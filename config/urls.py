@@ -1,14 +1,14 @@
 from django.contrib import admin
 from django.urls import path, include
-from myapp import views
+from mill import views
 from django.contrib.auth import views as auth_views  # Import this
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('myapp.urls')),  # Include myapp URLs
+    path('', include('mill.urls')),  # Include mill URLs
     path('', views.index, name='index'),
-    path('login/', auth_views.LoginView.as_view(template_name='myapp/login.html'), name='login'),
+    path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('profile/', views.profile, name='profile'),
     path('admin-view/', views.admin_view, name='admin_view'),

@@ -137,7 +137,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'myapp/static',  # Ensure static files directory is configured
+    BASE_DIR / 'mill/static',  # Ensure static files directory is configured
 ]
 
 # Default primary key field type
@@ -158,7 +158,7 @@ LOGGING = {
         'level': 'WARNING',
     },
     'loggers': {
-        'myapp': {
+        'mill': {
             'handlers': ['console'],
             'level': 'ERROR',
             'propagate': True,
