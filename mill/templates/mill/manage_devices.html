@@ -1,0 +1,247 @@
+{% load i18n %}
+<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+<html dir="rtl" lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Manage Devices" %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #0c2d48;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            vertical-align: middle;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: #0c2d48;
+            color: #fff;
+        }
+        .accordion-button:focus {
+            box-shadow: none;
+        }
+        .btn-primary, .btn-secondary, .btn-warning, .btn-danger {
+            width: 100%;
+        }
+        .modal-header {
+            background-color: #0c2d48;
+            color: #fff;
+        }
+        .form-control:focus {
+            box-shadow: none;
+        }
+        .disabled {
+            background-color: #ccc !important;
+            cursor: not-allowed !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-container">
+    <h2>{% trans "Manage Devices" %}</h2>
+
+    <a href="{% url 'manage_admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
+
+    <div class="accordion" id="deviceAccordion">
+        <!-- New Devices Section -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingNewDevices">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNewDevices" aria-expanded="false" aria-controls="collapseNewDevices">
+                    {% trans "New Devices" %}
+                </button>
+            </h2>
+            <div id="collapseNewDevices" class="accordion-collapse collapse" aria-labelledby="headingNewDevices" data-bs-parent="#deviceAccordion">
+                <div class="accordion-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Device Name/Serial Number" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="new-devices-table-body">
+                            {% for device in new_devices %}
+                            <tr id="new-device-row-{{ device.id }}">
+                                <td>{{ device.serial_number }}</td>
+                                <td>
+                                    <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="rename_device">
+                                        <input type="hidden" name="device_id" value="{{ device.id }}">
+                                        <input type="text" name="new_device_name" placeholder="{% trans 'Enter new name' %}" class="form-control mb-2" required>
+                                        <button type="submit" class="btn btn-info btn-sm mb-1">{% trans "Rename" %}</button>
+                                    </form>
+                                    <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="device_id" value="{{ device.id }}">
+                                        <button type="submit" class="btn btn-danger btn-sm">{% trans "Remove" %}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Devices Section -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingExistingDevices">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExistingDevices" aria-expanded="true" aria-controls="collapseExistingDevices">
+                    {% trans "Existing Devices" %}
+                </button>
+            </h2>
+            <div id="collapseExistingDevices" class="accordion-collapse collapse show" aria-labelledby="headingExistingDevices" data-bs-parent="#deviceAccordion">
+                <div class="accordion-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Device Name/Serial Number" %}</th>
+                                <th>{% trans "Status" %}</th>
+                                <th>{% trans "Selected Counter" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                                <th>{% trans "Pair Device" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="existing-devices-table-body">
+                            {% for device in existing_devices %}
+                            <tr id="device-row-{{ device.id }}">
+                                <td>{{ device.name|default:device.serial_number }}</td>
+                                <td>
+                                    <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
+										{% csrf_token %}
+										<input type="hidden" name="device_id" value="{{ device.id }}">
+										<button type="submit" class="btn btn-warning btn-sm">
+											{% if device.status %}
+												{% trans "Deactivate" %}
+											{% else %}
+												{% trans "Activate" %}
+											{% endif %}
+										</button>
+									</form>
+                                </td>
+                                <td>
+                                    <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_device_counter">
+                                        <input type="hidden" name="device_id" value="{{ device.id }}">
+                                        <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
+                                            <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
+                                            <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
+                                            <option value="counter_4" {% if device.selected_counter == 'counter_4' %}selected{% endif %}>{% trans "Counter 4" %}</option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="rename_device">
+                                        <input type="hidden" name="device_id" value="{{ device.id }}">
+                                        <input type="text" name="new_device_name" placeholder="{% trans 'Enter new name' %}" class="form-control mb-2" required>
+                                        <button type="submit" class="btn btn-info btn-sm mb-1">{% trans "Rename" %}</button>
+                                    </form>
+                                    <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
+										{% csrf_token %}
+										<input type="hidden" name="device_id" value="{{ device.id }}">
+										<button type="submit" class="btn btn-danger btn-sm">{% trans "Remove" %}</button>
+									</form>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="showPairDeviceModal('{{ device.id }}')">{% trans "Pair" %}</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Device Manually -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingAddDevice">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddDevice" aria-expanded="false" aria-controls="collapseAddDevice">
+                    {% trans "Add Device Manually" %}
+                </button>
+            </h2>
+            <div id="collapseAddDevice" class="accordion-collapse collapse" aria-labelledby="headingAddDevice" data-bs-parent="#deviceAccordion">
+                <div class="accordion-body">
+                    <form method="POST" action="{% url 'add_device' %}">
+						{% csrf_token %}
+						<div class="mb-3">
+							<label for="new_device_name" class="form-label">{% trans "Device Name" %}</label>
+							<input type="text" class="form-control" id="new_device_name" name="new_device_name" required>
+						</div>
+						<div class="mb-3">
+							<label for="new_device_serial" class="form-label">{% trans "Device Serial Number" %}</label>
+							<input type="text" class="form-control" id="new_device_serial" name="new_device_serial" required>
+						</div>
+						<button type="submit" class="btn btn-primary">{% trans "Add Device" %}</button>
+					</form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pair Device Modal -->
+<div class="modal fade" id="pairDeviceModal" tabindex="-1" aria-labelledby="pairDeviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pairDeviceModalLabel">{% trans "Pair Device" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pairDeviceForm" method="POST" action="{% url 'pair_device' %}">
+                    {% csrf_token %}
+                    <input type="hidden" id="pair_device_id" name="device_id">
+                    <div class="mb-3">
+                        <label for="pair_with_device_id" class="form-label">{% trans "Select Device to Pair With" %}</label>
+                        <select id="pair_with_device_id" name="pair_with_device_id" class="form-select" required>
+                            {% for device in existing_devices %}
+                            <option value="{{ device.id }}">{{ device.name|default:device.serial_number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">{% trans "Pair" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function showPairDeviceModal(deviceId) {
+        document.getElementById('pair_device_id').value = deviceId;
+        new bootstrap.Modal(document.getElementById('pairDeviceModal')).show();
+    }
+
+    function fetchAndUpdateDeviceCounters() {
+        fetch("{% url 'manage_devices' %}")
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('existing-devices-table-body').innerHTML = html;
+        });
+    }
+
+    setInterval(fetchAndUpdateDeviceCounters, 10000);
+</script>
+
+</body>
+</html>

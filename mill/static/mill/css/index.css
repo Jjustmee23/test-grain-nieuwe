@@ -1,0 +1,434 @@
+/* Basiskleuren voor de pagina */
+:root {
+    --primary-color: #4a90e2; /* Hoofdkleur, gebruikt voor knoppen en andere primaire elementen */
+    --primary-hover-color: #357ABD; /* Kleur bij hover voor primaire elementen */
+    --background-color: #ffffff; /* Algemene achtergrondkleur voor de pagina */
+    --text-color: #333333; /* Standaard tekstkleur */
+    --secondary-color: #0c2d48; /* Secundaire kleur, gebruikt voor statusbalken en vergelijkbare elementen */
+    --secondary-hover-color: #094072; /* Hoverkleur voor secundaire elementen */
+}
+
+/* Donkere modus kleuren */
+[data-theme="dark"] {
+    --primary-color: #1E3A8A; /* Hoofdkleur in donkere modus */
+    --primary-hover-color: #1D4ED8; /* Hoverkleur in donkere modus */
+    --background-color: #1F2937; /* Achtergrondkleur in donkere modus */
+    --text-color: #E5E7EB; /* Tekstkleur in donkere modus */
+}
+
+/* Globale stijlen voor de gehele pagina */
+body {
+    font-family: 'Inter', sans-serif; /* Gebruik van het 'Inter' lettertype voor de hele pagina */
+    background-color: var(--background-color); /* Stelt de achtergrondkleur van de pagina in */
+    color: var(--text-color); /* Stelt de standaard tekstkleur in */
+    margin: 0;
+    padding: 20px;
+    transition: background-color 0.3s, color 0.3s; /* Zachte overgang voor kleurveranderingen (bijv. bij donkere modus) */
+    display: flex;
+    flex-direction: column; /* Zorgt ervoor dat de inhoud in kolommen wordt geplaatst */
+    min-height: 100vh; /* De pagina beslaat minimaal de volledige hoogte van het scherm */
+}
+
+/* Style for sacks and tons display */
+.sacks-display, .tons-display {
+    font-size: 1.2rem;
+    font-weight: bold;
+    display: inline-block;
+    word-wrap: break-word;
+}
+
+/* Ensure responsive design for the totals */
+.total-today, .total-tons {
+    font-size: 1.2rem;
+    margin: 10px 0;
+    color: var(--text-color);
+    text-align: center;
+}
+
+/* Adjust text overflow for larger numbers */
+.total-today span, .total-tons span {
+    white-space: nowrap;  /* Prevent text from wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;  /* Add ellipsis for overflow */
+}
+
+/* Header (bovenkant van de pagina) */
+.header {
+    background: linear-gradient(90deg, #88C0B8, #D8E2DC); /* Achtergrond met een lineaire gradient */
+    padding: 40px 20px; /* Ruimte rond de inhoud van de header */
+    border-radius: 12px 12px 0 0; /* Afgeronde hoeken aan de bovenkant */
+    position: relative;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Zachte schaduw onder de header */
+    display: flex;
+    align-items: center; /* Verticaal centreren van de inhoud in de header */
+    justify-content: center; /* Horizontaal centreren van de inhoud in de header */
+    text-align: center; /* Tekst centreren in de header */
+}
+
+/* Afbeeldingen (logo's) in de header */
+.header img.logo-left,
+.header img.logo-right {
+    height: 140px; /* Hoogte van de logo's aan beide zijden van de header */
+    position: absolute;
+    top: 50%; /* Verticaal centreren van de logo's */
+    transform: translateY(-50%); /* Zorgt ervoor dat de logo's precies in het midden staan */
+}
+
+.header img.logo-left {
+    left: 20px; /* Plaatst het linker logo 20px van de linkerkant van de header */
+}
+
+.header img.logo-right {
+    right: 20px; /* Plaatst het rechter logo 20px van de rechterkant van de header */
+}
+
+/* Titel en subtitel in de header */
+.header h1,
+.header h2 {
+    margin: 0;
+    font-size: 36px; /* Standaard grootte voor de titels */
+    color: #FFD700; /* Goudkleurige tekst */
+    font-weight: bold; /* Vetgedrukt */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Zachte schaduw voor de tekst */
+}
+
+.header h1 {
+    font-size: 48px; /* Grotere tekstgrootte voor de hoofdtitel */
+    margin-bottom: 10px; /* Ruimte onder de hoofdtitel */
+}
+
+.header h2 {
+    font-size: 36px; /* Iets kleinere tekstgrootte voor de subtitel */
+    margin-top: 10px; /* Ruimte boven de subtitel */
+}
+
+/* Responsieve aanpassingen voor de header op kleinere schermen */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 32px; /* Verklein de hoofdtitel op kleine schermen */
+    }
+
+    .header h2 {
+        font-size: 28px; /* Verklein de subtitel op kleine schermen */
+    }
+
+    .header img.logo-left,
+    .header img.logo-right {
+        height: 100px; /* Verklein de logo's op kleinere schermen */
+    }
+}
+
+/* Knoppen die dezelfde stijl als de header hebben */
+.logout-button,
+.admin-button,
+.profile-button {
+    padding: 10px 20px; /* Ruimte binnen de knoppen */
+    font-weight: 600; /* Vetgedrukte tekst in de knoppen */
+    color: #FFD700; /* Goudkleurige tekstkleur */
+    background: linear-gradient(90deg, #88C0B8, #D8E2DC); /* Gradient achtergrond */
+    border: none; /* Geen rand */
+    border-radius: 8px; /* Afgeronde hoeken */
+    cursor: pointer; /* Cursor verandert naar pointer bij hover */
+    transition: background-color 0.3s, transform 0.3s; /* Overgang voor hover-effect */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Schaduw voor de tekst in de knoppen */
+}
+
+.logout-button:hover,
+.admin-button:hover,
+.profile-button:hover {
+    background: linear-gradient(90deg, #357ABD, #4a90e2); /* Donkere achtergrondkleur bij hover */
+    transform: scale(1.05); /* Vergroot de knop iets bij hover */
+}
+
+/* Daily total and tons layout */
+.daily-total, .tons-total {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 10px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.current-value, .tons-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-left: 10px;
+    white-space: nowrap; /* Zorgt ervoor dat de waarde niet breekt */
+}
+
+/* Filters voor het selecteren van gegevens, zoals steden en datums */
+.filters {
+    display: flex;
+    justify-content: space-between; /* Verspreid de filters over de beschikbare ruimte */
+    align-items: center; /* Centreer de filters verticaal */
+    margin-bottom: 20px; /* Ruimte onder de filters */
+    flex-wrap: wrap; /* Zorgt ervoor dat de filters doorlopen naar de volgende regel indien nodig */
+}
+
+/* Gebruikersinformatie en logout-knop in de filters */
+.user-info {
+    display: flex;
+    align-items: center; /* Centreer de tekst en knoppen verticaal */
+    margin-right: 20px; /* Ruimte tussen de gebruikersinfo en de rest van de filters */
+}
+
+.user-info span {
+    font-size: 18px; /* Grootte van de tekst die de gebruiker verwelkomt */
+    color: var(--text-color); /* Tekstkleur van de gebruikersinfo */
+    margin-right: 10px; /* Ruimte tussen de tekst en de knoppen */
+}
+
+.logout-button {
+    margin-left: 10px; /* Ruimte tussen de knoppen in de gebruikersinfo */
+}
+
+/* Formuliervelden binnen de filters */
+.filters .form-group {
+    margin: 10px 20px; /* Ruimte rond de individuele formuliervelden */
+}
+
+/* Uitlijning van de datumkiezer */
+.filters .date-picker {
+    margin-left: auto; /* Plaatst de datumkiezer aan de rechterkant van de filters */
+}
+
+/* Container voor de inhoud van de pagina */
+.content {
+    flex: 1; /* Zorgt ervoor dat de inhoud de resterende ruimte vult */
+}
+
+/* Factories grid - de lay-out voor de fabrieksboxen */
+.factories-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Zorgt voor een flexibele kolomlay-out met een minimale breedte van 300px per box */
+    gap: 60px; /* Ruimte tussen de boxen */
+    justify-content: center; /* Centreer de grid binnen de container */
+    padding: 40px; /* Ruimte rond de grid */
+}
+
+/* De stijl van de individuele fabrieksboxen */
+.factory {
+    padding: 20px; /* Ruimte binnen de boxen */
+    margin: 0; /* Geen extra marge rond de boxen, ruimte wordt geregeld door de grid gap */
+    background-color: #f8f9fa; /* Achtergrondkleur van de boxen */
+    border-radius: 12px; /* Afgeronde hoeken voor de boxen */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1), 0 12px 20px rgba(0, 0, 0, 0.2); /* Schaduw voor een 3D-effect */
+    transition: transform 0.3s, box-shadow 0.3s; /* Zachte overgang voor hover-effecten */
+    cursor: pointer; /* Cursor verandert naar pointer bij hover */
+    text-decoration: none; /* Verwijdert standaard tekstdecoratie */
+    color: inherit; /* Houdt de standaard tekstkleur aan */
+    display: block;
+    height: 350px; /* Grotere hoogte voor meer inhoud in de box */
+    overflow: hidden;
+    position: relative;
+    text-align: center; /* Centreert de tekst en inhoud in de box */
+}
+
+.factory:hover {
+    transform: translateY(-5px); /* Verschuift de box iets omhoog bij hover */
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.2), 0 14px 28px rgba(0, 0, 0, 0.3); /* Versterkt de schaduw bij hover voor een groter 3D-effect */
+}
+
+/* Stijl van de titel binnen de fabrieksboxen */
+.factory h2 {
+    position: relative;
+    top: 10px; /* Plaatst de titel iets naar beneden binnen de box */
+    margin: 0;
+    font-size: 2rem; /* Verhoogt de grootte van de titel */
+    text-align: center; /* Centreert de titeltekst */
+    font-weight: 600; /* Maakt de titeltekst vetgedrukt */
+}
+
+/* Stijl van de "Total today" tekst onder de titel */
+.total-today {
+    position: relative;
+    top: 20px; /* Plaatst de tekst iets onder de titel */
+    margin: 0;
+    font-size: 1.2rem; /* Verhoogt de grootte van de tekst */
+    color: var(--text-color); /* Gebruikt de standaard tekstkleur */
+}
+
+/* Stijl van de animatiecontainer binnen de fabrieksboxen */
+.animation-container {
+    position: absolute; /* Changed from relative to absolute */
+    width: 100%; /* Zorgt ervoor dat de animatie de volledige breedte van de container vult */
+    height: auto; /* Changed from a fixed height to auto */
+    overflow: hidden;
+    text-align: left; /* Aligns the content to the left */
+    bottom: 0; /* Moves the container to the bottom */
+    left: 0; /* Moves the container to the left */
+}
+
+/* Stijl van de animatieafbeelding binnen de animatiecontainer */
+.factory-animation {
+    width: 100%; /* Vergroot de animatieafbeelding */
+    height: auto; /* Zorgt ervoor dat de hoogte in verhouding blijft tot de breedte */
+    display: block;
+    margin: 0 auto; /* Centreert de afbeelding horizontaal */
+    margin-top: 50px; /* Plaatst de afbeelding verder naar beneden binnen de container */
+}
+
+/* Stijl voor de fabrieksboxen op basis van de status */
+.factory.online {
+    border-color: #28a745; /* Groene randkleur voor online boxen */
+    background-color: #d4edda; /* Lichtgroene achtergrondkleur voor online boxen */
+}
+
+.factory.offline {
+    border-color: #f1f1f1; /* Grijze randkleur voor offline boxen */
+    background-color: #f1f1f1; /* Grijze achtergrondkleur voor offline boxen */
+}
+
+.factory.error {
+    border-color: #dc3545; /* Rode randkleur voor boxen met een fout */
+    background-color: #f8d7da; /* Lichtrode achtergrondkleur voor boxen met een fout */
+    animation: blink 1s linear infinite; /* Laat de box knipperen bij een fout */
+}
+
+/* Knipperend effect voor foutstatus */
+@keyframes blink {
+    0% {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+    }
+    50% {
+        background-color: #fff; /* Verandert tijdelijk naar wit */
+        border-color: #fff;
+    }
+    100% {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+    }
+}
+
+/* Popup stijlen */
+.popup {
+    display: none; /* Verberg de popup standaard */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ffffff; /* Witte achtergrond */
+    border: 1px solid #ddd; /* Grijze rand */
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 1000; /* Zorgt ervoor dat de popup boven alle andere inhoud verschijnt */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Zachte schaduw voor een 3D-effect */
+    text-align: center; /* Centreert de tekst in de popup */
+}
+
+.popup h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.5rem; /* Verhoogt de tekstgrootte voor de titel */
+    color: #333333; /* Zwarte tekstkleur */
+}
+
+.popup p {
+    margin: 5px 0;
+    color: #666666; /* Donkergrijze tekstkleur */
+}
+
+/* Knop binnen de popup */
+.popup button {
+    padding: 10px 20px; /* Ruimte binnen de knop */
+    background-color: #4a90e2; /* Primaire kleur voor de knop */
+    color: white; /* Witte tekstkleur voor de knop */
+    border: none; /* Geen rand */
+    border-radius: 4px; /* Afgeronde hoeken */
+    cursor: pointer; /* Cursor verandert naar pointer bij hover */
+    font-size: 1rem; /* Standaard tekstgrootte */
+    transition: background-color 0.3s; /* Zachte overgang voor kleurveranderingen */
+}
+
+.popup button:hover {
+    background-color: #357ABD; /* Donkere kleur bij hover */
+}
+
+.popup.active {
+    display: block; /* Toon de popup wanneer deze actief is */
+}
+
+/* Stijlen voor de statusbalk onderaan de pagina */
+.status-bar {
+    display: flex;
+    justify-content: space-between; /* Verspreid de inhoud van de statusbalk over de volledige breedte */
+    align-items: center; /* Centreert de inhoud verticaal */
+    background-color: var(--secondary-color); /* Secundaire kleur voor de achtergrond */
+    color: white; /* Witte tekstkleur */
+    padding: 10px; /* Ruimte binnen de statusbalk */
+    border-radius: 8px; /* Afgeronde hoeken */
+    margin-top: 20px; /* Ruimte boven de statusbalk */
+}
+
+.status-bar span {
+    font-weight: 500; /* Maakt de tekst in de statusbalk vetgedrukt */
+}
+
+/* Schakelaar voor donkere modus */
+.dark-mode-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer; /* Verandert de cursor naar pointer bij hover */
+}
+
+/* Popup voor statistieken */
+.statistics-popup {
+    display: none; /* Verbergt de popup standaard */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Centreert de popup op het scherm */
+    background-color: var(--background-color);
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 20;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 90%; /* Breedte van de popup aangepast aan het scherm */
+    max-width: 600px; /* Maximale breedte van de popup */
+}
+
+.statistics-popup h2 {
+    margin-top: 0;
+    font-weight: 600; /* Maakt de titel in de popup vetgedrukt */
+}
+
+.statistics-popup button {
+    margin-top: 20px;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.statistics-popup button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.statistics-popup .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* Responsieve aanpassingen voor kleinere schermen */
+@media (max-width: 576px) {
+    .filters {
+        flex-direction: column; /* Stapelt de filters onder elkaar op kleine schermen */
+    }
+
+    .status-bar {
+        flex-direction: column; /* Stapelt de inhoud van de statusbalk onder elkaar op kleine schermen */
+        text-align: center; /* Centreert de tekst op kleine schermen */
+    }
+}

@@ -1,0 +1,148 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html dir="rtl" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Register" %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --primary-hover-color: #357ABD;
+            --background-color: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .register-container {
+            background-color: var(--background-color);
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            transition: box-shadow 0.3s;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .form-group label {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            pointer-events: none;
+            transition: all 0.2s;
+            color: #aaa;
+        }
+
+        .form-group input:focus + label,
+        .form-group input:not(:placeholder-shown) + label {
+            top: 0;
+            left: 10px;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            background-color: var(--background-color);
+            padding: 0 5px;
+        }
+
+        button {
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover-color);
+        }
+
+        .dark-mode-toggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div style="position: absolute; top: 10px; left: 10px;">
+    <a href="?lang=en" style="margin-right: 10px;">English</a>
+    <a href="?lang=ar">العربية</a>
+</div>
+
+<div class="dark-mode-toggle" onclick="toggleDarkMode()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m4.22 1.79l-.73.73m5.04 3.18h-1m-4.51 9a9.003 9.003 0 01-9-8.25M6.22 5.22L5.5 5.5m0 13h1m4.51 0a9 9 0 109-9m-2.83 3a7.5 7.5 0 11-7.5-7.5m0 0V3m0 1v1m0 0V5m0-2.5v1.5m0-2.5v.5m0 0v1m0-2.5v1.5m0-2.5V3m0 0v1.5M12 3v.5M12 1.5v1M12 2.5v.5M12 1.5V2m0 0V1m0 .5v1.5m0 0v.5m0-2.5v1.5m0-2.5V1m0 0v.5m0-1V0m0 0v.5m0-1V0z" />
+    </svg>
+</div>
+
+<div class="register-container">
+    <h2>{% trans "Register" %}</h2>
+
+    {% if form.errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for field, errors in form.errors.items %}
+                <strong>{{ field|capfirst }}</strong>: {{ errors|striptags }}<br>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Renders the form dynamically -->
+
+        <button type="submit">{% trans "Register" %}</button>
+    </form>
+
+    <p>{% trans "Already have an account?" %} <a href="{% url 'login' %}">{% trans "Login here" %}</a></p>
+</div>
+
+<script>
+    const toggleDarkMode = () => {
+        document.documentElement.toggleAttribute('data-theme', 'dark');
+    }
+</script>
+</body>
+</html>

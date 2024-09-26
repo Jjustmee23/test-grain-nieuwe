@@ -1,0 +1,238 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html dir="rtl" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans 'Database Management' %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .accordion-button {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .accordion-button:hover {
+            background-color: #0b5ed7;
+        }
+        .modal-header {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .btn-primary, .btn-danger, .btn-info, .btn-success {
+            margin-top: 10px;
+        }
+        .form-container {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div style="position: absolute; top: 10px; left: 10px;">
+    <a href="?lang=en" style="margin-right: 10px;">English</a>
+    <a href="?lang=ar">العربية</a>
+</div>
+
+    <div class="container">
+        <h2>{% trans 'Database Management' %}</h2>
+        
+        <div class="d-flex justify-content-between mb-3">
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDatabaseModal">
+                    {% trans 'Add Database' %}
+                </button>
+            </div>
+            <div>
+                <button class="btn btn-info" onclick="window.print();">{% trans 'Print' %}</button>
+            </div>
+        </div>
+
+        <div class="accordion" id="databaseAccordion">
+            <!-- Main Database (mqtt_db) -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingMqttDb">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMqttDb" aria-expanded="true" aria-controls="collapseMqttDb">
+                        mqtt_db ({% trans 'Main Database' %})
+                    </button>
+                </h2>
+                <div id="collapseMqttDb" class="accordion-collapse collapse show" aria-labelledby="headingMqttDb" data-bs-parent="#databaseAccordion">
+                    <div class="accordion-body">
+                        <h5>{% trans 'Tables' %}</h5>
+                        <ul>
+                            {% for table in mqtt_db_tables %}
+                            <li>
+                                {{ table.name }}
+                                <button class="btn btn-info btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseColumnsMqtt{{ table.name }}" aria-expanded="false" aria-controls="collapseColumnsMqtt{{ table.name }}">
+                                    {% trans 'View Columns' %}
+                                </button>
+                                <div class="collapse mt-2" id="collapseColumnsMqtt{{ table.name }}">
+                                    <ul>
+                                        {% for column in table.columns %}
+                                        <li>{{ column }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other databases -->
+            {% for db in other_databases %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ db.name|replace:' ', '_' }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ db.name|replace:' ', '_' }}" aria-expanded="false" aria-controls="collapse{{ db.name|replace:' ', '_' }}">
+                        {{ db.name }}
+                    </button>
+                </h2>
+                <div id="collapse{{ db.name|replace:' ', '_' }}" class="accordion-collapse collapse" aria-labelledby="heading{{ db.name|replace:' ', '_' }}" data-bs-parent="#databaseAccordion">
+                    <div class="accordion-body">
+                        <h5>{% trans 'Tables' %}</h5>
+                        <ul>
+                            {% for table in db.tables %}
+                            <li>
+                                {{ table.name }}
+                                <button class="btn btn-info btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseColumns{{ db.name|replace:' ', '_' }}{{ table.name }}" aria-expanded="false" aria-controls="collapseColumns{{ db.name|replace:' ', '_' }}{{ table.name }}">
+                                    {% trans 'View Columns' %}
+                                </button>
+                                <div class="collapse mt-2" id="collapseColumns{{ db.name|replace:' ', '_' }}{{ table.name }}">
+                                    <ul>
+                                        {% for column in table.columns %}
+                                        <li>{{ column }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{% url 'database.manage_tables' db_name=db.name %}" class="btn btn-secondary btn-sm">{% trans 'Manage Tables' %}</a>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="mt-3">
+                            <a href="{% url 'database.download_csv' db_name=db.name %}" class="btn btn-success">{% trans 'Download CSV' %}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Modal for adding databases -->
+        <div class="modal fade" id="addDatabaseModal" tabindex="-1" aria-labelledby="addDatabaseModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addDatabaseModalLabel">{% trans 'Add Database' %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="addDatabaseOptions">
+                            <button type="button" class="btn btn-primary btn-lg btn-block" id="localOption">{% trans 'Local' %}</button>
+                            <button type="button" class="btn btn-secondary btn-lg btn-block" id="externalOption">{% trans 'External' %}</button>
+                        </div>
+
+                        <form id="localForm" class="form-container" method="POST" action="{% url 'database.add_local_database' %}">
+                            <h5>{% trans 'Add Local Database' %}</h5>
+                            <div class="mb-3">
+                                <label for="db_name_local" class="form-label">{% trans 'Database Name' %}</label>
+                                <input type="text" class="form-control" id="db_name_local" name="db_name_local" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="db_location" class="form-label">{% trans 'Database Location' %}</label>
+                                <input type="text" class="form-control" id="db_location" name="db_location" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans 'Close' %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans 'Add Database' %}</button>
+                            </div>
+                        </form>
+
+                        <form id="externalForm" class="form-container" method="POST" action="{% url 'database.add_external_database' %}">
+                            <h5>{% trans 'Add External Database' %}</h5>
+                            <div class="mb-3">
+                                <label for="db_name_external" class="form-label">{% trans 'Database Name' %}</label>
+                                <input type="text" class="form-control" id="db_name_external" name="db_name_external" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="db_host_external" class="form-label">{% trans 'IP/Host' %}</label>
+                                <input type="text" class="form-control" id="db_host_external" name="db_host_external" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="db_port_external" class="form-label">{% trans 'Port' %}</label>
+                                <input type="text" class="form-control" id="db_port_external" name="db_port_external" value="3306" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="db_username_external" class="form-label">{% trans 'Username' %}</label>
+                                <input type="text" class="form-control" id="db_username_external" name="db_username_external" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="db_password_external" class="form-label">{% trans 'Password' %}</label>
+                                <input type="password" class="form-control" id="db_password_external" name="db_password_external" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="friendly_name_external" class="form-label">{% trans 'Friendly Name' %}</label>
+                                <input type="text" class="form-control" id="friendly_name_external" name="friendly_name_external" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans 'Close' %}</button>
+                                <button type="submit" class="btn btn-primary">{% trans 'Add Database' %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for removing databases -->
+        <div class="modal fade" id="removeDatabaseModal" tabindex="-1" aria-labelledby="removeDatabaseModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="removeDatabaseModalLabel">{% trans 'Remove Database' %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="removeDatabaseForm" method="POST" action="{% url 'database.remove_database' %}">
+                            <div class="mb-3">
+                                <label for="remove_db_name" class="form-label">{% trans 'Select Database' %}</label>
+                                <select class="form-select" id="remove_db_name" name="db_name">
+                                    {% for db in other_databases %}
+                                    <option value="{{ db.name }}">{{ db.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans 'Close' %}</button>
+                                <button type="submit" class="btn btn-danger">{% trans 'Remove Database' %}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle between local and external forms
+        document.getElementById('localOption').onclick = function() {
+            document.getElementById('localForm').style.display = 'block';
+            document.getElementById('externalForm').style.display = 'none';
+        };
+
+        document.getElementById('externalOption').onclick = function() {
+            document.getElementById('localForm').style.display = 'none';
+            document.getElementById('externalForm').style.display = 'block';
+        };
+    </script>
+</body>
+</html>

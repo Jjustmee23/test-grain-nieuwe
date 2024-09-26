@@ -1,0 +1,39 @@
+{% extends 'mill/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Manage Users</h2>
+
+    <a href="{% url 'create_user' %}" class="btn btn-success mb-3">Create New User</a>
+
+    <table class="table table-striped">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Username</th>
+				<th>Email</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for user in users %}
+			<tr>
+				<td>{{ user.id }}</td>
+				<td>{{ user.username }}</td>
+				<td>{{ user.email }}</td>
+				<td>
+					<a href="{% url 'edit_user' user.id %}" class="btn btn-primary btn-sm">Edit</a>
+					<a href="{% url 'delete_user' user.id %}" class="btn btn-danger btn-sm">Delete</a>
+				</td>
+			</tr>
+			{% empty %}
+			<tr>
+				<td colspan="4">No users found.</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+    <a href="{% url 'super_admin' %}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

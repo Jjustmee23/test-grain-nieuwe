@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def manage_users(request):
     users = User.objects.all()  # Fetch all users
     print(users) 
-    return render(request, 'myapp/manage_users.html', {'users': users})
+    return render(request, 'mill/manage_users.html', {'users': users})
 
 # Create new user view
 @login_required
@@ -33,7 +33,7 @@ def create_user(request):
             return redirect('manage_users')
     else:
         form = UserCreationForm()
-    return render(request, 'myapp/create_user.html', {'form': form})
+    return render(request, 'mill/create_user.html', {'form': form})
 
 # Edit existing user view
 @login_required
@@ -46,7 +46,7 @@ def edit_user(request, user_id):
             return redirect('manage_users')
     else:
         form = UserChangeForm(instance=user)
-    return render(request, 'myapp/edit_user.html', {'form': form, 'user': user})
+    return render(request, 'mill/edit_user.html', {'form': form, 'user': user})
 
 # Delete user view
 @login_required
@@ -55,7 +55,7 @@ def delete_user(request, user_id):
     if request.method == 'POST':
         user.delete()
         return redirect('manage_users')
-    return render(request, 'myapp/delete_user.html', {'user': user})
+    return render(request, 'mill/delete_user.html', {'user': user})
 
 # Assign permissions/rights to a user (e.g., add to group)
 @login_required
@@ -69,7 +69,7 @@ def assign_rights(request, user_id):
         user.groups.add(group)
         return redirect('manage_users')
 
-    return render(request, 'myapp/assign_rights.html', {'user': user, 'groups': groups})
+    return render(request, 'mill/assign_rights.html', {'user': user, 'groups': groups})
 
 def index(request):
     # Haal alle steden op
@@ -124,10 +124,10 @@ def index(request):
         'current_date': selected_date,  # Toon de gekozen of huidige datum
     }
 
-    return render(request, 'myapp/index.html', context)
+    return render(request, 'mill/index.html', context)
 
 def profile(request):
-    return render(request, 'myapp/profile.html')
+    return render(request, 'mill/profile.html')
 
 def register(request):
     if request.method == 'POST':
@@ -141,7 +141,7 @@ def register(request):
             return redirect('index')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'myapp/register.html', {'form': form})
+    return render(request, 'mill/register.html', {'form': form})
 
 def monitor_required(user):
     return user.groups.filter(name='monitor').exists() or user.is_superuser
@@ -150,7 +150,7 @@ def super_admin_required(user):
     return user.groups.filter(name='super_admin').exists() or user.is_superuser
 
 def admin_view(request):
-    return render(request, 'myapp/admin.html')
+    return render(request, 'mill/admin.html')
 
 from django.utils.translation import get_language
 from django.shortcuts import render
@@ -158,17 +158,17 @@ from django.shortcuts import render
 def super_admin_view(request):
     current_locale = get_language()  # Gets the current language
     dir = 'rtl' if current_locale == 'ar' else 'ltr'
-    return render(request, 'myapp/super_admin.html', {'dir': dir, 'lang': current_locale})
+    return render(request, 'mill/super_admin.html', {'dir': dir, 'lang': current_locale})
 
 # Manage views for users, databases, devices, tables, factory, city, etc.
 def manage_users(request):
-    return render(request, 'myapp/manage_users.html')
+    return render(request, 'mill/manage_users.html')
 
 def manage_databases(request):
-    return render(request, 'myapp/manage_databases.html')
+    return render(request, 'mill/manage_databases.html')
 
 def manage_tables(request):
-    return render(request, 'myapp/manage_tables.html')
+    return render(request, 'mill/manage_tables.html')
 
 def manage_factory(request):
     if request.method == "POST":
@@ -182,16 +182,16 @@ def manage_factory(request):
             return redirect("manage_factory")
 
 def manage_city(request):
-    return render(request, 'myapp/manage_city.html')
+    return render(request, 'mill/manage_city.html')
 
 def view_statistics(request):
-    return render(request, 'myapp/view_statistics.html')
+    return render(request, 'mill/view_statistics.html')
 
 def view_tables(request):
-    return render(request, 'myapp/view_tables.html')
+    return render(request, 'mill/view_tables.html')
 
 def manage_admin_view(request):
-    return render(request, 'myapp/manage_admin.html')
+    return render(request, 'mill/manage_admin.html')
 
 def download_factories(request):
     # Logic to generate and serve the Excel file
@@ -310,7 +310,7 @@ def manage_city(request):
 
     # GET request: show the list of cities
     cities = City.objects.all()
-    return render(request, 'myapp/manage_city.html', {'cities': cities})
+    return render(request, 'mill/manage_city.html', {'cities': cities})
     
 def manage_factory(request):
     if request.method == "POST":
@@ -359,7 +359,7 @@ def manage_factory(request):
 
     cities = City.objects.all()
     factories = Factory.objects.all().select_related('city')
-    return render(request, 'myapp/manage_factory.html', {'factories': factories, 'cities': cities})
+    return render(request, 'mill/manage_factory.html', {'factories': factories, 'cities': cities})
     
     
 # Function to get the highest counter value for the device for each day
@@ -398,7 +398,7 @@ def manage_devices(request):
             return redirect('manage_devices')
 
     existing_devices = Device.objects.all()
-    return render(request, 'myapp/manage_devices.html', {'existing_devices': existing_devices})
+    return render(request, 'mill/manage_devices.html', {'existing_devices': existing_devices})
     
 def get_factory_status(request):
     factories = Factory.objects.all().values('id', 'status', 'error', 'devices')
