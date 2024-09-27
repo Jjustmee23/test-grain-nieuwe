@@ -85,7 +85,7 @@ DATABASES = {
         'NAME': 'mqtt_db',
         'USER': 'mqtt_user',
         'PASSWORD': 'Jjustmee12773',
-        'HOST': '84.195.150.96',  # MySQL server host
+        'HOST': '84.194.32.109',  # MySQL server host
         'PORT': '3308',  # MySQL server port
     },
 }
