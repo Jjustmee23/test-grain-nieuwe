@@ -59,5 +59,4 @@ class MQTTData(models.Model):
     class Meta:
         managed = False
         db_table = 'mqtt_data'
-        app_label = 'mqtt_data_app'
         ordering = ['-created_at']
