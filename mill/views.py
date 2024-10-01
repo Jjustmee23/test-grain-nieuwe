@@ -184,8 +184,16 @@ def manage_factory(request):
 def manage_city(request):
     return render(request, 'mill/manage_city.html')
 
+from datetime import date
+
 def view_statistics(request):
-    return render(request, 'mill/view_statistics.html')
+    selected_date = request.GET.get('date', date.today().isoformat())
+    context = {
+        'date': selected_date,
+        'current_date': date.today().isoformat(),
+    }
+    
+    return render(request, 'mill/view_statistics.html', context)
 
 def view_tables(request):
     return render(request, 'mill/view_tables.html')

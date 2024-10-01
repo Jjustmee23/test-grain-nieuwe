@@ -48,7 +48,7 @@ function handleFactoryClick(factoryId, hasDevices) {
         showNoDevicesPopup();
     } else {
         // Otherwise, proceed to the statistics page
-        window.location.href = `/view_statistics?factory_id=${factoryId}`;
+        window.location.href = `/view-statistics?factory_id=${factoryId}`;
     }
 }
 
