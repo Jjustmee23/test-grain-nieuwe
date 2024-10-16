@@ -4,6 +4,27 @@
 <div class="container">
     <h2>Manage Users</h2>
 
+	<h3>{% trans 'Create User' %}</h3>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="username" class="form-label">{% trans 'Username' %}:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+		<div class="mb-3">
+            <label for="username" class="form-label">{% trans 'Username' %}:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+		<div class="mb-3">
+            <label for="username" class="form-label">{% trans 'Username' %}:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+		<div class="mb-3">
+            <label for="username" class="form-label">{% trans 'Username' %}:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <button type="submit" name="action" value="add_factory" class="btn btn-primary">{% trans 'Add Factory' %}</button>
+    </form>
     <a href="{% url 'create_user' %}" class="btn btn-success mb-3">Create New User</a>
 
     <table class="table table-striped">
