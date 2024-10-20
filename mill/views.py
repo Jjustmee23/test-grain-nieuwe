@@ -108,24 +108,6 @@ def calculate_daily_total_today(selected_counter, counter_data):
         daily_total = sum(counter.counter_4 for counter in counter_data)
     return daily_total
 
-def fetch_device_data_for_device(filter):
-    # Fetch daily total for the factory
-     object_data = DeviceData.objects.filter(
-        **filter
-    )
-    #  print('filter is :',filter)
-    #  print("Called to get device_data:", object_data)
-     #print first entry from queryset if exists
-    #  if object_data.exists():
-        # print("First entry:", object_data.first())
-     return object_data
-
-def fetch_counter_data_for_device(filter):
-    # Fetch daily total for the factory
-     object_data = CountersData.objects.filter(
-        **filter
-    )
-     return object_data
 
 #Daily_total previous days
 def calculate_daily_total_previous(device_data):
@@ -284,18 +266,159 @@ def manage_city(request):
 
 from datetime import date
 
+def fetch_device_data_for_device(filter):
+    # Fetch daily total for the factory
+     object_data = DeviceData.objects.filter(
+        **filter
+    )
+     return object_data
+
+def fetch_counter_data_for_device(filter):
+    # Fetch daily total for the factory
+     object_data = CountersData.objects.filter(
+        **filter
+    )
+     return object_data
+
+
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db.models import Sum, F, IntegerField, ExpressionWrapper
+from django.db.models.functions import ExtractHour, ExtractMonth
+
+@login_required
+@require_GET
+def chart_data(request):
+    # Extract query parameters
+    date_str = request.GET.get('date')
+    factory_id = request.GET.get('factory_id')
+    counters_str = request.GET.get('counters')  # e.g., 'counter_1,counter_2'
+
+    # Validate and parse the date
+    try:
+        selected_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.date.today()
+    except ValueError:
+        return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+
+    # Validate factory_id
+    if not factory_id:
+        return JsonResponse({'error': 'Missing factory_id parameter.'}, status=400)
+
+    factory = get_object_or_404(Factory, id=factory_id)
+
+    # Get devices for the factory
+    devices = Device.objects.filter(factory=factory)
+    if not devices.exists():
+        return JsonResponse({'error': 'No devices found for the selected factory.'}, status=404)
+
+    # Handle selected_counters
+    if counters_str:
+        counters = counters_str.split(',')
+    else:
+        # Default to each device's selected_counter
+        # Assuming you want to aggregate across all devices and their respective selected_counters
+        counters = [device.selected_counter for device in devices]
+
+    # Aggregate CountersData for Hourly Totals
+    start_datetime = datetime.datetime.combine(selected_date, datetime.time.min)
+    end_datetime = datetime.datetime.combine(selected_date, datetime.time.max)
+
+    # Filter CountersData within the selected date and factory's devices
+    counters_data = CountersData.objects.filter(
+        device__in=devices,
+        created_at__range=(start_datetime, end_datetime)
+    )
+
+    if not counters_data.exists():
+        hourly_totals_list = []
+    else:
+        # Create an expression to sum selected counters per entry
+        sum_expr = None
+        for counter in counters:
+            if sum_expr is None:
+                sum_expr = F(counter)
+            else:
+                sum_expr = sum_expr + F(counter)
+
+        if sum_expr is None:
+            sum_expr = 0
+
+        counters_data = counters_data.annotate(total=ExpressionWrapper(sum_expr, output_field=IntegerField()))
+        counters_data = counters_data.annotate(hour=ExtractHour('created_at'))
+
+        # Group by hour and sum totals
+        hourly_totals = counters_data.values('hour').annotate(total=Sum('total')).order_by('hour')
+
+        hourly_totals_list = [{'hour': item['hour'], 'total': item['total']} for item in hourly_totals]
+
+    # Aggregate DeviceData for Daily Totals
+    daily_totals_qs = DeviceData.objects.filter(
+        device__in=devices,
+        created_at__date=selected_date
+    ).aggregate(total=Sum('daily_total'))
+
+    daily_total = daily_totals_qs['total'] or 0
+
+    # Aggregate DeviceData for Monthly Totals (current month up to selected date)
+    start_of_month = selected_date.replace(day=1)
+    daily_totals_month_qs = DeviceData.objects.filter(
+        device__in=devices,
+        created_at__date__gte=start_of_month,
+        created_at__date__lte=selected_date
+    ).annotate(day=ExtractHour('created_at')).values('day').annotate(total=Sum('daily_total')).order_by('day')
+
+    daily_totals = [{'date': item['day'], 'total': item['total']} for item in daily_totals_month_qs]
+
+    # Aggregate DeviceData for Monthly Totals (current year up to selected date)
+    start_of_year = selected_date.replace(month=1, day=1)
+    monthly_totals_qs = DeviceData.objects.filter(
+        device__in=devices,
+        created_at__year=selected_date.year
+    ).annotate(month=ExtractMonth('created_at')).values('month').annotate(total=Sum('daily_total')).order_by('month')
+
+    monthly_totals = [{'month': item['month'], 'total': item['total']} for item in monthly_totals_qs]
+
+    # Calculate Cumulative Totals
+    cumulative_sum = 0
+    cumulative_totals = []
+    for item in daily_totals:
+        cumulative_sum += item['total']
+        cumulative_totals.append({'date': item['date'], 'total': cumulative_sum})
+
+    # Prepare response data
+    response_data = {
+        'hourly_totals': hourly_totals_list,
+        'daily_total': daily_total,
+        'daily_totals': daily_totals,
+        'monthly_totals': monthly_totals,
+        'cumulative_totals': cumulative_totals,
+    }
+
+    return JsonResponse(response_data)
+
+
 @login_required
 def view_statistics(request, factory_id):
-    factory = get_object_or_404(Factory, id=factory_id)
-    
     # Retrieve the date from GET parameters, or default to today's date
     selected_date = request.GET.get('date', date.today().isoformat())
-    
+
+    #get selected date from query
+    factory = get_object_or_404(Factory, id=factory_id)
+    devices = Device.objects.filter(factory=factory)
+    device_data = DeviceData.objects.filter(
+        device = devices[0]
+        #selected_date
+    )[:50]
+    print('Device_dat in statistics',device_data)
+    today_total = device_data[0]
     # Prepare context for rendering the template
     context = {
         'date': selected_date,
         'current_date': date.today().isoformat(),
         'factory': factory,
+        'device_data':device_data,
+        'today_total':today_total
     }
     
     # Render the HTML template with the context

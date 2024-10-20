@@ -1,11 +1,11 @@
 /* Basiskleuren voor de pagina */
 :root {
-    --primary-color: #4a90e2; /* Hoofdkleur, gebruikt voor knoppen en andere primaire elementen */
-    --primary-hover-color: #357ABD; /* Kleur bij hover voor primaire elementen */
-    --background-color: #ffffff; /* Algemene achtergrondkleur voor de pagina */
-    --text-color: #333333; /* Standaard tekstkleur */
-    --secondary-color: #0c2d48; /* Secundaire kleur, gebruikt voor statusbalken en vergelijkbare elementen */
-    --secondary-hover-color: #094072; /* Hoverkleur voor secundaire elementen */
+    --primary-color: #88C0B8;
+    --primary-hover-color: #6FAF9A;
+    --background-color: #ffffff;
+    --text-color: #333333;
+    --secondary-color: #0c2d48;
+    --secondary-hover-color: #094072;/* Hoverkleur voor secundaire elementen */
 }
 
 /* Donkere modus kleuren */
@@ -22,7 +22,6 @@ body {
     background-color: var(--background-color); /* Stelt de achtergrondkleur van de pagina in */
     color: var(--text-color); /* Stelt de standaard tekstkleur in */
     margin: 0;
-    padding: 20px;
     transition: background-color 0.3s, color 0.3s; /* Zachte overgang voor kleurveranderingen (bijv. bij donkere modus) */
     display: flex;
     flex-direction: column; /* Zorgt ervoor dat de inhoud in kolommen wordt geplaatst */

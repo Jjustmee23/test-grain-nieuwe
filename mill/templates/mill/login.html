@@ -1,7 +1,7 @@
 {% load static %}
 {% load i18n %}
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html dir="rtl" lang={{LANGUAGE_CODE}}>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -121,22 +121,33 @@
         <div class="header">
             <img src="{% static 'pictures/logo-left.png' %}" alt="Left Logo" class="logo-left">
             <div>
-                <h1>{% trans 'General Company for Grain Processing' %}</h1>
-                <h2>{% trans 'Mill Operation Monitoring System' %}</h2>
+                <h1>{% trans 'الشركة العامة لتصنيع الحبوب' %}</h1>
+                <h2>{% trans 'نظام مراقبة عمل المطاحن' %}</h2>
             </div>
             <img src="{% static 'pictures/logo-right.png' %}" alt="Right Logo" class="logo-right">
         </div>
 
         <div class="login-container">
-            <form action="{% url 'login' %}" method="POST">
+            <form  method="POST" role="form">
                 {% csrf_token %}
-                <label for="username">{% trans 'Username:' %}</label>
+                {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                  <div class="text-danger mb-3">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+                {% comment %} <label for="username">{% trans 'اسم المستخدم:' %}</label>
                 <input type="text" id="username" name="username" required>
                 
-                <label for="password">{% trans 'Password:' %}</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">{% trans 'كلمة المرور:' %}</label>
+                <input type="password" id="password" name="password" required> {% endcomment %}
                 
-                <button type="submit">{% trans 'Login' %}</button>
+                {% for field in form %}
+                <div class="mb-3">
+                  {{ field }}
+                </div>
+                {% endfor %}
+                
+                <button type="submit">{% trans 'تسجيل الدخول' %}</button>
             </form>
         </div>
     </div>

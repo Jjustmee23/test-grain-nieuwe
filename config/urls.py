@@ -2,14 +2,17 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from mill import views
+from django.conf.urls import handler404
 
 urlpatterns = [
     # Admin
-    path('admin/', admin.site.urls),
+    # path('admin/',admin.site.urls,name='admin'),
+    path('admin/', views.admin_view, name='admin'),
     path('super-admin/', views.super_admin_view, name='super_admin'),
 
     # Authentication
-    path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
+    # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
+    path('login/',views.BasicLoginView.as_view(),name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('register/', views.register, name='register'),
 
@@ -23,9 +26,7 @@ urlpatterns = [
 
     # Views
     path('', views.index, name='index'),
-    path('admin-view/', views.admin_view, name='admin_view'),
-    path('super-admin-view/', views.super_admin_view, name='super_admin_view'),
-    path('view-statistics/', views.view_statistics, name='view_statistics'),
+    path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('view-tables/', views.view_tables, name='view_tables'),
 
     # Management
@@ -53,6 +54,10 @@ urlpatterns = [
     path('api/available-devices/', views.api_get_available_devices, name='api_get_available_devices'),
     path('api/factory-devices/<int:factory_id>/', views.api_get_factory_devices, name='api_get_factory_devices'),
 
+    path('api/chart_data/', views.chart_data, name='chart_data'),
+
     # Include mill URLs
     path('', include('mill.urls')),
 ]
+
+handler404 = 'mill.views.custom_404_view'

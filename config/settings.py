@@ -125,7 +125,7 @@ LANGUAGES = [
 LOCALE_PATHS = [
     BASE_DIR / 'locale',  # Path to translation files
 ]
-
+LOGIN_URL = '/login'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
@@ -139,7 +139,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'mill/static/mill',  # Ensure static files directory is configured
+    BASE_DIR / 'static/mill',  # Ensure static files directory is configured
 ]
 
 # Default primary key field type
