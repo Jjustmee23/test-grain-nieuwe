@@ -8,16 +8,30 @@ from django.core.files.storage import FileSystemStorage
 import csv, openpyxl  
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from .models import City, Factory, Device, DeviceData  
+from .models import City, Factory, Device, DeviceData ,CountersData
 import logging
 from datetime import datetime
 from django.utils import timezone
 from django.db.models import Sum  # Add this import
-
+from django.contrib.auth.views import LoginView
+from django.urls import reverse_lazy
 
 logger = logging.getLogger(__name__)
 
+# Authentication Views
+class BasicLoginView(LoginView):
+    template_name = 'mill/login.html'
+    redirect_authenticated_user = True
+    success_url = reverse_lazy('index')  # Redirect to 'index' view after successful login
 
+    def get_success_url(self):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
+        else:
+            return self.success_url
+
+@login_required
 def manage_users(request):
     users = User.objects.all()  # Fetch all users
     print(users) 
@@ -27,7 +41,7 @@ def manage_users(request):
 @login_required
 def create_user(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('manage_users')
@@ -71,16 +85,77 @@ def assign_rights(request, user_id):
 
     return render(request, 'mill/assign_rights.html', {'user': user, 'groups': groups})
 
+def check_factory_status(counter_data):
+    if counter_data.exists():
+        last_entry = counter_data.latest('created_at')  # Get the latest entry based on created_at
+        if timezone.now() - last_entry.created_at > timezone.timedelta(minutes=30):
+            return True  # Last entry is less than 30 minutes ago
+    return False  # No entries or last entry is older than 30 minutes
+
+#Daily_total for today
+def calculate_daily_total_today(selected_counter, counter_data):
+    # daily_total = loop counter_data and add value of selected counter to it
+    if selected_counter =='counter_1':
+        daily_total = sum(counter.counter_1 for counter in counter_data)
+    elif selected_counter =='counter_2':
+        daily_total = sum(counter.counter_2 for counter in counter_data)
+    elif selected_counter =='counter_3':
+        daily_total = sum(counter.counter_3 for counter in counter_data)
+    elif selected_counter =='counter_4':
+        daily_total = sum(counter.counter_4 for counter in counter_data)
+    return daily_total
+
+def fetch_device_data_for_device(filter):
+    # Fetch daily total for the factory
+     object_data = DeviceData.objects.filter(
+        **filter
+    )
+     return object_data
+
+def fetch_counter_data_for_device(filter):
+    # Fetch daily total for the factory
+     object_data = CountersData.objects.filter(
+        **filter
+    )
+     return object_data
+
+#Daily_total previous days
+def calculate_daily_total_previous(device_data):
+    return device_data.daily_total
+
+#Calculate start Time
+def calculate_start_time(counter_data):
+    if counter_data.exists():
+        return counter_data.first().created_at.time()  # Return only the time of the first entry
+    return 'N/A'  # No entries exist
+
+#Calculate stop Time
+def calculate_stop_time(counter_data, factory_status):
+    if factory_status:
+        return 'Working'  # Factory is currently working
+    else:
+        if counter_data.exists():
+            return counter_data.latest('created_at').created_at.time()  # Return only the time of the last entry
+        return 'N/A'  # No entries exist
+    
+# Aggregate_city Data
+def aggregate_city_data(city_data, factory_data):
+    print(city_data)
+    print(factory_data)
+    city_data['daily_total'] = city_data.get('daily_total', 0) + factory_data.daily_total
+    city_data['weekly_total'] = city_data.get('weekly_total', 0) + factory_data.weekly_total
+    city_data['monthly_total'] = city_data.get('monthly_total', 0) + factory_data.monthly_total
+    city_data['yearly_total'] = city_data.get('yearly_total', 0) + factory_data.yearly_total
+
+@login_required
 def index(request):
     # Haal alle steden op
     cities = City.objects.all()
     
-    # Haal de geselecteerde stad op uit de GET-parameter 'city'
-    selected_city_id = request.GET.get('city')
-    
-    # Haal de gekozen datum op uit de GET-parameter 'date'
+    selected_city_id = request.GET.get('city') 
     selected_date_str = request.GET.get('date')
-    
+    print(selected_city_id,selected_date_str,"Request param")
+
     if selected_date_str:
         try:
             selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
@@ -101,31 +176,44 @@ def index(request):
         # Als geen stad is geselecteerd, toon alle factories
         factories = Factory.objects.all()
 
+    city_data={'daily_total':0,'weekly_total':0,'monthly_total':0,'yearly_total':0}
     # Controleer de status van elke fabriek op basis van de laatste update (bijv. foutstatus)
     for factory in factories:
-        factory.check_status()
+        # find devices of Factory
+        devices = Device.objects.filter(factory=factory)
+        print("devices:",devices)
+        # factory.check_status()
+        counter_data = fetch_device_data_for_device(filter={'device':devices[0],  'created_at__date':selected_date})
+        factory.status = check_factory_status(counter_data)
 
-        # Fetch daily total for the factory
-        daily_total = DeviceData.objects.filter(
-            device__factory=factory, 
-            created_at__date=selected_date
-        ).aggregate(
-            daily_total=Sum('daily_total')  # Assuming counter_2 is the relevant counter for sacks
-        )['daily_total'] or 0
+        device_data = fetch_device_data_for_device(filter={'device':devices[0],  'created_at__date':selected_date})
 
+        if selected_date == timezone.now().date():
+            # Aggregate sum of selected_counter
+            selected_counter = devices[0].selected_counter
+            daily_total = calculate_daily_total_today(selected_counter,counter_data)
+        else:
+            daily_total = calculate_daily_total_previous(device_data)
+        print(daily_total)
         # Multiply to get tonnage (assuming 50 sacks = 1 ton)
         factory.daily_total = daily_total
         factory.daily_tons = daily_total * 50 / 1000
-
+        factory.start_time = calculate_start_time(counter_data)
+        factory.stop_time = calculate_stop_time(counter_data,factory.status)
+        if device_data:
+            aggregate_city_data(city_data,device_data)
+        print(city_data)
     context = {
         'cities': cities,
         'factories': factories,  # Voeg de gefilterde factories toe aan de context
         'selected_city_id': selected_city_id,
-        'current_date': selected_date,  # Toon de gekozen of huidige datum
+        'current_date': selected_date, 
+        'city_data': city_data # Toon de gekozen of huidige datum
     }
 
     return render(request, 'mill/index.html', context)
 
+@login_required
 def profile(request):
     return render(request, 'mill/profile.html')
 
@@ -150,7 +238,11 @@ def super_admin_required(user):
     return user.groups.filter(name='super_admin').exists() or user.is_superuser
 
 def admin_view(request):
-    return render(request, 'mill/admin.html')
+    # provide request.user as context
+    context = {
+        'user': request.user
+    }
+    return render(request, 'mill/admin.html', context)
 
 from django.utils.translation import get_language
 from django.shortcuts import render
@@ -161,8 +253,6 @@ def super_admin_view(request):
     return render(request, 'mill/super_admin.html', {'dir': dir, 'lang': current_locale})
 
 # Manage views for users, databases, devices, tables, factory, city, etc.
-def manage_users(request):
-    return render(request, 'mill/manage_users.html')
 
 def manage_databases(request):
     return render(request, 'mill/manage_databases.html')
@@ -186,13 +276,21 @@ def manage_city(request):
 
 from datetime import date
 
-def view_statistics(request):
+@login_required
+def view_statistics(request, factory_id):
+    factory = get_object_or_404(Factory, id=factory_id)
+    
+    # Retrieve the date from GET parameters, or default to today's date
     selected_date = request.GET.get('date', date.today().isoformat())
+    
+    # Prepare context for rendering the template
     context = {
         'date': selected_date,
         'current_date': date.today().isoformat(),
+        'factory': factory,
     }
     
+    # Render the HTML template with the context
     return render(request, 'mill/view_statistics.html', context)
 
 def view_tables(request):
@@ -448,3 +546,8 @@ def remove_device(request):
             pass  # Handle the case where the device does not exist
 
     return redirect('manage_devices')  # Redirect back to the manage devices page
+
+def custom_404_view(request, exception):
+    return render(request, '404.html', status=404)
+
+

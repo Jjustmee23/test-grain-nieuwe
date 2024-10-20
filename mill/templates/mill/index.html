@@ -4,10 +4,10 @@
 {% block title %}Control Pannel{% endblock %}
 
 {% block content %}
-<div style="position: absolute; top: 10px; left: 10px;">
+{% comment %} <div style="position: absolute; top: 10px; left: 10px;">
     <a href="?lang=en" style="margin-right: 10px;">English</a>
     <a href="?lang=ar">Arabic</a>
-</div>
+</div> {% endcomment %}
 
 <!-- Dark mode toggle -->
 <div class="dark-mode-toggle" onclick="toggleDarkMode()">
@@ -19,31 +19,31 @@
 <div class="filters">
     <div class="left-section">
         <div class="user-info">
-            <span>{% trans 'Welcome, ' %}{{ user.username }}</span>
-            <a href="{% url 'logout' %}" class="logout-button">{% trans 'Logout' %}</a>
+            <span>{% trans 'مرحباً ' %}{{ user.username }}</span>
+            <a href="{% url 'logout' %}" class="logout-button">{% trans 'تسجيل الخروج' %}</a>
             
             <!-- Only show Admin/Monitor dashboard link if user is a Monitor or Super Admin -->
-            <a href="{% url 'admin' %}" class="admin-button">{% trans 'Admin Dashboard' %}</a>
+            <a href="{% url 'admin' %}" class="admin-button">{% trans 'لوحة التحكم الإدارية' %}</a>
             
             <!-- Super Admin Dashboard only for Super Admins -->
             {% if is_super_admin %}
                 <a href="{% url 'super_admin:index' %}" class="super-admin-button">{% trans 'Super Admin Panel' %}</a>
             {% endif %}
             
-            <a href="#" onclick="openProfilePopup()" class="profile-button">{% trans 'Profile' %}</a>
+            {% comment %} <a href="#" onclick="openProfilePopup()" class="profile-button">{% trans 'Profile' %}</a> {% endcomment %}
         </div>
     </div>
     <div class="form-group">
-        <label for="cityDropdown">{% trans 'Select City:' %}</label>
+        <label for="cityDropdown">{% trans 'اختر محافظة:' %}</label>
         <select id="cityDropdown" name="cityDropdown" onchange="filterFactoriesByCity()">
-            <option value="">{% trans 'Select City' %}</option>
+            <option value="">{% trans 'اختر محافظة' %}</option>
             {% for city in cities %}
             <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
             {% endfor %}
         </select>
     </div>
     <div class="form-group date-picker">
-        <label for="datePicker">{% trans 'Select Date:' %}</label>
+        <label for="datePicker">{% trans 'إختر التاريخ:' %}</label>
         <input type="date" id="datePicker" name="date" value="{{ current_date }}" />
     </div>
 </div>
@@ -69,35 +69,35 @@
 
         <!-- Daily Total Title -->
         <div class="totaal-vandaag-title">
-            <span>{% trans "Daily Total" %}</span>
+            <span>{% trans "إلاجمالي اليومي" %}</span>
         </div>
 
         <!-- Display Daily Total in Bags -->
         <div class="responsive-input">
-            <label for="numBags-{{ factory.id }}">{% trans "Number of Bags" %}</label>
-            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.dailyTotal }}</span>
-            <label for="numBags-{{ factory.id }}">{% trans "bags" %}</label>
+            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
+            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.daily_total }}</span>
+            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
         </div>
 
         <!-- Display Calculated Tons -->
         <div class="responsive-input">
-            <label for="tons-{{ factory.id }}">{% trans "Quantity in Tons" %}</label>
+            <label for="tons-{{ factory.id }}">{% trans "ألكمية بالطن" %}</label>
             <span id="tons-{{ factory.id }}" class="readonly">
-                {% widthratio factory.dailyTotal 20 1 as tons %}
+                {{ factory.daily_tons }}
                 {{ tons|floatformat:2 }}
             </span>
-            <label for="tons-{{ factory.id }}">{% trans "tons" %}</label>
+            <label for="tons-{{ factory.id }}">{% trans "طن" %}</label>
         </div>
 
         <!-- Display Start Time -->
         <div class="responsive-input">
-            <label for="startTime-{{ factory.id }}">{% trans "Start Time" %}</label>
+            <label for="startTime-{{ factory.id }}">{% trans "وقت البدء" %}</label>
             <span id="startTime-{{ factory.id }}" class="readonly">{{ factory.start_time|default:"N/A" }}</span>
         </div>
 
         <!-- Display Stop Time -->
         <div class="responsive-input">
-            <label for="stopTime-{{ factory.id }}">{% trans "Stop Time" %}</label>
+            <label for="stopTime-{{ factory.id }}">{% trans "وقت التوقف" %}</label>
             <span id="stopTime-{{ factory.id }}" class="readonly">{{ factory.stop_time|default:"N/A" }}</span>
         </div>
         <div class="animation-container"></div>
@@ -108,18 +108,19 @@
 
 <!-- No devices popup -->
 <div id="noDevicesPopup" class="popup">
-    <h3>{% trans 'No devices found for this mill' %}</h3>
-    <p>{% trans 'Please attach a device to this mill first.' %}</p>
+    <h3>{% trans 'لم يتم العثور على أجهزة لهذه المطحنة' %}</h3>
+    <p>{% trans 'يرجى توصيل جهاز لهذه المطحنة أولاً.' %}</p>
     <button id="closePopupButton">{% trans 'OK' %}</button>
 </div>
 
 <!-- Status bar -->
 <div class="status-bar" style="margin-top: auto;">
-    <span>{% trans 'Daily total for all mills in this city:' %} <span id="total-daily">{{ city_daily_total }}</span></span>
-    <span>{% trans 'Weekly total for all mills in this city:' %} <span id="total-week">{{ city_weekly_total }}</span></span>
-    <span>{% trans 'Monthly total for all mills in this city:' %} <span id="total-month">{{ city_month_total }}</span></span>
-    <span>{% trans 'Yearly total for all mills in this city (2023):' %} <span id="total-year-2023">{{ city_year_total }}</span></span>
+    <span>{% trans 'الإجمالي اليومي لجميع المطاحن في هذه المحافظة:' %} <span id="total-daily">{{ city_data.daily_total }}</span></span>
+    <span>{% trans 'الإجمالي الأسبوعي لجميع المطاحن في هذه المدينة:' %} <span id="total-week">{{ city_data.weekly_total }}</span></span>
+    <span>{% trans 'الإجمالي الشهري لجميع المطاحن في هذه المحافظة:' %} <span id="total-month">{{ city_data.monthly_total }}</span></span>
+    <span>{% trans 'الإجمالي السنوي لجميع المطاحن في هذه المدينة (2023):' %} <span id="total-year-2023">{{ city_data.yearly_total }}</span></span>
 </div>
+
 
 <script src="{% static 'js/index.js' %}"></script>
 {% endblock %}
