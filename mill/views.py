@@ -86,9 +86,12 @@ def assign_rights(request, user_id):
     return render(request, 'mill/assign_rights.html', {'user': user, 'groups': groups})
 
 def check_factory_status(counter_data):
+    print(counter_data)
     if counter_data.exists():
         last_entry = counter_data.latest('created_at')  # Get the latest entry based on created_at
-        if timezone.now() - last_entry.created_at > timezone.timedelta(minutes=30):
+        print('timezone',timezone.now(),'las_entry',last_entry)
+        if timezone.now() - last_entry.created_at < timezone.timedelta(minutes=30):
+            print("telling that factory is working");
             return True  # Last entry is less than 30 minutes ago
     return False  # No entries or last entry is older than 30 minutes
 
@@ -110,6 +113,11 @@ def fetch_device_data_for_device(filter):
      object_data = DeviceData.objects.filter(
         **filter
     )
+    #  print('filter is :',filter)
+    #  print("Called to get device_data:", object_data)
+     #print first entry from queryset if exists
+    #  if object_data.exists():
+        # print("First entry:", object_data.first())
      return object_data
 
 def fetch_counter_data_for_device(filter):
@@ -183,7 +191,7 @@ def index(request):
         devices = Device.objects.filter(factory=factory)
         print("devices:",devices)
         # factory.check_status()
-        counter_data = fetch_device_data_for_device(filter={'device':devices[0],  'created_at__date':selected_date})
+        counter_data = fetch_counter_data_for_device(filter={'device':devices[0],  'created_at__date':selected_date})
         factory.status = check_factory_status(counter_data)
 
         device_data = fetch_device_data_for_device(filter={'device':devices[0],  'created_at__date':selected_date})
@@ -201,7 +209,7 @@ def index(request):
         factory.start_time = calculate_start_time(counter_data)
         factory.stop_time = calculate_stop_time(counter_data,factory.status)
         if device_data:
-            aggregate_city_data(city_data,device_data)
+            aggregate_city_data(city_data,device_data.first())
         print(city_data)
     context = {
         'cities': cities,
