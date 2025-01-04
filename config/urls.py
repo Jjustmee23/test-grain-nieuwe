@@ -55,6 +55,8 @@ urlpatterns = [
     path('api/factory-devices/<int:factory_id>/', views.api_get_factory_devices, name='api_get_factory_devices'),
 
     path('api/chart_data/', views.chart_data, name='chart_data'),
+    path('api/counter-data/<int:device_id>/',views.update_counter,name='api_update_counter'),
+    path('api/devices/',views.get_devices,name='get-devices'),
 
     # Include mill URLs
     path('', include('mill.urls')),

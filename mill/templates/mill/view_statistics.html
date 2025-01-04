@@ -247,9 +247,6 @@
         <span class="close">&times;</span>
         <canvas id="modalChart" class="modal-content"></canvas>
     </div>
-{% endblock %}
-
-{% block extra_js %}
     <!-- JavaScript for Charts and Data Fetching -->
     <script>
         // Arabic day and month names
@@ -266,10 +263,10 @@
             hourlyChart = new Chart(hourlyCtx, {
                 type: 'line',
                 data: {
-                    labels: [],
+                    labels: ["2020/Q1", "2020/Q2", "2020/Q3", "2020/Q4"],
                     datasets: [{
                         label: 'كمية الإنتاج لكل ساعة',
-                        data: [],
+                        data: [1,2,3,4,5],
                         backgroundColor: 'rgba(255, 99, 132, 0.5)',
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1,
@@ -422,7 +419,7 @@
             }
 
             try {
-                const response = await fetch(`/api/chart_data?date=${date}&device_id=${deviceId}&counters=${selectedCounters}`);
+                const response = await fetch(`/api/chart_data?date=${date}&factory_id=${deviceId}&counters=${selectedCounters}`);
                 const data = await response.json();
 
                 if (response.ok) {

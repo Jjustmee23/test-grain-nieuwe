@@ -10,11 +10,13 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from .models import City, Factory, Device, DeviceData ,CountersData
 import logging
-from datetime import datetime
+from datetime import datetime, time  # Import time class
 from django.utils import timezone
 from django.db.models import Sum  # Add this import
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
+from django.views.decorators.csrf import csrf_exempt
+
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +289,118 @@ from django.views.decorators.http import require_GET
 from django.db.models import Sum, F, IntegerField, ExpressionWrapper
 from django.db.models.functions import ExtractHour, ExtractMonth
 
+# @login_required
+# @require_GET
+# def chart_data(request):
+#     # Extract query parameters
+#     date_str = request.GET.get('date')
+#     factory_id = request.GET.get('factory_id')
+#     counters_str = request.GET.get('counters')  # e.g., 'counter_1,counter_2'
+
+#     # Validate and parse the date
+#     try:
+#         selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.date.today()
+#     except ValueError:
+#         return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+
+#     # Validate factory_id
+#     if not factory_id:
+#         return JsonResponse({'error': 'Missing factory_id parameter.'}, status=400)
+
+#     factory = get_object_or_404(Factory, id=factory_id)
+
+#     # Get devices for the factory
+#     devices = Device.objects.filter(factory=factory)
+#     if not devices.exists():
+#         return JsonResponse({'error': 'No devices found for the selected factory.'}, status=404)
+
+#     # Handle selected_counters
+#     if counters_str:
+#         counters = counters_str.split(',')
+#     else:
+#         # Default to each device's selected_counter
+#         # Assuming you want to aggregate across all devices and their respective selected_counters
+#         counters = [device.selected_counter for device in devices]
+
+#     # Aggregate CountersData for Hourly Totals
+#     start_datetime = datetime.combine(selected_date, datetime.time.min)
+#     end_datetime = datetime.combine(selected_date, datetime.time.max)
+
+#     # Filter CountersData within the selected date and factory's devices
+#     counters_data = CountersData.objects.filter(
+#         device__in=devices,
+#         created_at__range=(start_datetime, end_datetime)
+#     )
+
+#     if not counters_data.exists():
+#         hourly_totals_list = []
+#     else:
+#         # Create an expression to sum selected counters per entry
+#         sum_expr = None
+#         for counter in counters:
+#             if sum_expr is None:
+#                 sum_expr = F(counter)
+#             else:
+#                 sum_expr = sum_expr + F(counter)
+
+#         if sum_expr is None:
+#             sum_expr = 0
+
+#         counters_data = counters_data.annotate(total=ExpressionWrapper(sum_expr, output_field=IntegerField()))
+#         counters_data = counters_data.annotate(hour=ExtractHour('created_at'))
+
+#         # Group by hour and sum totals
+#         hourly_totals = counters_data.values('hour').annotate(total=Sum('total')).order_by('hour')
+
+#         hourly_totals_list = [{'hour': item['hour'], 'total': item['total']} for item in hourly_totals]
+
+#     # Aggregate DeviceData for Daily Totals
+#     daily_totals_qs = DeviceData.objects.filter(
+#         device__in=devices,
+#         created_at__date=selected_date
+#     ).aggregate(total=Sum('daily_total'))
+
+#     daily_total = daily_totals_qs['total'] or 0
+
+#     # Aggregate DeviceData for Monthly Totals (current month up to selected date)
+#     start_of_month = selected_date.replace(day=1)
+#     daily_totals_month_qs = DeviceData.objects.filter(
+#         device__in=devices,
+#         created_at__date__gte=start_of_month,
+#         created_at__date__lte=selected_date
+#     ).annotate(day=ExtractHour('created_at')).values('day').annotate(total=Sum('daily_total')).order_by('day')
+
+#     daily_totals = [{'date': item['day'], 'total': item['total']} for item in daily_totals_month_qs]
+
+#     # Aggregate DeviceData for Monthly Totals (current year up to selected date)
+#     start_of_year = selected_date.replace(month=1, day=1)
+#     monthly_totals_qs = DeviceData.objects.filter(
+#         device__in=devices,
+#         created_at__year=selected_date.year
+#     ).annotate(month=ExtractMonth('created_at')).values('month').annotate(total=Sum('daily_total')).order_by('month')
+
+#     monthly_totals = [{'month': item['month'], 'total': item['total']} for item in monthly_totals_qs]
+
+#     # Calculate Cumulative Totals
+#     cumulative_sum = 0
+#     cumulative_totals = []
+#     for item in daily_totals:
+#         cumulative_sum += item['total']
+#         cumulative_totals.append({'date': item['date'], 'total': cumulative_sum})
+
+#     # Prepare response data
+#     response_data = {
+#         'hourly_totals': hourly_totals_list,
+#         'daily_total': daily_total,
+#         'daily_totals': daily_totals,
+#         'monthly_totals': monthly_totals,
+#         'cumulative_totals': cumulative_totals,
+#     }
+
+#     return JsonResponse(response_data)
+
+
+from django.utils import timezone
 @login_required
 @require_GET
 def chart_data(request):
@@ -297,7 +411,7 @@ def chart_data(request):
 
     # Validate and parse the date
     try:
-        selected_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.date.today()
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.date.today()
     except ValueError:
         return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
 
@@ -319,11 +433,11 @@ def chart_data(request):
         # Default to each device's selected_counter
         # Assuming you want to aggregate across all devices and their respective selected_counters
         counters = [device.selected_counter for device in devices]
+    start_time = time(7, 0)
+    end_time = time(23, 59, 59)  # Including the entire last minute
 
-    # Aggregate CountersData for Hourly Totals
-    start_datetime = datetime.datetime.combine(selected_date, datetime.time.min)
-    end_datetime = datetime.datetime.combine(selected_date, datetime.time.max)
-
+    start_datetime = timezone.make_aware(datetime.combine(selected_date, start_time))
+    end_datetime = timezone.make_aware(datetime.combine(selected_date, end_time))
     # Filter CountersData within the selected date and factory's devices
     counters_data = CountersData.objects.filter(
         device__in=devices,
@@ -331,6 +445,7 @@ def chart_data(request):
     )
 
     if not counters_data.exists():
+        print("Counter Data not found")
         hourly_totals_list = []
     else:
         # Create an expression to sum selected counters per entry
@@ -397,7 +512,6 @@ def chart_data(request):
 
     return JsonResponse(response_data)
 
-
 @login_required
 def view_statistics(request, factory_id):
     # Retrieve the date from GET parameters, or default to today's date
@@ -411,13 +525,17 @@ def view_statistics(request, factory_id):
         #selected_date
     )[:50]
     print('Device_dat in statistics',device_data)
-    today_total = device_data[0]
+    if device_data:
+        today_total = device_data[0]
+    else:
+        today_total = 0
     # Prepare context for rendering the template
     context = {
         'date': selected_date,
         'current_date': date.today().isoformat(),
         'factory': factory,
         'device_data':device_data,
+        'device_id':devices[0].id,
         'today_total':today_total
     }
     
@@ -677,6 +795,36 @@ def remove_device(request):
             pass  # Handle the case where the device does not exist
 
     return redirect('manage_devices')  # Redirect back to the manage devices page
+
+@csrf_exempt
+def update_counter(request, device_id):
+    # Get recent counter_data for the specified device
+    counter_data = CountersData.objects.filter(device_id=device_id).order_by('-created_at').first()
+    
+    if not counter_data:
+        # If no counter data exists, create a new entry with a default value
+        counter_data = CountersData.objects.create(device_id=device_id)  # Assuming default counter value is 1
+        return JsonResponse({'message': 'Counter data created with default value.', 'counter_value': counter_data.counter_1}, status=201)
+    else:
+        # Check if counter_str is present in the request
+        counter_str = request.POST.get('counter_str')
+        
+        if counter_str:
+            # Update the counter_data with the provided counter_str value
+            counter_data.counter_1 += int(counter_str)  # Increment the counter value
+            counter_data.save()
+            return JsonResponse({'message': 'Counter updated successfully.', 'counter_value': counter_data.counter_1}, status=200)
+        else:
+            # If counter_str is not present, increment the counter by a default value
+            counter_data.counter_1 += 1  # Increment by 1 if no specific value is provided
+            counter_data.save()
+            return JsonResponse({'message': 'Counter incremented.', 'counter_value': counter_data.counter_1}, status=200)
+
+def get_devices(request):
+    devices = Device.objects.all()
+    # Convert the devices QuerySet to a list of dictionaries
+    devices_list = [{"id": device.id, "name": device.name or device.serial_number} for device in devices]
+    return JsonResponse({"devices": devices_list})  # Use a string key for the JSON response
 
 def custom_404_view(request, exception):
     return render(request, '404.html', status=404)
