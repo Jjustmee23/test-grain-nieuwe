@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from mill import views
+from mill import views, apis
 from django.conf.urls import handler404
 
 urlpatterns = [
@@ -56,7 +56,7 @@ urlpatterns = [
 
     path('api/chart_data/', views.chart_data, name='chart_data'),
     path('api/counter-data/<int:device_id>/',views.update_counter,name='api_update_counter'),
-    path('api/devices/',views.get_devices,name='get-devices'),
+    path('api/devices/',apis.get_devices,name='get-devices'),
 
     # Include mill URLs
     path('', include('mill.urls')),

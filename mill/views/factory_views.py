@@ -90,6 +90,5 @@ def manage_factory(request):
         for factory in factories
     ]
     print(f"Total cities: {cities.count()}, Total factories: {factories.count()}")
-    print(f"Factory data: {factory_data[0]}")
     return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
 
