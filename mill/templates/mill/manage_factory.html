@@ -40,7 +40,7 @@
             <input type="text" class="form-control" id="factory_name" name="factory_name" required>
         </div>
         <div class="mb-3">
-            <label for="city_id" class="form-label">{% trans 'Select City (optional)' %}:</label>
+            <label for="city_id" class="form-label">{% trans 'Select City ' %}:</label>
             <select id="city_id" name="city_id" class="form-control">
                 <!-- Add an empty option -->
                 <option value="">{% trans 'Select a city' %}</option>
@@ -60,7 +60,7 @@
                 <th>{% trans 'City' %}</th>
                 <th>{% trans 'Status' %}</th>
                 <th>{% trans 'Linked Devices' %}</th>
-                <th>{% trans 'Device Counters' %}</th>
+                {% comment %} <th>{% trans 'Device Counters' %}</th> {% endcomment %}
                 <th>{% trans 'Actions' %}</th>
             </tr>
         </thead>
