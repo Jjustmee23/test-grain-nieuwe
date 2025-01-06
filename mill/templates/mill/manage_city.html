@@ -163,7 +163,7 @@
             {% for city in cities %}
             <tr>
                 <td>{{ city.name }}</td>
-                <td>{{ city.factories|length }}</td>
+                <td>{{ city.factories_count }}</td>
                 <td>
                     <form method="POST" style="display:inline;">
                         {% csrf_token %}
