@@ -35,17 +35,23 @@
     </div>
     <div class="form-group">
         <label for="cityDropdown">{% trans 'اختر محافظة:' %}</label>
-        <select id="cityDropdown" name="cityDropdown" onchange="filterFactoriesByCity()">
-            <option value="">{% trans 'اختر محافظة' %}</option>
+        <select id="cityDropdown" name="city" required>
             {% for city in cities %}
-            <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
+                <option value="{{ city.id }}" 
+                    {% if selected_city_id == city.id  %}selected{% endif %}>
+                    {{ city.name }}
+                </option>
             {% endfor %}
         </select>
     </div>
+    
     <div class="form-group date-picker">
         <label for="datePicker">{% trans 'إختر التاريخ:' %}</label>
-        <input type="date" id="datePicker" name="date" value="{{ current_date }}" />
+        <input type="date" id="datePicker" name="date" value="{{ current_date|date:"Y-m-d" }}" required>
     </div>
+    
+    <button type="button" id="filterButton" class="btn btn-primary">{% trans 'تصفية' %}</button>
+    
 </div>
 
 <!-- Content section -->
@@ -67,10 +73,7 @@
          onclick="{% if factory.devices %}handleFactoryClick({{ factory.id }}, {{ factory.devices|yesno:'true,false' }}){% endif %}">
         <h2>{{ factory.name }}</h2>
 
-        <!-- Daily Total Title -->
-        <div class="totaal-vandaag-title">
-            <span>{% trans "إلاجمالي اليومي" %}</span>
-        </div>
+
 
         <!-- Display Daily Total in Bags -->
         <div class="responsive-input">
@@ -79,6 +82,24 @@
             <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
         </div>
 
+        <!-- Display Weekly Total in Bags -->
+        <div class="responsive-input">
+            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
+            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.weekly_total }}</span>
+            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
+        </div>
+        <!-- Display Monthly Total in Bags -->
+        <div class="responsive-input">
+            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
+            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.monthly_total }}</span>
+            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
+        </div>
+        <!-- Display Yearlu Total in Bags -->
+        <div class="responsive-input">
+            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
+            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.yearly_total }}</span>
+            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
+        </div>
         <!-- Display Calculated Tons -->
         <div class="responsive-input">
             <label for="tons-{{ factory.id }}">{% trans "ألكمية بالطن" %}</label>
@@ -123,5 +144,17 @@
 
 
 <script src="{% static 'js/index.js' %}"></script>
+<script>
+    document.getElementById('filterButton').addEventListener('click', function() {
+        const cityId = document.getElementById('cityDropdown').value;
+        const date = document.getElementById('datePicker').value;
+    
+        if (cityId && date) {
+            window.location.href = `?city=${cityId}&date=${date}`;
+        } else {
+            alert('Please select both city and date.');
+        }
+    });
+</script>
 {% endblock %}
 
