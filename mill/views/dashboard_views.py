@@ -3,12 +3,8 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status
 from mill.models import City, Factory, Device, ProductionData
-
-from django.shortcuts import render
-from django.utils import timezone
 from django.db.models import Sum
 from datetime import datetime
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def index(request):

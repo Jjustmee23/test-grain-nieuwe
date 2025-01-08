@@ -3,7 +3,7 @@ from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import Group, User
-from mill.forms import CustomUserCreationForm, UserCreationForm, UserChangeForm
+from mill.forms import CustomUserCreationForm, UserCreationForm
 from django.contrib.auth import login
 
 # Authentication Views
@@ -58,15 +58,16 @@ def create_user(request):
 # Edit existing user view
 @login_required
 def edit_user(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    if request.method == 'POST':
-        form = UserChangeForm(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('manage_users')
-    else:
-        form = UserChangeForm(instance=user)
-    return render(request, 'mill/edit_user.html', {'form': form, 'user': user})
+    pass
+#     user = get_object_or_404(User, id=user_id)
+#     if request.method == 'POST':
+#         form = UserChangeForm(request.POST, instance=user)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('manage_users')
+#     else:
+#         form = UserChangeForm(instance=user)
+#     return render(request, 'mill/edit_user.html', {'form': form, 'user': user})
 
 # Delete user view
 @login_required
