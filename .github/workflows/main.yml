@@ -26,8 +26,8 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
             # Create the directory if it doesn't exist
-            mkdir -p /home/ubuntu/project-mill-application
-            cd /home/ubuntu/project-mill-application
+            mkdir -p /home/administrator/project-mill-application
+            cd /home/administrator/project-mill-application
             
             # Check if this is the first deployment
             if [ ! -d .git ]; then
