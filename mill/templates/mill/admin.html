@@ -3,23 +3,14 @@
 {% load i18n %}
 {% block title %}Admin Dashboard{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
 
 {% block content %}
 
 <div class="admin-container">
     <h2>{% trans "Admin Dashboard" %}</h2>
-
-    <!-- Flash Messages -->
-    {% comment %} {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %} {% endcomment %}
 
     <!-- New Devices Alert -->
     {% if new_devices %}
