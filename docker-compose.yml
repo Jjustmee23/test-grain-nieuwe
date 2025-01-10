@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: app_postgres
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: testdb
+    ports:
+      - "5433:5432"  # Host port 5433 mapped to container's 5432
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data  # Persistent volume to store DB data
+
+volumes:
+  postgres_data_test:
+
+

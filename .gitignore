@@ -10,12 +10,11 @@ env
 /staticfiles/
 /media/
 
-ama_env
 #src
 *.sqlite*
 *.log
 .env
 
 pg.ipynb
-ama_v1/static/uploads*
 /logs/
+/debug/
