@@ -1,3 +1,33 @@
+// static/js/index.js
+
+function handleFactoryClick(factoryId) {
+    window.location.href = `/view_statistics/${factoryId}/`;
+}
+
+function updateDashboard() {
+    const date = document.getElementById('dashboardDatePicker').value;
+    const cityId = document.getElementById('citySelector').value;
+
+    // Bouw de URL met de geselecteerde parameters
+    let url = '/';
+    let params = new URLSearchParams();
+
+    if (cityId) {
+        params.append('city', cityId);
+    }
+
+    if (date) {
+        params.append('date', date);
+    }
+
+    if ([...params].length > 0) {
+        url += '?' + params.toString();
+    }
+
+    // Herlaad de pagina met de nieuwe parameters
+    window.location.href = url;
+}
+
 function filterFactoriesByCity() {
     const selectedCityId = document.getElementById('cityDropdown').value;
 
@@ -42,15 +72,7 @@ function closePopup() {
 // Add an event listener to the OK button to close the popup
 document.getElementById('closePopupButton').addEventListener('click', closePopup);
 
-function handleFactoryClick(factoryId, hasDevices) {
-    if (!hasDevices) {
-        // Show the popup if there are no devices linked to the factory
-        showNoDevicesPopup();
-    } else {
-        // Otherwise, proceed to the statistics page
-        window.location.href = `/view-statistics/${factoryId}`;
-    }
-}
+
 
 function toggleDarkMode() {
     const body = document.body;
