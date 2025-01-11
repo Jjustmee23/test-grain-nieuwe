@@ -4,157 +4,115 @@
 {% block title %}Control Pannel{% endblock %}
 
 {% block content %}
-{% comment %} <div style="position: absolute; top: 10px; left: 10px;">
-    <a href="?lang=en" style="margin-right: 10px;">English</a>
-    <a href="?lang=ar">Arabic</a>
-</div> {% endcomment %}
-
-<!-- Dark mode toggle -->
-<div class="dark-mode-toggle" onclick="toggleDarkMode()">
-    <!-- Dark mode SVG icon -->
-</div>
-
-
-<!-- Filters section with user info and logout -->
-<div class="filters">
-    <div class="left-section">
-        <div class="user-info">
-            <span>{% trans 'مرحباً ' %}{{ user.username }}</span>
-            <a href="{% url 'logout' %}" class="logout-button">{% trans 'تسجيل الخروج' %}</a>
-            
-            <!-- Only show Admin/Monitor dashboard link if user is a Monitor or Super Admin -->
-            <a href="{% url 'admin' %}" class="admin-button">{% trans 'لوحة التحكم الإدارية' %}</a>
-            
-            <!-- Super Admin Dashboard only for Super Admins -->
-            {% if is_super_admin %}
-                <a href="{% url 'super_admin:index' %}" class="super-admin-button">{% trans 'Super Admin Panel' %}</a>
-            {% endif %}
-            
-            {% comment %} <a href="#" onclick="openProfilePopup()" class="profile-button">{% trans 'Profile' %}</a> {% endcomment %}
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <!-- Optioneel: Je kunt hier een logo toevoegen als je dat wilt -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if not user.groups.all.0.name == 'Public' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <label for="cityDropdown">{% trans 'اختر محافظة:' %}</label>
-        <select id="cityDropdown" name="city" required>
-            {% for city in cities %}
-                <option value="{{ city.id }}" 
-                    {% if selected_city_id == city.id  %}selected{% endif %}>
-                    {{ city.name }}
-                </option>
+    </nav>
+
+    <!-- Hoofdcontainer -->
+    <div class="container my-4">
+        <!-- Filters: City Selector en Date Picker -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <select id="citySelector" class="form-select" onchange="window.location.href='/?city=' + this.value">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}
+                        <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 mb-3">
+                <input type="date" id="dashboardDatePicker" class="form-control" onchange="updateDashboard()" value="{{ current_date|date:"Y-m-d" }}">
+            </div>
+        </div>
+
+        <!-- Totale Productiekaarten voor de Stad -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">City Daily Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-daily-total">{{ city_data.daily_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-white">City Weekly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-weekly-total">{{ city_data.weekly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-danger text-white">City Monthly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-month-total">{{ city_data.monthly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">City Yearly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-year-total">{{ city_data.yearly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fabriekkaarten -->
+        <div class="row">
+            {% for factory in factories %}
+                <div class="col-md-4 mb-4">
+                    <div class="card factory-card h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5>{{ factory.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if factory.error %}
+                                <div class="alert alert-danger" role="alert">
+                                    Error retrieving data
+                                </div>
+                            {% else %}
+                                <p><strong>Daily Total:</strong> {{ factory.daily_total }}</p>
+                                <p><strong>Weekly Total:</strong> {{ factory.weekly_total }}</p>
+                                <p><strong>Monthly Total:</strong> {{ factory.monthly_total }}</p>
+                                <p><strong>Yearly Total:</strong> {{ factory.yearly_total }}</p>
+                                <p><strong>Start Time:</strong> {{ factory.start_time }}</p>
+                                <p><strong>Stop Time:</strong> {{ factory.stop_time }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-center">
+                            <button class="btn btn-sm btn-outline-primary" onclick="handleFactoryClick({{ factory.id }})">View Statistics</button>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
-        </select>
+        </div>
     </div>
-    
-    <div class="form-group date-picker">
-        <label for="datePicker">{% trans 'إختر التاريخ:' %}</label>
-        <input type="date" id="datePicker" name="date" value="{{ current_date|date:"Y-m-d" }}" required>
-    </div>
-    
-    <button type="button" id="filterButton" class="btn btn-primary">{% trans 'تصفية' %}</button>
-    
-</div>
 
-<!-- Content section -->
-<div class="content">
-    <div class="factories-container">
-        {% for factory in factories %}
-        <div id="factory-{{ factory.id }}" class="factory {% if factory.status %}
-					online
-				{% elif not factory.error %}
-					offline
-				{% else %}
-					error
-				{% endif %} 
-				{% if not factory.devices %}
-					no-device
-				{% endif %}" 
-         data-city-id="{{ factory.city_id }}" 
-         data-prev-total="0" 
-         onclick="{% if factory.devices %}handleFactoryClick({{ factory.id }}, {{ factory.devices|yesno:'true,false' }}){% endif %}">
-        <h2>{{ factory.name }}</h2>
-
-
-
-        <!-- Display Daily Total in Bags -->
-        <div class="responsive-input">
-            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
-            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.daily_total }}</span>
-            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
-        </div>
-
-        <!-- Display Weekly Total in Bags -->
-        <div class="responsive-input">
-            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
-            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.weekly_total }}</span>
-            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
-        </div>
-        <!-- Display Monthly Total in Bags -->
-        <div class="responsive-input">
-            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
-            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.monthly_total }}</span>
-            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
-        </div>
-        <!-- Display Yearlu Total in Bags -->
-        <div class="responsive-input">
-            <label for="numBags-{{ factory.id }}">{% trans "عدد الأكياس" %}</label>
-            <span id="numBags-{{ factory.id }}" class="readonly">{{ factory.yearly_total }}</span>
-            <label for="numBags-{{ factory.id }}">{% trans "كيس" %}</label>
-        </div>
-        <!-- Display Calculated Tons -->
-        <div class="responsive-input">
-            <label for="tons-{{ factory.id }}">{% trans "ألكمية بالطن" %}</label>
-            <span id="tons-{{ factory.id }}" class="readonly">
-                {{ factory.daily_tons }}
-                {{ tons|floatformat:2 }}
-            </span>
-            <label for="tons-{{ factory.id }}">{% trans "طن" %}</label>
-        </div>
-
-        <!-- Display Start Time -->
-        <div class="responsive-input">
-            <label for="startTime-{{ factory.id }}">{% trans "وقت البدء" %}</label>
-            <span id="startTime-{{ factory.id }}" class="readonly">{{ factory.start_time|default:"N/A" }}</span>
-        </div>
-
-        <!-- Display Stop Time -->
-        <div class="responsive-input">
-            <label for="stopTime-{{ factory.id }}">{% trans "وقت التوقف" %}</label>
-            <span id="stopTime-{{ factory.id }}" class="readonly">{{ factory.stop_time|default:"N/A" }}</span>
-        </div>
-        <div class="animation-container"></div>
-    </div>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- No devices popup -->
-<div id="noDevicesPopup" class="popup">
-    <h3>{% trans 'لم يتم العثور على أجهزة لهذه المطحنة' %}</h3>
-    <p>{% trans 'يرجى توصيل جهاز لهذه المطحنة أولاً.' %}</p>
-    <button id="closePopupButton">{% trans 'OK' %}</button>
-</div>
-
-<!-- Status bar -->
-<div class="status-bar" style="margin-top: auto;">
-    <span>{% trans 'الإجمالي اليومي لجميع المطاحن في هذه المحافظة:' %} <span id="total-daily">{{ city_data.daily_total }}</span></span>
-    <span>{% trans 'الإجمالي الأسبوعي لجميع المطاحن في هذه المدينة:' %} <span id="total-week">{{ city_data.weekly_total }}</span></span>
-    <span>{% trans 'الإجمالي الشهري لجميع المطاحن في هذه المحافظة:' %} <span id="total-month">{{ city_data.monthly_total }}</span></span>
-    <span>{% trans 'الإجمالي السنوي لجميع المطاحن في هذه المدينة (2023):' %} <span id="total-year-2023">{{ city_data.yearly_total }}</span></span>
-</div>
-
-
+    <!-- JavaScript bestanden -->
 <script src="{% static 'js/index.js' %}"></script>
-<script>
-    document.getElementById('filterButton').addEventListener('click', function() {
-        const cityId = document.getElementById('cityDropdown').value;
-        const date = document.getElementById('datePicker').value;
-    
-        if (cityId && date) {
-            window.location.href = `?city=${cityId}&date=${date}`;
-        } else {
-            alert('Please select both city and date.');
-        }
-    });
-</script>
+
 {% endblock %}
 

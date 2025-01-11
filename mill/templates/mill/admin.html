@@ -3,23 +3,14 @@
 {% load i18n %}
 {% block title %}Admin Dashboard{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
 
 {% block content %}
 
 <div class="admin-container">
     <h2>{% trans "Admin Dashboard" %}</h2>
-
-    <!-- Flash Messages -->
-    {% comment %} {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %} {% endcomment %}
 
     <!-- New Devices Alert -->
     {% if new_devices %}
@@ -41,15 +32,20 @@
 
     <div class="row">
         <div class="col-md-6">
+            {% if user.groups.all.0.name == 'Admin' %}
+            <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
+            {% endif %}
+            {% if user.groups.all.0.name == 'Superadmin' %}
             <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Cities" %}</a>
+            {% endif %}
             <a href="{% url 'manage_factory' %}" class="btn btn-primary mb-3">{% trans "Manage Factories" %}</a>
         </div>
+        {% if user.groups.all.0.name == 'Superadmin' %}
         <div class="col-md-6">
             <a href="{% url 'manage_devices' %}" class="btn btn-primary mb-3">{% trans "Manage Devices" %}</a>
-            {% if not user.is_super_admin %}
-                <a href="{% url 'super_admin' %}" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+                <a href="/super_admin/" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+            </div>
             {% endif %}
-        </div>
     </div>
 
     <!-- Nieuwe box met afbeelding -->

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+from django.conf import settings
+
 # City model
 class City(models.Model):
     name = models.CharField(max_length=100, unique=True, blank=False)
@@ -63,3 +65,11 @@ class TransactionData(models.Model):
         ]
     def __str__(self):
         return f"Production Data for {self.device.name} at {self.created_at}"
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    # Only for non-super_admin users (admins and public_users)
+    allowed_cities = models.ManyToManyField(City, blank=True)
+
+    def __str__(self):
+        return f"Profile for {self.user.username}"

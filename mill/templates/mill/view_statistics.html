@@ -4,524 +4,96 @@
 {% load i18n %}
 {% block title %}Mill Statistics{% endblock %}
 
-{% block extra_head %}
-    <!-- Include Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Base colors and styles */
-        :root {
-            --primary-color: #4a90e2;
-            --primary-hover-color: #357ABD;
-            --background-color: #ffffff;
-            --text-color: #333333;
-            --secondary-color: #0c2d48;
-            --secondary-hover-color: #094072;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            direction: rtl; /* RTL layout support */
-            text-align: right;
-        }
-
-
-        /* Filters section */
-        .filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--background-color);
-            padding: 20px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .filters select, .filters input[type="date"] {
-            padding: 8px 12px;
-            font-size: 1.1rem;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-right: 15px;
-        }
-
-        /* Button to go back to the dashboard */
-        #backToDashboard {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        #backToDashboard:hover {
-            background-color: var(--secondary-hover-color);
-        }
-
-        /* Factory Performance section */
-        .statistics-section {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .performance-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .card p {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-        }
-
-        /* Chart Box Section */
-        .chart-box {
-            max-width: 100vw;
-            margin: 0 auto;
-            padding: 50px;
-            border-radius: 30px;
-            background-color: #ffffff;
-            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .chart-section {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 40px;
-            justify-content: center;
-        }
-
-        .chart-container {
-            padding: 30px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
-            width: 700px;
-            height: 500px;
-        }
-
-        .chart-container canvas {
-            width: 100% !important;
-            height: 100% !important;
-        }
-
-        .download-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .download-btn:hover {
-            background-color: var(--primary-hover-color);
-        }
-
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            padding-top: 60px;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-content {
-            margin: auto;
-            display: block;
-            width: 80%;
-            max-width: 1200px;
-            max-height: 80%;
-        }
-
-        .modal .close {
-            position: absolute;
-            top: 30px;
-            right: 35px;
-            color: #f1f1f1;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
-
-{% endblock %}
-
 {% block content %}
-    <!-- Filters Section with Date Picker -->
-    <div class="filters">
-        <input type="date" id="datePicker" onchange="fetchChartData()" />
-        <!-- Back to Dashboard button -->
-        <button id="backToDashboard" onclick="window.location.href='/';">العودة إلى لوحة القيادة</button>
-    </div>
+    {% comment %} <div class="header d-flex justify-content-between align-items-center p-3 bg-light">
+        <img src="{{ url_for('static', filename='pictures/logo-left.png') }}" alt="Logo Left" class="logo-left" style="height: 50px;">
+        <div class="text-center">
+            <h1>{{ factory_name }}</h1>
+            <h2>إحصائيات</h2>
+        </div>
+        <img src="{{ url_for('static', filename='pictures/logo-right.png') }}" alt="Logo Right" class="logo-right" style="height: 50px;">
+    </div> {% endcomment %}
 
-    <!-- Hidden input fields to store device_id and selected_counters -->
-    <input type="hidden" id="deviceId" value="{{ device_id }}">
-    <input type="hidden" id="selectedCounters" value="{{ selected_counters }}">
+    <div class="container my-4">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <input type="date" id="datePicker" class="form-control" onchange="refreshCharts()" value="{{ selected_date|date:"Y-m-d" }}" />
+            </div>
+            <div class="col-md-2">
+                <button id="backToDashboard" class="btn btn-primary" onclick="window.location.href='/';">العودة إلى لوحة التحكم</button>
+            </div>
+        </div>
 
-    <!-- Factory Performance Section -->
-    <div class="statistics-section">
-        <h2>نظرة عامة على أداء المطحنة</h2>
-        <div class="performance-cards">
-            <div class="card" id="factory-performance">
-                <h3>اسم المطحنة: {{ factory.name }}</h3>
-                <p><strong>إنتاج من الدقيق:</strong> <span id="product-flour">{{ today_total.daily_total }}</span></p>
-                <p><strong>إجمالي الحبوب المستلمة:</strong> <span id="recipient-total"></span></p>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-header">إجمالي يومي</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="total-daily">{{ factory.daily_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-secondary mb-3">
+                    <div class="card-header">إجمالي أسبوعي</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="total-week">{{ factory.weekly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-header">إجمالي شهري</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="total-month">{{ factory.monthly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-warning mb-3">
+                    <div class="card-header">إجمالي سنوي حالي</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ factory.yearly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-danger mb-3">
+                    <div class="card-header">إجمالي سنوي سابق</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ yearly_previous }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج يومي</h3>
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج شهري</h3>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج سنوي</h3>
+                    <canvas id="yearlyChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- Chart Box Section -->
-    <div class="chart-box">
-        <div class="chart-section">
-            <!-- Hourly Chart -->
-            <div class="chart-container">
-                <h3>كمية الإنتاج لكل ساعة</h3>
-                <button class="download-btn" onclick="downloadChart(hourlyChart, 'hourly_chart.png')">تصدير</button>
-                <canvas id="hourlyChart"></canvas>
-            </div>
-
-            <!-- Daily Chart -->
-            <div class="chart-container">
-                <h3>الإنتاج اليومي</h3>
-                <button class="download-btn" onclick="downloadChart(dailyChart, 'daily_chart.png')">تصدير</button>
-                <canvas id="dailyChart"></canvas>
-            </div>
-
-            <!-- Monthly Chart -->
-            <div class="chart-container">
-                <h3>الإنتاج الشهري</h3>
-                <button class="download-btn" onclick="downloadChart(monthlyChart, 'monthly_chart.png')">تصدير</button>
-                <canvas id="monthlyChart"></canvas>
-            </div>
-
-            <!-- Cumulative Daily Chart -->
-            <div class="chart-container">
-                <h3>الإنتاج اليومي الكلي</h3>
-                <button class="download-btn" onclick="downloadChart(cumulativeDailyChart, 'cumulative_daily_chart.png')">تصدير</button>
-                <canvas id="cumulativeDailyChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Structure -->
-    <div id="chartModal" class="modal">
-        <span class="close">&times;</span>
-        <canvas id="modalChart" class="modal-content"></canvas>
-    </div>
-    <!-- JavaScript for Charts and Data Fetching -->
-    <script>
-        // Arabic day and month names
-        const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-
-        // Declare chart variables
-        let hourlyChart, dailyChart, monthlyChart, cumulativeDailyChart;
-
-        // Initialize the charts
-        function initializeCharts() {
-            // Initialize the hourly chart
-            const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
-            hourlyChart = new Chart(hourlyCtx, {
-                type: 'line',
-                data: {
-                    labels: ["2020/Q1", "2020/Q2", "2020/Q3", "2020/Q4"],
-                    datasets: [{
-                        label: 'كمية الإنتاج لكل ساعة',
-                        data: [1,2,3,4,5],
-                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1,
-                        pointRadius: 5,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    plugins: {
-                        tooltip: {
-                            enabled: true,
-                            mode: 'nearest',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Initialize the daily chart
-            const dailyCtx = document.getElementById('dailyChart').getContext('2d');
-            dailyChart = new Chart(dailyCtx, {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'الإنتاج اليومي',
-                        data: [],
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-
-            // Initialize the monthly chart
-            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-            monthlyChart = new Chart(monthlyCtx, {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'الإنتاج الشهري',
-                        data: [],
-                        backgroundColor: 'rgba(153, 102, 255, 0.5)',
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-
-            // Initialize the cumulative daily chart
-            const cumulativeDailyCtx = document.getElementById('cumulativeDailyChart').getContext('2d');
-            cumulativeDailyChart = new Chart(cumulativeDailyCtx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'الإنتاج التراكمي اليومي',
-                        data: [],
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1,
-                        pointRadius: 5,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    },
-                    plugins: {
-                        tooltip: {
-                            enabled: true,
-                            mode: 'nearest',
-                            intersect: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Call the initializeCharts function
-        initializeCharts();
-
-        // Function to fetch data and update charts
-        async function fetchChartData() {
-            const date = document.getElementById('datePicker').value;
-            const deviceId = document.getElementById('deviceId').value.trim();
-            let selectedCounters = document.getElementById('selectedCounters').value.trim();
-
-            console.log('Date:', date);
-            console.log('Device ID:', deviceId);
-            console.log('Selected Counters:', selectedCounters);
-
-            if (!deviceId) {
-                console.error('Device ID is missing.');
-                alert('Device ID is missing. Please contact the administrator.');
-                return;
-            }
-
-            // Handle empty selectedCounters
-            if (!selectedCounters) {
-                console.warn('Selected Counters are empty. Defaulting to "counter_1".');
-                selectedCounters = 'counter_1';  // Default to 'counter_1' or handle as needed
-            }
-
-            try {
-                const response = await fetch(`/api/chart_data?date=${date}&factory_id=${deviceId}&counters=${selectedCounters}`);
-                const data = await response.json();
-
-                if (response.ok) {
-                    updateCharts(data.hourly_totals, data.daily_totals, data.monthly_totals, data.cumulative_totals);
-                } else {
-                    console.error('Error fetching chart data:', data.error);
-                    alert('Error fetching chart data. Please try again later.');
-                }
-            } catch (error) {
-                console.error('Error fetching chart data:', error);
-                alert('Error fetching chart data. Please check your network connection and try again.');
-            }
-        }
-
-        function updateCharts(hourlyData, dailyData, monthlyData, cumulativeData) {
-            // Update hourly chart
-            hourlyChart.data.labels = hourlyData.map(item => `${item.hour}:00`);
-            hourlyChart.data.datasets[0].data = hourlyData.map(item => item.total);
-            hourlyChart.update();
-
-            // Update daily chart
-            dailyChart.data.labels = dailyData.map(item => item.date);
-            dailyChart.data.datasets[0].data = dailyData.map(item => item.total);
-            dailyChart.update();
-
-            // Update monthly chart
-            monthlyChart.data.labels = monthlyData.map(item => item.date);
-            monthlyChart.data.datasets[0].data = monthlyData.map(item => item.total);
-            monthlyChart.update();
-
-            // Update cumulative daily chart
-            cumulativeDailyChart.data.labels = cumulativeData.map(item => `${item.hour}:00`);
-            cumulativeDailyChart.data.datasets[0].data = cumulativeData.map(item => item.total);
-            cumulativeDailyChart.update();
-        }
-
-        // Function to download chart as an image
-        function downloadChart(chart, filename) {
-            const link = document.createElement('a');
-            link.href = chart.toBase64Image();
-            link.download = filename;
-            link.click();
-        }
-
-        // Modal functionality
-        const modal = document.getElementById('chartModal');
-        const modalChartCanvas = document.getElementById('modalChart');
-        const closeModalBtn = document.querySelector('.modal .close');
-
-        function openModal(chart) {
-            modal.style.display = 'block';
-
-            if (window.modalChartInstance) {
-                window.modalChartInstance.destroy();
-            }
-
-            const ctx = modalChartCanvas.getContext('2d');
-            window.modalChartInstance = new Chart(ctx, {
-                type: chart.config.type,
-                data: chart.data,
-                options: chart.options
-            });
-        }
-
-        // Attach event listeners to charts
-        document.getElementById('hourlyChart').onclick = function() {
-            openModal(hourlyChart);
-        };
-        document.getElementById('dailyChart').onclick = function() {
-            openModal(dailyChart);
-        };
-        document.getElementById('monthlyChart').onclick = function() {
-            openModal(monthlyChart);
-        };
-        document.getElementById('cumulativeDailyChart').onclick = function() {
-            openModal(cumulativeDailyChart);
-        };
-
-        // Close modal functionality
-        closeModalBtn.onclick = function() {
-            modal.style.display = 'none';
-            if (window.modalChartInstance) {
-                window.modalChartInstance.destroy();
-                window.modalChartInstance = null;
-            }
-        };
-
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-                if (window.modalChartInstance) {
-                    window.modalChartInstance.destroy();
-                    window.modalChartInstance = null;
-                }
-            }
-        };
-
-        // Fetch data when page loads
-        window.onload = function() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('datePicker').value = today;
-            fetchChartData();
-        };
-    </script>
-{% endblock %}
+    <input id="factoryId" hidden value={{factory.id}}>{{ factory.id }}</input>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/view_statistics.js' %}"></script>
+    {% endblock %}

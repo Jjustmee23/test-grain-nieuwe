@@ -57,7 +57,10 @@ def manage_city(request):
         return redirect('manage_city')
 
     # Handle GET request
-    cities = City.objects.all()
+    if request.user.groups.filter(name='super_admin').exists():
+        cities = City.objects.all()
+    else:
+        cities = request.user.userprofile.allowed_cities.all()
     city_data = [
         {
             'id': city.id,

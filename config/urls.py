@@ -8,7 +8,7 @@ urlpatterns = [
     # Admin
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
-    path('super-admin/', views.super_admin_view, name='super_admin'),
+    path('super-admin/', admin.site.urls),
 
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
@@ -55,7 +55,6 @@ urlpatterns = [
     path('api/factory-devices/<int:factory_id>/', views.api_get_factory_devices, name='api_get_factory_devices'),
 
     path('api/chart_data/', apis.chart_data, name='chart_data'),
-    path('api/counter-data/<int:device_id>/',views.update_counter,name='api_update_counter'),
     path('api/devices/',apis.get_devices,name='get-devices'),
 
     # Include mill URLs
