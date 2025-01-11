@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 def check_factory_status(counter_data):
@@ -21,7 +22,7 @@ def calculate_stop_time(counter_data, factory_status):
 
 
 from datetime import datetime, timedelta
-from mill.models import ProductionData
+from mill.models import City, Factory, ProductionData
 
 def calculate_daily_data(factory_id,selected_date):
     print(selected_date, factory_id)
@@ -104,3 +105,20 @@ def calculate_chart_data(date,factory_id):
     print(YearlyCurrent, YearlyPrevious)
 
     return { 'daily_labels': DailyLabels, 'daily_data': DailyData, 'monthly_labels': MonthlyLabels, 'monthly_data': MonthlyData, 'yearly_current': YearlyCurrent, 'yearly_previous': YearlyPrevious }
+
+
+# Check Allowlists
+def is_allowed_factory(request, factory_id):
+    factory = get_object_or_404(Factory, id=factory_id)
+    if request.user.groups.filter(name='super_admin').exists():
+        return factory
+    if request.user.userprofile.allowed_cities.filter(id=factory.city.id).exists():
+        return None
+def allowed_cities(request):
+    if request.user.groups.filter(name='super_admin').exists():
+        return City.objects.all()
+    return request.user.userprofile.allowed_cities.all()
+def allowed_factories(request):
+    if request.user.groups.filter(name='super_admin').exists():
+        return Factory.objects.all()
+    return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())

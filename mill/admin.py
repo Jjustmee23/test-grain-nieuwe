@@ -9,4 +9,7 @@ admin.site.register(Device)
 admin.site.register(ProductionData)
 admin.site.register(City)
 admin.site.register(Factory)
-admin.site.register(UserProfile)
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user',)
+    filter_horizontal = ('allowed_cities',) 

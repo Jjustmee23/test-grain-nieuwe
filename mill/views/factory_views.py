@@ -3,6 +3,8 @@ from mill.models import Factory, City, Device
 from django.contrib import messages
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
+from mill.utils import allowed_cities, allowed_factories, is_allowed_factory
+
 
 def manage_factory(request):
     if request.method == "POST":
@@ -47,7 +49,10 @@ def manage_factory(request):
 
             elif action == "remove_factory":
                 print("Action: Remove factory")
-                factory = Factory.objects.get(id=factory_id)
+                factory = is_allowed_factory(request, factory_id)
+                if not factory:
+                    messages.error(request, "You are not allowed to remove this factory.")
+                    return redirect("manage_factory")
                 print(f"Factory found: {factory.name}. Removing now...")
                 factory.delete()
                 print("Factory removed successfully.")
@@ -58,6 +63,10 @@ def manage_factory(request):
                 factory_name = request.POST.get('factory_name')
                 city_id = request.POST.get('city_id')
                 print(f"Factory Name: {factory_name}, City ID: {city_id}")
+
+                if city_id not in request.user.userprofile.allowed_cities.values_list('id', flat=True):
+                    messages.error(request, "You are not allowed to add factories to this city.")
+                    return redirect("manage_factory")
 
                 factory = Factory(name=factory_name)
                 if city_id:
@@ -78,8 +87,9 @@ def manage_factory(request):
         return redirect("manage_factory")
 
     print("Rendering manage_factory template with cities and factories.")
-    cities = City.objects.all()
-    factories = Factory.objects.all().select_related('city')
+
+    cities = allowed_cities(request)
+    factories = allowed_factories(request)
     factory_data = [
         {
             'id': factory.id,
@@ -89,6 +99,5 @@ def manage_factory(request):
         }
         for factory in factories
     ]
-    print(f"Total cities: {cities.count()}, Total factories: {factories.count()}")
     return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
 

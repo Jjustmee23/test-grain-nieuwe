@@ -4,13 +4,18 @@ from datetime import date, datetime
 from django.db.models import Sum
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from mill.utils import calculate_chart_data
+from mill.utils import calculate_chart_data, is_allowed_factory
+
 
 @login_required
 def view_statistics(request, factory_id):
     # Read factory & date from query
     selected_date_str = request.GET.get('date')
     
+    # Get the actual factory object
+    factory = is_allowed_factory(request, factory_id)
+    if not factory:
+        return redirect('index')
     # Validate/parse date or use today
     if selected_date_str:
         try:
@@ -22,8 +27,6 @@ def view_statistics(request, factory_id):
     else:
         selected_date = timezone.now().date()
 
-    # Get the actual factory object
-    factory = Factory.objects.filter(id=factory_id).first()
 
     # Summarize production data for this factory on the selected date
     production_qs = (

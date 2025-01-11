@@ -32,15 +32,20 @@
 
     <div class="row">
         <div class="col-md-6">
+            {% if user.groups.all.0.name == 'Admin' %}
+            <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
+            {% endif %}
+            {% if user.groups.all.0.name == 'Superadmin' %}
             <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Cities" %}</a>
+            {% endif %}
             <a href="{% url 'manage_factory' %}" class="btn btn-primary mb-3">{% trans "Manage Factories" %}</a>
         </div>
+        {% if user.groups.all.0.name == 'Superadmin' %}
         <div class="col-md-6">
             <a href="{% url 'manage_devices' %}" class="btn btn-primary mb-3">{% trans "Manage Devices" %}</a>
-            {% if not user.is_super_admin %}
-                <a href="{% url 'super_admin' %}" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+                <a href="/super_admin/" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+            </div>
             {% endif %}
-        </div>
     </div>
 
     <!-- Nieuwe box met afbeelding -->

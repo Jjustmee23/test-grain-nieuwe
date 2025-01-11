@@ -61,7 +61,7 @@ def remove_device(request):
         device_id = request.POST.get('device_id')
         try:
             device = Device.objects.get(id=device_id)
-            device.delete()  # Remove the device from the database
+            # device.delete()  # Remove the device from the database
         except Device.DoesNotExist:
             pass  # Handle the case where the device does not exist
 

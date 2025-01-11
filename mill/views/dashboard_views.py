@@ -9,12 +9,41 @@ from datetime import datetime
 @login_required
 def index(request):
     # Grab all cities
-    cities = City.objects.all()
+    if request.user.groups.filter(name='super_admin').exists():
+        cities = City.objects.all()
+    else:
+        cities = request.user.userprofile.allowed_cities.all()    
     
     # Read city & date from query
     selected_city_id = request.GET.get('city')
     selected_date_str = request.GET.get('date')
-    print(f"Received city={selected_city_id}, date={selected_date_str}")
+
+    # Validate selected city is in user's allowed cities
+    if selected_city_id:
+        try:
+            selected_city_id = int(selected_city_id)
+            if not cities.filter(id=selected_city_id).exists():
+                selected_city_id = cities.first().id if cities.exists() else None
+        except ValueError:
+            selected_city_id = cities.first().id if cities.exists() else None
+    else:
+        selected_city_id = cities.first().id if cities.exists() else None
+
+    # If no cities are available, return empty context
+    if not selected_city_id:
+        context = {
+            'cities': cities,
+            'factories': Factory.objects.none(),
+            'selected_city_id': None,
+            'current_date': timezone.now().date(),
+            'city_data': {
+                'daily_total': 0,
+                'weekly_total': 0,
+                'monthly_total': 0,
+                'yearly_total': 0
+            }
+        }
+        return render(request, 'mill/index.html', context)
 
     # Validate/parse date; default to today if invalid
     if selected_date_str:
@@ -29,8 +58,6 @@ def index(request):
     print(f"Final selected_date={selected_date}")
 
     # Filter factories
-    if not selected_city_id:
-        selected_city_id = cities.first().id
     factories = Factory.objects.filter(city_id=selected_city_id)
     print(f"Factories found: {[f.id for f in factories]}")
 
@@ -82,6 +109,7 @@ def index(request):
         'factories': factories,
         'selected_city_id': int(selected_city_id) if selected_city_id else None,
         'current_date': selected_date,
-        'city_data': city_data
+        'city_data': city_data,
+        'is_public': request.user.groups.filter(name='public').exists()
     }
     return render(request, 'mill/index.html', context)
