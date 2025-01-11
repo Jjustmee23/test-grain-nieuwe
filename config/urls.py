@@ -8,7 +8,7 @@ urlpatterns = [
     # Admin
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
-    path('super-admin/', views.super_admin_view, name='super_admin'),
+    path('super-admin/', admin.site.urls),
 
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
