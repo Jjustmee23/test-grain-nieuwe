@@ -27,7 +27,7 @@ from mill.models import City, Factory, ProductionData
 def calculate_daily_data(factory_id,selected_date):
     print(selected_date, factory_id)
     # Initial Daily Labels: Last 6 days including the selected date
-    DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)]
+    DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
 
     # Get production entries for the last 6 days
     DailyData = ProductionData.objects.filter(
@@ -63,7 +63,7 @@ def get_month_ends(target_date, months_back=12):
 
 
 def calculate_monthly_data(factory_id,selected_date):
-    MonthlyLabels = [(selected_date - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(12)]
+    MonthlyLabels = [(selected_date - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(12)][::-1]
     month_ends = get_month_ends(selected_date)
 
     MonthlyData = ProductionData.objects.filter(
@@ -110,15 +110,28 @@ def calculate_chart_data(date,factory_id):
 # Check Allowlists
 def is_allowed_factory(request, factory_id):
     factory = get_object_or_404(Factory, id=factory_id)
-    if request.user.groups.filter(name='super_admin').exists():
+    if request.user.groups.filter(name='Superadmin').exists():
         return factory
     if request.user.userprofile.allowed_cities.filter(id=factory.city.id).exists():
-        return None
+        return factory
+    return None
+    
+def is_allowed_city(request, city_id):
+    city = get_object_or_404(City, id=city_id)
+    if request.user.groups.filter(name='Superadmin').exists():
+        return city
+    if request.user.userprofile.allowed_cities.filter(id=city.id).exists():
+        return city
+    return None
+
 def allowed_cities(request):
-    if request.user.groups.filter(name='super_admin').exists():
+    if request.user.groups.filter(name='Superadmin').exists():
         return City.objects.all()
     return request.user.userprofile.allowed_cities.all()
 def allowed_factories(request):
-    if request.user.groups.filter(name='super_admin').exists():
+    if request.user.groups.filter(name='Superadmin').exists():
+        print("Superadmin detected. Returning all factories.")
         return Factory.objects.all()
+    print("Returning allowed factories.")
+    print(request.user.userprofile.allowed_cities.all())
     return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())

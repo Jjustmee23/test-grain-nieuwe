@@ -33,7 +33,7 @@ jobs:
             if [ ! -d .git ]; then
               git clone https://syedwastil:${{secrets.REPO_ACCESS_TOKEN}}@github.com/syedwastil/project-mill-application.git .
             else
-              git pull origin main
+              git pull origin master
             fi
             
             # Stop and remove all running containers if any

@@ -54,6 +54,7 @@ def view_statistics(request, factory_id):
     context = {
         'factory': factory,
         'selected_date': selected_date,
+        'yearly_previous': 0,
         # 'chart_data': chart_data,
     }    
     # Render the HTML template with the context

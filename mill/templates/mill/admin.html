@@ -43,7 +43,7 @@
         {% if user.groups.all.0.name == 'Superadmin' %}
         <div class="col-md-6">
             <a href="{% url 'manage_devices' %}" class="btn btn-primary mb-3">{% trans "Manage Devices" %}</a>
-                <a href="/super_admin/" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+                <a href="/super-admin/" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
             </div>
             {% endif %}
     </div>

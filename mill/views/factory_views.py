@@ -3,7 +3,7 @@ from mill.models import Factory, City, Device
 from django.contrib import messages
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
-from mill.utils import allowed_cities, allowed_factories, is_allowed_factory
+from mill.utils import allowed_cities, allowed_factories, is_allowed_city, is_allowed_factory
 
 
 def manage_factory(request):
@@ -64,15 +64,14 @@ def manage_factory(request):
                 city_id = request.POST.get('city_id')
                 print(f"Factory Name: {factory_name}, City ID: {city_id}")
 
-                if city_id not in request.user.userprofile.allowed_cities.values_list('id', flat=True):
+                city = is_allowed_city(request, city_id)
+                if not city:
                     messages.error(request, "You are not allowed to add factories to this city.")
                     return redirect("manage_factory")
 
                 factory = Factory(name=factory_name)
-                if city_id:
-                    city = City.objects.get(id=city_id)
-                    factory.city = city
-                    print(f"City found: {city.name}. Assigning to new factory.")
+                factory.city = city
+                print(f"City found: {city.name}. Assigning to new factory.")
                 factory.save()
                 print(f"Factory '{factory_name}' has been added.")
                 messages.success(request, f"Factory '{factory_name}' has been added.")

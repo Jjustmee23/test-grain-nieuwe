@@ -1,7 +1,7 @@
 // static/js/index.js
 
 function handleFactoryClick(factoryId) {
-    window.location.href = `/view_statistics/${factoryId}/`;
+    window.location.href = `/view-statistics/${factoryId}/`;
 }
 
 function updateDashboard() {
