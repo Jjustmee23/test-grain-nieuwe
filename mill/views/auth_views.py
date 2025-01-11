@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect,get_object_or_404
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import Group, User
@@ -18,6 +18,9 @@ class BasicLoginView(LoginView):
             return next_url
         else:
             return self.success_url
+
+class BasicLogoutView(LogoutView):
+    next_page = reverse_lazy('login')  # Redirect to 'login' after logout
 
 def register(request):
     if request.method == 'POST':
@@ -91,3 +94,4 @@ def assign_rights(request, user_id):
         return redirect('manage_users')
 
     return render(request, 'mill/assign_rights.html', {'user': user, 'groups': groups})
+

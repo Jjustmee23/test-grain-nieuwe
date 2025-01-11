@@ -13,7 +13,7 @@ urlpatterns = [
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
     path('login/',views.BasicLoginView.as_view(),name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', views.BasicLogoutView.as_view(), name='logout'),
     path('register/', views.register, name='register'),
 
     # User management
