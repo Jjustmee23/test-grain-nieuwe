@@ -33,7 +33,7 @@
     <div class="row">
         <div class="col-md-6">
             {% if user.groups.all.0.name == 'Admin' %}
-            <a href="{% url 'manage_user' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
+            <a href="{% url 'manage_users' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
             {% endif %}
             {% if user.groups.all.0.name == 'Superadmin' %}
             <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Cities" %}</a>

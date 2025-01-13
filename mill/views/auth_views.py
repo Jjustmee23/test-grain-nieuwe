@@ -39,12 +39,12 @@ def register(request):
 @login_required
 def profile(request):
     return render(request, 'mill/profile.html')
-
 @login_required
 def manage_users(request):
-    users = User.objects.all()  # Fetch all users
-    print(users) 
+    # Get all users who are NOT superusers and NOT in the Superadmin group
+    users = User.objects.exclude(is_superuser=True).exclude(groups__name='Superadmin')
     return render(request, 'mill/manage_users.html', {'users': users})
+
 
 # Create new user view
 @login_required
