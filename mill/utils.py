@@ -126,7 +126,9 @@ def is_allowed_city(request, city_id):
 
 def allowed_cities(request):
     if request.user.groups.filter(name='Superadmin').exists():
+        print("SU allowed all cities")
         return City.objects.all()
+    print(request.user.userprofile.allowed_cities.all())
     return request.user.userprofile.allowed_cities.all()
 def allowed_factories(request):
     if request.user.groups.filter(name='Superadmin').exists():

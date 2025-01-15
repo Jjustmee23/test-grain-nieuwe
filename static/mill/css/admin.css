@@ -17,7 +17,6 @@ body {
 }
 
 .admin-container {
-    max-width: 800px;
     margin: auto;
     padding: 20px;
     background-color: var(--background-color);

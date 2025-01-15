@@ -3,6 +3,8 @@ from mill.models import City, Factory
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
+from mill.utils import allowed_cities
+
 @login_required
 def manage_city(request):
     if request.method == 'POST':
@@ -57,10 +59,7 @@ def manage_city(request):
         return redirect('manage_city')
 
     # Handle GET request
-    if request.user.groups.filter(name='super_admin').exists():
-        cities = City.objects.all()
-    else:
-        cities = request.user.userprofile.allowed_cities.all()
+    cities = allowed_cities(request)
     city_data = [
         {
             'id': city.id,
