@@ -2,3 +2,4 @@ Django==4.2.16
 psycopg2-binary
 python-dotenv
 openpyxl
+django-jazzmin==3.0.1
