@@ -25,7 +25,7 @@ class Factory(models.Model):
 
 # Device model
 class Device(models.Model):
-    id = models.IntegerField(primary_key=True,unique=True)
+    id = models.CharField(max_length=30,primary_key=True,unique=True)
     name = models.CharField(max_length=255)
     selected_counter = models.CharField(max_length=50, default='counter_1')
     status = models.BooleanField(default=False)

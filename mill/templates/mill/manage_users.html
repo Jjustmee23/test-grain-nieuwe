@@ -1,31 +1,46 @@
 {% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Manage Uses{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Manage Users</h2>
+<div class="admin-container">
+    <h2>{% trans 'Manage Users' %}</h2>
 
-	<h3>{% trans 'Create User' %}</h3>
+    <!-- Back to Admin Dashboard Button -->
+    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans 'Back to Admin Dashboard' %}</a>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+	<h3>{% trans 'Create User' %} </h3>
     <form method="POST">
         {% csrf_token %}
         <div class="mb-3">
             <label for="username" class="form-label">{% trans 'Username' %}:</label>
             <input type="text" class="form-control" id="username" name="username" required>
         </div>
-		<div class="mb-3">
-            <label for="username" class="form-label">{% trans 'Username' %}:</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+        <div class="mb-3">
+            <label for="email" class="form-label">{% trans 'Email' %}:</label>
+            <input type="text" class="form-control" id="email" name="email" required>
         </div>
 		<div class="mb-3">
-            <label for="username" class="form-label">{% trans 'Username' %}:</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+            <label for="password" class="form-label">{% trans 'Password' %}:</label>
+            <input type="text" class="form-control" id="password" name="password" required>
         </div>
-		<div class="mb-3">
-            <label for="username" class="form-label">{% trans 'Username' %}:</label>
-            <input type="text" class="form-control" id="username" name="username" required>
-        </div>
-        <button type="submit" name="action" value="add_factory" class="btn btn-primary">{% trans 'Add Factory' %}</button>
+        <button type="submit" name="action" value="add_user" class="btn btn-primary">{% trans 'Add User' %}</button>
     </form>
-    <a href="{% url 'create_user' %}" class="btn btn-success mb-3">Create New User</a>
 
     <table class="table table-striped">
 		<thead>
@@ -55,6 +70,5 @@
 		</tbody>
 	</table>
 
-    <a href="{% url 'super_admin' %}" class="btn btn-secondary">Back to Dashboard</a>
 </div>
 {% endblock %}
