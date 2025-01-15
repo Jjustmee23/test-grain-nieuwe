@@ -19,6 +19,13 @@ def manage_devices(request):
             device.save()
             messages.success(request, f"Counter updated for {device.id}: {selected_counter}")
 
+        if action == 'rename_device':
+            print("Rename device called")
+            new_name = request.POST.get('new_device_name')
+            device.name = new_name
+            device.save()
+            messages.success(request, f"Device renamed to {new_name}")
+
     existing_devices = Device.objects.all()
     return render(request, 'mill/manage_devices.html', {'existing_devices': existing_devices})
  
