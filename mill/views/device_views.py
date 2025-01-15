@@ -12,20 +12,12 @@ def manage_devices(request):
         device = get_object_or_404(Device, id=device_id)
 
         if action == 'update_device_counter':
-            # Get the highest counter for the device
-            highest_counters =None 
-            # highest_counters =None or get_highest_counter(device.device_id)
-
-            # Get the latest counter value for today
-            if highest_counters and highest_counters[0] is not None:
-                latest_counter_today = highest_counters[0]  # Highest value today
-                if latest_counter_today != device.selected_counter:
-                    device.selected_counter = latest_counter_today
-                    device.save()
-                    messages.success(request, f"Counter updated for {device.id}: {latest_counter_today}")
-            else:
-                messages.info(request, f"No new counters for {device.name} today.")
-            return redirect('manage_devices')
+            print("Update device counter called")
+            selected_counter = request.POST.get('selected_counter')
+            print(selected_counter)
+            device.selected_counter = selected_counter
+            device.save()
+            messages.success(request, f"Counter updated for {device.id}: {selected_counter}")
 
     existing_devices = Device.objects.all()
     return render(request, 'mill/manage_devices.html', {'existing_devices': existing_devices})
