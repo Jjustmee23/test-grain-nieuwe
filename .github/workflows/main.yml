@@ -42,4 +42,5 @@ jobs:
             # Remove the specific microservice container image if it exists
             
             # Build and start the containers
-            docker-compose up -d --build --remove-orphans
+            docker-compose up -d postgres
+            docker-compose up -d web --build --remove-orphans

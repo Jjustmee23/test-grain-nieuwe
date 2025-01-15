@@ -24,7 +24,7 @@ RUN python manage.py makemigrations && python manage.py migrate
 RUN python manage.py collectstatic --noinput
 
 # Create a user to run the application
-RUN echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('USAdmin', 'm.syedwasti@gmail.com', 'Grainbackend1!')" | python manage.py shell
+# RUN echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('USAdmin', 'm.syedwasti@gmail.com', 'Grainbackend1!')" | python manage.py shell
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
