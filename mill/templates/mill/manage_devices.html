@@ -49,7 +49,8 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>{% trans "Device Name/Serial Number" %}</th>
+                        <th>{% trans "Serial Number" %}</th>
+                        <th>{% trans "Device Name" %}</th>
                         <th>{% trans "Status" %}</th>
                         <th>{% trans "Selected Counter" %}</th>
                         <th>{% trans "Actions" %}</th>
@@ -59,7 +60,8 @@
                 <tbody id="existing-devices-table-body">
                     {% for device in existing_devices %}
                     <tr id="device-row-{{ device.id }}">
-                        <td>{{ device.name|default:device.id }}</td>
+                        <td>{{ device.id }}</td>
+                        <td>{{ device.name }}</td>
                         <td>
                             <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
                                 {% csrf_token %}

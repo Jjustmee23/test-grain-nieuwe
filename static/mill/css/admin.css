@@ -26,6 +26,10 @@ body {
     min-width:800px;
 }
 
+.admin-container img {
+    max-width: 600px;
+}
+
 .admin-container h2 {
     text-align: center;
     margin-bottom: 20px;
