@@ -28,27 +28,34 @@ def view_statistics(request, factory_id):
         selected_date = timezone.now().date()
 
 
-    # Summarize production data for this factory on the selected date
-    production_qs = (
-        ProductionData.objects
-        .filter(device__factory=factory, created_at__date=selected_date)
-        .values('device__factory')
-        .annotate(
-            daily_total=Sum('daily_production'),
-            weekly_total=Sum('weekly_production'),
-            monthly_total=Sum('monthly_production'),
-            yearly_total=Sum('yearly_production'),
-        )
-    )
-    print(f"Production data for {factory.name} on {selected_date}: {production_qs}")
-    # Convert results to a dict for easy lookup
-    sums_dict = production_qs[0] if production_qs.exists() else {}
+    # Summarize production data for this factory on the selected d    
+    production_qs = ProductionData.objects.filter(
+    device__factory=factory, created_at__date=selected_date).order_by('device_id', '-created_at')
+    # Dictionary to store the latest production data per device
+    latest_production = {}
+    for production in production_qs:
+        if production.device_id not in latest_production:
+            latest_production[production.device_id] = production
+
+    factory_total = {
+        'daily_total': 0, 'weekly_total': 0,
+        'monthly_total': 0, 'yearly_total': 0
+    }
+
+    for production in latest_production.values():
+        print(f"production.device.factory_id | daily_total: {production.device.factory_id} {factory_total['weekly_total']}")
+        if production.device.factory_id == factory.id:
+            factory_total['daily_total'] += production.daily_production or 0
+            factory_total['weekly_total'] += production.weekly_production or 0
+            factory_total['monthly_total'] += production.monthly_production or 0
+            factory_total['yearly_total'] += production.yearly_production or 0
 
     # Attach sums to factory (use .get() with default 0 if not found)
-    factory.daily_total = sums_dict.get('daily_total', 0) or 0
-    factory.weekly_total = sums_dict.get('weekly_total', 0) or 0
-    factory.monthly_total = sums_dict.get('monthly_total', 0) or 0
-    factory.yearly_total = sums_dict.get('yearly_total', 0) or 0
+    # Attach totals to the factory
+    factory.daily_total = factory_total['daily_total']
+    factory.weekly_total = factory_total['weekly_total']
+    factory.monthly_total = factory_total['monthly_total']
+    factory.yearly_total = factory_total['yearly_total']
 
     # chart_data = calculate_chart_data(selected_date, factory_id)
     context = {
