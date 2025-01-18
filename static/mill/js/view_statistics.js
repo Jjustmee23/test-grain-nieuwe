@@ -149,10 +149,23 @@ function fetchChartData() {
                 window.yearlyChart.update();
             }
 
-            
+            updateCommulative(data.daily_total, data.weekly_total, data.monthly_total, data.yearly_current, data.yearly_previous);
         })
         .catch(error => {
             console.error('Error fetching chart data:', error);
             alert('Fout bij het ophalen van grafiekgegevens.');
         });
+}
+
+function updateCommulative(daily_data,weekly_data,monthly_data,yearly_data,previous_data){
+    let daily = document.getElementById('total-daily');
+    let weekly = document.getElementById('total-week');
+    let monthly = document.getElementById('total-month');
+    let yearly = document.getElementById('total-year');
+    let previously = document.getElementById('total-previous');
+    daily.innerHTML = daily_data;
+    weekly.innerHTML = weekly_data;
+    monthly.innerHTML = monthly_data;
+    yearly.innerHTML = yearly_data;
+    previously.innerHTML = previous_data;
 }

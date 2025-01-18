@@ -28,14 +28,27 @@ def calculate_daily_data(factory_id,selected_date):
     print(selected_date, factory_id)
     # Initial Daily Labels: Last 6 days including the selected date
     DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
-
+    DailyData = {label: 0 for label in DailyLabels}
+    WeeklyData = 0
+    print(DailyLabels,"jhghjgjh",DailyData)
     # Get production entries for the last 6 days
-    DailyData = ProductionData.objects.filter(
+    production_data = ProductionData.objects.filter(
         device__factory_id=factory_id,
         created_at__date__range=[selected_date - timedelta(days=5), selected_date]
-    ).order_by('-created_at').values_list('daily_production', flat=True)
+    ).order_by('-created_at')
 
-    return DailyLabels, list(DailyData)
+    # Map existing data to the corresponding labels
+    for data in production_data:
+        date_str = data.created_at.strftime('%Y-%m-%d')
+        if date_str in DailyData:
+            DailyData[date_str] = data.daily_production
+        if date_str == DailyLabels[-1]:
+            print("Date not in labels")
+            WeeklyData = data.weekly_production
+        print(DailyLabels[-1],date_str)
+
+    return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
+
 from datetime import date, timedelta
 import calendar
 
@@ -44,7 +57,7 @@ def get_month_ends(target_date, months_back=12):
     if isinstance(target_date, datetime):
         target_date = target_date.date()
 
-    month_ends = []
+    month_ends = [target_date]
     current_year = target_date.year
     current_month = target_date.month
 
@@ -64,15 +77,22 @@ def get_month_ends(target_date, months_back=12):
 
 def calculate_monthly_data(factory_id,selected_date):
     MonthlyLabels = [(selected_date - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(12)][::-1]
+    # Initialize data with zeros
+    MonthlyData = {label: 0 for label in MonthlyLabels}
     month_ends = get_month_ends(selected_date)
-
-    MonthlyData = ProductionData.objects.filter(
+    production_data = ProductionData.objects.filter(
         device__factory_id=factory_id,
         created_at__date__in=month_ends
-    ).order_by('created_at').values_list('monthly_production', flat=True)
+    ).order_by('created_at')
 
-    return MonthlyLabels, list(MonthlyData)
+    # Map existing data to the corresponding labels
+    for data in production_data:
+        month_str = data.created_at.strftime('%Y-%m')
+        if month_str in MonthlyData:
+            MonthlyData[month_str] = data.monthly_production
 
+    # Return labels and data as a list
+    return MonthlyLabels, [MonthlyData[label] for label in MonthlyLabels]
 
 def calculate_yearly_data(factory_id,selected_date):
     current_year = selected_date.year
@@ -97,14 +117,14 @@ def calculate_chart_data(date,factory_id):
         # Convert date to datetime object if not already
     selected_date = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
     
-    DailyLabels, DailyData = calculate_daily_data(factory_id, selected_date)
-    print(DailyLabels, DailyData)
+    DailyLabels, DailyData, WeeklyData = calculate_daily_data(factory_id, selected_date)
+    print("Daily:_______",DailyLabels, DailyData)
     MonthlyLabels, MonthlyData = calculate_monthly_data(factory_id, selected_date)
-    print(MonthlyLabels, MonthlyData)
+    print("Monthly:_______",MonthlyLabels, MonthlyData)
     YearlyCurrent, YearlyPrevious = calculate_yearly_data(factory_id, selected_date)
-    print(YearlyCurrent, YearlyPrevious)
+    print("Yearly:_______",YearlyCurrent, YearlyPrevious)
 
-    return { 'daily_labels': DailyLabels, 'daily_data': DailyData, 'monthly_labels': MonthlyLabels, 'monthly_data': MonthlyData, 'yearly_current': YearlyCurrent, 'yearly_previous': YearlyPrevious }
+    return { 'daily_labels': DailyLabels, 'daily_data': DailyData, 'monthly_labels': MonthlyLabels, 'monthly_data': MonthlyData, 'yearly_current': YearlyCurrent, 'yearly_previous': YearlyPrevious , 'daily_total': DailyData[-1], 'monthly_total': MonthlyData[-1], 'weekly_total': WeeklyData}
 
 
 # Check Allowlists
