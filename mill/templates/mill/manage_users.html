@@ -25,7 +25,7 @@
     {% endif %}
 
 	<h3>{% trans 'Create User' %} </h3>
-    <form method="POST">
+    <form method="POST" action="{% url 'create_user' %}" >
         {% csrf_token %}
         <div class="mb-3">
             <label for="username" class="form-label">{% trans 'Username' %}:</label>
@@ -37,7 +37,11 @@
         </div>
 		<div class="mb-3">
             <label for="password" class="form-label">{% trans 'Password' %}:</label>
-            <input type="text" class="form-control" id="password" name="password" required>
+            <input type="password" class="form-control" id="password" name="password1" required>
+        </div>
+		<div class="mb-3">
+            <label for="password" class="form-label">{% trans 'Confirm Password' %}:</label>
+            <input type="password" class="form-control" id="password" name="password2" required>
         </div>
         <button type="submit" name="action" value="add_user" class="btn btn-primary">{% trans 'Add User' %}</button>
     </form>

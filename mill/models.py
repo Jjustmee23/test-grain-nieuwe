@@ -68,6 +68,7 @@ class TransactionData(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    team = models.CharField(max_length=100, blank=True, null=True)
     # Only for non-super_admin users (admins and public_users)
     allowed_cities = models.ManyToManyField(City, blank=True)
 

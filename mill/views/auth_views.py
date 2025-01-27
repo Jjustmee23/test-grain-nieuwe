@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import Group, User
 from mill.forms import CustomUserCreationForm, UserCreationForm
 from django.contrib.auth import login
+from django.contrib import messages
+from mill.models import UserProfile
 
 # Authentication Views
 class BasicLoginView(LoginView):
@@ -42,7 +44,7 @@ def profile(request):
 @login_required
 def manage_users(request):
     # Get all users who are NOT superusers and NOT in the Superadmin group
-    users = User.objects.exclude(is_superuser=True).exclude(groups__name='Superadmin')
+    users = User.objects.exclude(is_superuser=True).exclude(groups__name='Superadmin').exclude(groups__name='Admin')
     return render(request, 'mill/manage_users.html', {'users': users})
 
 
@@ -52,8 +54,22 @@ def create_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('manage_users')
+            print("Form is valid")
+            new_user = form.save()
+            creater_profile = UserProfile.objects.get(user=request.user)
+            # Create a UserProfile entry for the new user
+            new_user_profile = UserProfile.objects.create(
+                user=new_user,
+                team=request.user.username,
+            )
+            new_user_profile.allowed_cities.set(creater_profile.allowed_cities.all())
+            new_user_profile.save()
+            messages.success(request, f"User created {new_user.username}")
+        else:
+            print("Form is invalid")
+            messages.error(request, 'Please correct the error below.')
+        return redirect('manage_users')
+        
     else:
         form = UserCreationForm()
     return render(request, 'mill/create_user.html', {'form': form})
@@ -78,6 +94,7 @@ def delete_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
         user.delete()
+        
         return redirect('manage_users')
     return render(request, 'mill/delete_user.html', {'user': user})
 
