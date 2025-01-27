@@ -8,7 +8,7 @@ admin.site.site_title = 'Mill Admin'
 # Add all fields of Device model to the admin panel.
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'status', 'factory', 'created_at')
+    list_display = ('id', 'name', 'status','selected_counter', 'factory', 'created_at')
     list_filter = ('status', 'factory')
     search_fields = ('id', 'name')
     date_hierarchy = 'created_at'
