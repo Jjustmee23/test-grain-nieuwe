@@ -93,6 +93,7 @@ def manage_factory(request):
         {
             'id': factory.id,
             'name': factory.name,
+            'city': factory.city,
             'status': factory.status,
             'devices': Device.objects.filter(factory=factory)
         }
