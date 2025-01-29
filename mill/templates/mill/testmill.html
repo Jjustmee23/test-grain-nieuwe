@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Query Results</title>
+</head>
+<body>
+    <h2>Mill Counter Query Results Latest</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>counter_id</th>
+                <th>timestamp </th>
+                <th>mobile_signal</th>
+                <th>dout_enabued</th>
+                <th>dout</th>
+                <th>di_mode</th>
+                <th>din</th>
+                <th>counter_1</th>
+                <th>counter_2</th>
+                <th>counter_3</th>
+                <th>counter_4</th>
+                <th>ain_mode</th>
+                <th>ain1_valu</th>
+                <th>ain2_valu</th>
+                <th>ain3_valu</th>
+                <th>ain4_valu</th>
+                <th>ain5_valu</th>
+                <th>ain6_valu</th>
+                <th>ain7_valu</th>
+                <th>ain8_valu</th>
+                <th>start_flag</th>
+                <th>type </th>
+                <th>length </th>
+                <th>version </th>
+                <th>end_flag </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Mill Counter Query Yesterday Data</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>counter_id</th>
+                <th>timestamp </th>
+                <th>mobile_signal</th>
+                <th>dout_enabued</th>
+                <th>dout</th>
+                <th>di_mode</th>
+                <th>din</th>
+                <th>counter_1</th>
+                <th>counter_2</th>
+                <th>counter_3</th>
+                <th>counter_4</th>
+                <th>ain_mode</th>
+                <th>ain1_valu</th>
+                <th>ain2_valu</th>
+                <th>ain3_valu</th>
+                <th>ain4_valu</th>
+                <th>ain5_valu</th>
+                <th>ain6_valu</th>
+                <th>ain7_valu</th>
+                <th>ain8_valu</th>
+                <th>start_flag</th>
+                <th>type </th>
+                <th>length </th>
+                <th>version </th>
+                <th>end_flag </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in yesterday %}
+            <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
