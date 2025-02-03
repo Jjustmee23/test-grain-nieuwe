@@ -1,0 +1,118 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Control Pannel{% endblock %}
+
+{% block content %}
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <!-- Optioneel: Je kunt hier een logo toevoegen als je dat wilt -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if not user.groups.all.0.name == 'Public' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hoofdcontainer -->
+    <div class="container my-4">
+        <!-- Filters: City Selector en Date Picker -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <select id="citySelector" class="form-select" onchange="window.location.href='/?city=' + this.value">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}
+                        <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 mb-3">
+                <input type="date" id="dashboardDatePicker" class="form-control" onchange="updateDashboard()" value="{{ current_date|date:"Y-m-d" }}">
+            </div>
+        </div>
+
+        <!-- Totale Productiekaarten voor de Stad -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">City Daily Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-daily-total">{{ city_data.daily_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-white">City Weekly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-weekly-total">{{ city_data.weekly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-danger text-white">City Monthly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-month-total">{{ city_data.monthly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">City Yearly Total</div>
+                    <div class="card-body">
+                        <h5 class="card-title" id="city-year-total">{{ city_data.yearly_total }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fabriekkaarten -->
+        <div class="row">
+            {% for factory in factories %}
+                <div class="col-md-4 mb-4">
+                    <div class="card factory-card h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5>{{ factory.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if factory.error %}
+                                <div class="alert alert-danger" role="alert">
+                                    Error retrieving data
+                                </div>
+                            {% else %}
+                                <p><strong>Daily Total:</strong> {{ factory.daily_total }}</p>
+                                <p><strong>Weekly Total:</strong> {{ factory.weekly_total }}</p>
+                                <p><strong>Monthly Total:</strong> {{ factory.monthly_total }}</p>
+                                <p><strong>Yearly Total:</strong> {{ factory.yearly_total }}</p>
+                                <p><strong>Start Time:</strong> {{ factory.start_time }}</p>
+                                <p><strong>Stop Time:</strong> {{ factory.stop_time }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-center">
+                            <button class="btn btn-sm btn-outline-primary" onclick="handleFactoryClick({{ factory.id }})">View Statistics</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- JavaScript bestanden -->
+<script src="{% static 'js/index.js' %}"></script>
+
+{% endblock %}
+

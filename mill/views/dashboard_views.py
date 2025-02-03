@@ -6,8 +6,11 @@ from mill.models import City, Factory, Device, ProductionData
 from django.db.models import Sum
 from datetime import datetime
 
-@login_required
 def index(request):
+    return render(request, 'mill/index.html')
+
+@login_required
+def dashboard(request):
     # Grab all cities
     if request.user.groups.filter(name='super_admin').exists():
         cities = City.objects.all()
@@ -43,7 +46,7 @@ def index(request):
                 'yearly_total': 0
             }
         }
-        return render(request, 'mill/index.html', context)
+        return render(request, 'mill/dashboard.html', context)
 
     # Validate/parse date; default to today if invalid
     if selected_date_str:
@@ -121,4 +124,4 @@ def index(request):
         'city_data': city_data,
         'is_public': request.user.groups.filter(name='public').exists()
     }
-    return render(request, 'mill/index.html', context)
+    return render(request, 'mill/dashboard.html', context)

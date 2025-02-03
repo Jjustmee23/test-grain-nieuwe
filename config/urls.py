@@ -26,6 +26,7 @@ urlpatterns = [
 
     # Views
     path('', views.index, name='index'),
+    path('dashboard', views.dashboard, name='dashboard'),
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('view-tables/', views.view_tables, name='view_tables'),
 
