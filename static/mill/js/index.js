@@ -9,7 +9,7 @@ function updateDashboard() {
     const cityId = document.getElementById('citySelector').value;
 
     // Bouw de URL met de geselecteerde parameters
-    let url = '/';
+    let url = '/dashboard';
     let params = new URLSearchParams();
 
     if (cityId) {
