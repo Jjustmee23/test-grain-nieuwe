@@ -149,7 +149,7 @@ function fetchChartData() {
                 window.yearlyChart.update();
             }
 
-            updateCommulative(data.daily_total, data.weekly_total, data.monthly_total, data.yearly_current, data.yearly_previous);
+            // updateCommulative(data.daily_total, data.weekly_total, data.monthly_total, data.yearly_current, data.yearly_previous);
         })
         .catch(error => {
             console.error('Error fetching chart data:', error);

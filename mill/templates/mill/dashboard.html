@@ -32,7 +32,7 @@
         <!-- Filters: City Selector en Date Picker -->
         <div class="row mb-4">
             <div class="col-md-4 mb-3">
-                <select id="citySelector" class="form-select" onchange="window.location.href='/?city=' + this.value">
+                <select id="citySelector" class="form-select" onchange="window.location.href='/dashboard?city=' + this.value">
                     <option value="">All Cities</option>
                     {% for city in cities %}
                         <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
