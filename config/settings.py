@@ -26,8 +26,17 @@ SECRET_KEY = 'django-insecure-m$h-by@rqvi!g(&kcg65hvh-5-kct!d2m!@w#&v7#j+g_hv!cb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'grain05.midaweb.be',
+    'www.grain05.midaweb.be',
+    '127.0.0.1',  # If needed for local development
+    'localhost',  # If needed for local development
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://grain05.midaweb.be',
+    'https://www.grain05.midaweb.be',
+]
 
 # Application definition
 
