@@ -3,6 +3,7 @@
 {% load i18n %}
 {% block title %}Manage Devices{% endblock %}
 
+
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}">
 {% endblock %}
@@ -122,6 +123,7 @@
                 <tr>
                     <th>{% trans "Serial Number" %}</th>
                     <th>{% trans "Device Name" %}</th>
+                    <th>{% trans "City" %}</th>
                     <th>{% trans "Status" %}</th>
                     <th>{% trans "Selected Counter" %}</th>
                     <th>{% trans "Actions" %}</th>
@@ -131,9 +133,17 @@
             <tbody id="existing-devices-table-body">
                 {% for device in existing_devices %}
                     {% if device.name != device.id %}
+                    
                         <tr id="device-row-{{ device.id }}">
                             <td>{{ device.id }}</td>
                             <td>{{ device.name }}</td>
+                            <td>
+                                {% if device.city %}
+                                    {{ device.city.name }}
+                                {% else %}
+                                    {% trans "Not Assigned" %}
+                                {% endif %}
+                            </td>
                             <td>
                                 <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
                                     {% csrf_token %}
@@ -178,6 +188,7 @@
                                 <button type="button" class="btn btn-primary btn-sm" onclick="showPairDeviceModal('{{ device.id }}')">{% trans "Pair" %}</button>
                             </td> {% endcomment %}
                         </tr>
+                        
                     {% endif %}
                 {% endfor %}
             </tbody>
