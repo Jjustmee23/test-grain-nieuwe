@@ -52,6 +52,7 @@
                     <tr>
                         <th>{% trans "Serial Number" %}</th>
                         <th>{% trans "Device Name" %}</th>
+                        <th>{% trans "City" %}</th>
                         <th>{% trans "Status" %}</th>
                         <th>{% trans "Selected Counter" %}</th>
                         <th>{% trans "Actions" %}</th>
@@ -64,6 +65,13 @@
                             <tr id="device-row-{{ device.id }}">
                                 <td>{{ device.id }}</td>
                                 <td>{{ device.name }}</td>
+                                <td>
+                                    {% if device.city %}
+                                        {{ device.city.name }}
+                                    {% else %}
+                                        {% trans "Not Assigned" %}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
                                         {% csrf_token %}
