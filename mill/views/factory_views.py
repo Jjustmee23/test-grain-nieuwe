@@ -76,6 +76,25 @@ def manage_factory(request):
                 print(f"Factory '{factory_name}' has been added.")
                 messages.success(request, f"Factory '{factory_name}' has been added.")
 
+            elif action == "edit_factory":  # Changed from edit_factory_name to match template
+                print("Action: Edit factory name")
+                new_factory_name = request.POST.get('factory_name')  # Changed from new_factory_name to match template
+                factory = is_allowed_factory(request, factory_id)
+                
+                if not factory:
+                    messages.error(request, "You are not allowed to edit this factory.")
+                    return redirect("manage_factory")
+
+                if not new_factory_name or new_factory_name.strip() == "":
+                    messages.error(request, "Factory name cannot be empty.")
+                    return redirect("manage_factory")
+
+                print(f"Factory found: {factory.name}. Updating name to {new_factory_name}.")
+                factory.name = new_factory_name.strip()
+                factory.save()
+                print(f"Factory name updated to '{new_factory_name}'.")
+                messages.success(request, f"Factory name updated to '{new_factory_name}'.")
+
         except ObjectDoesNotExist as e:
             messages.error(request, f"Error: {str(e)}")
             print(f"Error occurred: {str(e)}")
@@ -100,4 +119,3 @@ def manage_factory(request):
         for factory in factories
     ]
     return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
-
