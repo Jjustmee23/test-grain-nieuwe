@@ -26,6 +26,24 @@ def manage_devices(request):
             device.save()
             messages.success(request, f"Device renamed to {new_name}")
 
+         # Get all devices and include city information if available
+    existing_devices = Device.objects.all().select_related('factory__city')
+    devices_with_cities = []
+    
+    for device in existing_devices:
+        device_data = {
+            'id': device.id,
+            'name': device.name,
+            'status': device.status,
+            'selected_counter': device.selected_counter,
+            'city': device.factory.city if device.factory and device.factory.city else None
+        }
+        devices_with_cities.append(device_data)
+
+    return render(request, 'mill/manage_devices.html', {
+        'existing_devices': devices_with_cities
+    })
+
     existing_devices = Device.objects.all()
     return render(request, 'mill/manage_devices.html', {'existing_devices': existing_devices})
  
