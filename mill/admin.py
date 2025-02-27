@@ -8,9 +8,14 @@ admin.site.site_title = 'Mill Admin'
 # Add all fields of Device model to the admin panel.
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'status','selected_counter', 'factory', 'created_at')
+    list_display = ('id', 'name', 'status', 'selected_counter', 'factory', 'city', 'created_at')
+
+    def city(self, obj):
+        return obj.factory.city if obj.factory else None
+
+
     list_filter = ('status', 'factory')
-    search_fields = ('id', 'name')
+    search_fields = ('id', 'name', 'factory__name')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     fieldsets = (
@@ -19,6 +24,7 @@ class DeviceAdmin(admin.ModelAdmin):
         }),
     )
     readonly_fields = ('created_at',)
+
 # admin.site.register(ProductionData)
 @admin.register(ProductionData)
 class ProductionDataAdmin(admin.ModelAdmin):
