@@ -35,6 +35,7 @@ urlpatterns = [
     path('manage-devices/', views.manage_devices, name='manage_devices'),
     path('manage-tables/', views.manage_tables, name='manage_tables'),
     path('manage-factory/', views.manage_factory, name='manage_factory'),
+    path('manage-batch/', views.manage_batches, name='manage_batches'),
     path('manage-city/', views.manage_city, name='manage_city'),
 
     # Device operations

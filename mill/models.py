@@ -74,3 +74,12 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile for {self.user.username}"
+    # Only for super_admin users
+class BatchForFactory(models.Model):
+    batchInteger = models.IntegerField()
+    factory = models.ForeignKey(Factory, on_delete=models.CASCADE, related_name='batch_for_factory')
+    amountofwheat = models.IntegerField(default=0)
+    DateTimeField = models.DateTimeField(auto_now_add=True)
+    waistfactor = models.IntegerField(default=20)
+    def __str__(self):
+        return f"Batch for {self.factory.name} at {self.DateTimeFieldField}"
