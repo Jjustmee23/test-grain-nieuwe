@@ -1,0 +1,91 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Manage Batches{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>{% trans "Manage Factory Batches" %}</h2>
+
+    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <h3>{% trans "Add New Batch" %}</h3>
+    <form method="post" action="{% url 'manage_batches' %}" class="form-group">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_batch">
+        
+        <div class="form-group">
+            <label for="factory">{% trans "Factory" %}</label>
+            <select id="factory" name="factory" class="form-control" required>
+                {% for factory in factories %}
+                    <option value="{{ factory.id }}">{{ factory.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="batch_number">{% trans "Batch Number" %}</label>
+            <input type="number" id="batch_number" name="batch_number" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="amount_wheat">{% trans "Amount of Wheat" %}</label>
+            <input type="number" id="amount_wheat" name="amount_wheat" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="waist_factor">{% trans "Waist Factor" %}</label>
+            <input type="number" id="waist_factor" name="waist_factor" class="form-control" required step="0.01">
+        </div>
+
+        <button type="submit" class="btn btn-primary">{% trans "Add Batch" %}</button>
+    </form>
+
+    <h3>{% trans "Existing Batches" %}</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>{% trans "Batch Number" %}</th>
+                <th>{% trans "Factory" %}</th>
+                <th>{% trans "Amount of Wheat" %}</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Waste Factor" %}</th>
+                <th>{% trans "Actions" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for batch in batches %}
+            <tr>
+                <td>{{ batch.batchInteger }}</td>
+                <td>{{ batch.factory.name }}</td>
+                <td>{{ batch.amountofwheat }}</td>
+                <td>{{ batch.DateTimeField }}</td>
+                <td>{{ batch.waistfactor }}%</td>
+                <!-- <td>{{ batch.created_at }}</td> -->
+                <td>
+                    <form method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="edit_batch">
+                        <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                        <button type="submit" class="btn btn-primary">{% trans "update" %}</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

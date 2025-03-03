@@ -2,6 +2,9 @@ from .dashboard_views import index, dashboard
 from .auth_views import *
 from .device_views import *
 from .factory_views import manage_factory
+from .batch_views import manage_batches
+# from .admin_views import manage_admin_view
+from .admin_views import change_password
 # from .admin_views import *
 from .city_views import manage_city
 from .stats_views import view_statistics
