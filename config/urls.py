@@ -9,6 +9,8 @@ urlpatterns = [
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
     path('super-admin/', admin.site.urls),
+    path('', include('mill.urls')),
+    path('change-password/', views.change_password, name='change_password'),
 
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
