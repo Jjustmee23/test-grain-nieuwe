@@ -2,7 +2,11 @@ from .dashboard_views import index, dashboard
 from .auth_views import *
 from .device_views import *
 from .factory_views import manage_factory
-from .batch_views import manage_batches
+from .batch_views import *
+# from .batch_views import BatchListView, BatchCreateView, BatchDetailView
+from .alert_views import *
+from .analytics_views import *
+from .sensor_views import *
 # from .admin_views import manage_admin_view
 from .admin_views import change_password
 # from .admin_views import *
