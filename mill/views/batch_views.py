@@ -133,9 +133,11 @@ class BatchUpdateView(LoginRequiredMixin, View):
                     FlourBagCount.objects.create(
                         batch=batch,
                         bag_count=bag_count,
+                        device=...,  # Ensure this is a valid Device instance
+
                         bags_weight=bags_weight,
                         timestamp=timezone.now(),
-                        created_by=request.user.username
+                        created_by=request.user 
                     )
                 except ValueError:
                     return JsonResponse({

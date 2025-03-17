@@ -33,7 +33,7 @@ urlpatterns = [
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
     path('super-admin/', admin.site.urls),
-    path('', include('mill.urls')),
+    path('', include('mill.urls')),  # Include the mill app URLs
     path('change-password/', views.change_password, name='change_password'),
 
     # Authentication
