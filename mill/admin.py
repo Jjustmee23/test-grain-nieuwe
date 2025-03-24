@@ -9,8 +9,8 @@ admin.site.site_title = 'Mill Admin'
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'status','selected_counter', 'factory', 'created_at')
-    list_filter = ('status', 'factory')
-    search_fields = ('id', 'name')
+    list_filter = ('status', 'factory', 'factory__city')  # Added factory__city to enable city filtering
+    search_fields = ('id', 'name', 'factory__city__name')  # Added factory__city__name to enable city name searching
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     fieldsets = (
