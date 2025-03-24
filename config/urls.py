@@ -3,12 +3,13 @@ from django.urls import path, include
 from mill import views, apis
 from django.conf.urls import handler404
 from django.contrib.auth import views as auth_views
+# from mill. import profile_views
 
 from mill.views import (
     BatchListView, BatchCreateView, BatchUpdateView, BatchDetailView,
     sensor_data_receiver, sensor_status,
     analytics_dashboard, batch_performance,
-    AlertListView, alert_dashboard, acknowledge_alert
+    AlertListView, alert_dashboard, acknowledge_alert, profile_views
 )
 
 urlpatterns = [
@@ -35,6 +36,8 @@ urlpatterns = [
     path('super-admin/', admin.site.urls),
     path('', include('mill.urls')),  # Include the mill app URLs
     path('change-password/', views.change_password, name='change_password'),
+    path('profile/manage/', profile_views.manage_profile, name='manage_profile'),
+
 
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
