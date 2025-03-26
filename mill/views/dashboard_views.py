@@ -5,6 +5,7 @@ from mill.utils import calculate_start_time, calculate_stop_time, check_factory_
 from mill.models import City, Factory, Device, ProductionData
 from django.db.models import Sum
 from datetime import datetime
+from mill.utils import allowed_cities
 
 def index(request):
     return render(request, 'mill/index.html')
@@ -12,10 +13,7 @@ def index(request):
 @login_required
 def dashboard(request):
     # Grab all cities
-    if request.user.groups.filter(name='super_admin').exists():
-        cities = City.objects.all()
-    else:
-        cities = request.user.userprofile.allowed_cities.all()    
+    cities= allowed_cities(request)   
     
     # Read city & date from query
     selected_city_id = request.GET.get('city')
