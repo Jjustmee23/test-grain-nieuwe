@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Device, ProductionData, City, Factory, UserProfile
+from .models import Device, Notification, NotificationCategory, ProductionData, City, Factory, UserProfile
 
 admin.site.site_header = 'Mill Admin'
 admin.site.site_title = 'Mill Admin'
@@ -64,3 +64,22 @@ class FactoryAdmin(admin.ModelAdmin):
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user',)
     filter_horizontal = ('allowed_cities',) 
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'category', 'message', 'read', 'timestamp')
+    list_filter = ('category', 'read', 'timestamp')
+    search_fields = ('user', 'message')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'category', 'message', 'read', 'timestamp')
+        }),
+    )
+    readonly_fields = ('timestamp',)
+
+@admin.register(NotificationCategory)
+class NotificationCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name','description')
+    search_fields = ('name','description')

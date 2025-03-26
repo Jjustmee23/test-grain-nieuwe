@@ -157,3 +157,21 @@ def allowed_factories(request):
     print("Returning allowed factories.")
     print(request.user.userprofile.allowed_cities.all())
     return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())
+
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+def send_notification_email(user, notification):
+    subject = f"New Notification: {notification.category.name}"
+    message = f"""
+    {notification.message}
+    View details: {notification.link or ''}
+    """
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
+    )
