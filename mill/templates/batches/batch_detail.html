@@ -1,0 +1,253 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Batch Details - {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Batch Details: {{ batch.batch_number }}</h2>
+        <div class="btn-group">
+            {% if not batch.is_completed %}
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editBatchModal">
+                <i class="fas fa-edit"></i> Edit Batch
+            </button>
+            {% endif %}
+            <a href="{% url 'batch-list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Batch Information -->
+    <div class="row">
+        <!-- Basic Info Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Factory</dt>
+                        <dd class="col-sm-8">{{ batch.factory.name }}</dd>
+
+                        <dt class="col-sm-4">Start Date</dt>
+                        <dd class="col-sm-8">{{ batch.start_date|date:"Y-m-d H:i" }}</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{% if batch.is_completed %}success{% else %}primary{% endif %}">
+                                {{ batch.get_status_display }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Waste Factor</dt>
+                        <dd class="col-sm-8">{{ batch.waste_factor }}%</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Production Stats Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Production Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Wheat Input</h6>
+                                <h3>{{ batch.wheat_amount }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Expected Output</h6>
+                                <h3>{{ batch.expected_flour_output }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Actual Output</h6>
+                                <h3>{{ batch.actual_flour_output }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Yield Rate</h6>
+                                <h3>{{ yield_rate|floatformat:1 }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Timeline -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Production Timeline</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="productionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    {% if alerts %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Alerts</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td>{{ alert.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{{ alert.get_severity_class }}">
+                                    {{ alert.get_alert_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ alert.message }}</td>
+                            <td>
+                                {% if alert.is_acknowledged %}
+                                <span class="badge bg-success">Acknowledged</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="editBatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Batch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editBatchForm" method="POST" action="{% url 'batch-update' batch.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Wheat Amount (tons)</label>
+                            <input type="number" class="form-control" name="wheat_amount" 
+                                   value="{{ batch.wheat_amount }}" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Waste Factor (%)</label>
+                            <input type="number" class="form-control" name="waste_factor" 
+                                   value="{{ batch.waste_factor }}" min="0" max="100" step="0.1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Actual Output (tons)</label>
+                            <input type="number" class="form-control" name="actual_flour_output" 
+                                   value="{{ batch.actual_flour_output }}" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="is_completed">
+                                <option value="false" {% if not batch.is_completed %}selected{% endif %}>
+                                    In Progress
+                                </option>
+                                <option value="true" {% if batch.is_completed %}selected{% endif %}>
+                                    Completed
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Add Production Entry Section -->
+                    <div class="mt-4">
+                        <h6>Add Production Entry</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Number of Bags</label>
+                                <input type="number" class="form-control" name="bag_count" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bags Weight (tons)</label>
+                                <input type="number" class="form-control" name="bags_weight" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('editBatchForm');
+    
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.d-flex'));
+                
+                // Close modal and refresh page after a short delay
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editBatchModal'));
+                modal.hide();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+            } else {
+                // Show error message
+                alert(data.error || 'An error occurred while updating the batch.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the batch.');
+        });
+    });
+});
+</script>
+{% endblock %}
