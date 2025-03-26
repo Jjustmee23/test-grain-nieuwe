@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -8,6 +8,45 @@ import csv
 from mill.models import City, Factory, Device, ProductionData
 
 @login_required
+def preview_data(request):
+    try:
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        cities = request.GET.get('cities', '').split(',')
+
+        # Convert dates
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        end_date = end_date.replace(hour=23, minute=59, second=59)
+
+        # Query the data with limit
+        production_data = ProductionData.objects.filter(
+            device__factory__city_id__in=cities,
+            created_at__range=(start_date, end_date)
+        ).select_related(
+            'device', 
+            'device__factory', 
+            'device__factory__city'
+        ).order_by('-created_at')[:100]  # Limit to latest 100 records
+
+        # Format data for JSON response
+        preview_data = [{
+            'created_at': data.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'city_name': data.device.factory.city.name,
+            'factory_name': data.device.factory.name,
+            'device_name': data.device.name,
+            'status': data.device.status,
+            'daily_production': data.daily_production,
+            'weekly_production': data.weekly_production,
+            'monthly_production': data.monthly_production,
+            'yearly_production': data.yearly_production
+        } for data in production_data]
+
+        return JsonResponse(preview_data, safe=False)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    
 def export_data(request):
     # Get cities available to the user
     if request.user.groups.filter(name='super_admin').exists():
@@ -98,4 +137,18 @@ def export_data(request):
     context = {
         'cities': cities,
     }
+    if request.method == 'GET':
+        # Get today's data for preview
+        today = timezone.now()
+        preview_data = ProductionData.objects.filter(
+            created_at__date=today.date()
+        ).select_related(
+            'device', 
+            'device__factory', 
+            'device__factory__city'
+        ).order_by('-created_at')[:50]  # Show latest 50 records
+
+        context.update({
+            'preview_data': preview_data,
+        })
     return render(request, 'mill/export_data.html', context)
