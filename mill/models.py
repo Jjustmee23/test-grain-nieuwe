@@ -86,7 +86,7 @@ class UserProfile(models.Model):
 
 class Batch(models.Model):
     batch_number = models.CharField(max_length=50, unique=True)
-    factory = models.ForeignKey(Factory, on_delete=models.CASCADE, related_name='batches')
+    factory = models.ForeignKey(Factory, on_delete=models.SET_NULL, null=True, related_name='batches')
     wheat_amount = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
@@ -113,7 +113,7 @@ class Batch(models.Model):
         validators=[MinValueValidator(0.0)],
         help_text="Actual flour output in tons"
     )
-    start_date = models.DateTimeField()
+    start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

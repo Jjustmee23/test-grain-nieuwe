@@ -27,14 +27,8 @@ class FactoryForm(forms.ModelForm):
 class BatchForm(forms.ModelForm):
     class Meta:
         model = Batch
-        fields = ['batch_number', 'factory', 'wheat_amount', 'waste_factor', 'start_date']
+        fields = ['batch_number', 'factory', 'wheat_amount', 'waste_factor']
         widgets = {
-            'start_date': forms.DateTimeInput(
-                attrs={
-                    'type': 'datetime-local',
-                    'class': 'form-control'
-                }
-            ),
             'waste_factor': forms.NumberInput(
                 attrs={
                     'min': '0',
