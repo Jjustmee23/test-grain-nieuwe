@@ -19,6 +19,7 @@ class DeviceAdmin(admin.ModelAdmin):
         }),
     )
     readonly_fields = ('created_at',)
+
 # admin.site.register(ProductionData)
 @admin.register(ProductionData)
 class ProductionDataAdmin(admin.ModelAdmin):
