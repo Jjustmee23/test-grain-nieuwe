@@ -11,117 +11,101 @@ def index(request):
 
 @login_required
 def dashboard(request):
+    # Get current user's timezone-aware datetime
+    current_datetime = timezone.now()
+    
     # Grab all cities
     if request.user.groups.filter(name='super_admin').exists():
         cities = City.objects.all()
     else:
         cities = request.user.userprofile.allowed_cities.all()    
     
-    # Read city & date from query
-    selected_city_id = request.GET.get('city')
-    selected_date_str = request.GET.get('date')
+    # Read cities & date from query
+    selected_cities_param = request.GET.get('cities')
+    selected_date_str = request.GET.get('date', current_datetime.strftime('%Y-%m-%d'))
 
-    # Validate selected city is in user's allowed cities
-    if selected_city_id:
+    # Handle multiple city selection
+    selected_city_ids = []
+    if selected_cities_param:
         try:
-            selected_city_id = int(selected_city_id)
-            if not cities.filter(id=selected_city_id).exists():
-                selected_city_id = cities.first().id if cities.exists() else None
+            selected_city_ids = [int(city_id) for city_id in selected_cities_param.split(',')]
+            # Validate selected cities are in user's allowed cities
+            selected_city_ids = [
+                city_id for city_id in selected_city_ids 
+                if cities.filter(id=city_id).exists()
+            ]
         except ValueError:
-            selected_city_id = cities.first().id if cities.exists() else None
-    else:
-        selected_city_id = cities.first().id if cities.exists() else None
+            selected_city_ids = []
 
-    # If no cities are available, return empty context
-    if not selected_city_id:
-        context = {
-            'cities': cities,
-            'factories': Factory.objects.none(),
-            'selected_city_id': None,
-            'current_date': timezone.now().date(),
-            'city_data': {
-                'daily_total': 0,
-                'weekly_total': 0,
-                'monthly_total': 0,
-                'yearly_total': 0
-            }
-        }
-        return render(request, 'mill/dashboard.html', context)
+    # If no cities are selected or invalid selection, use all available cities
+    if not selected_city_ids:
+        selected_city_ids = list(cities.values_list('id', flat=True))
 
-    # Validate/parse date; default to today if invalid
-    if selected_date_str:
-        try:
-            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-            if selected_date > timezone.now().date():
-                selected_date = timezone.now().date()
-        except ValueError:
-            selected_date = timezone.now().date()
-    else:
-        selected_date = timezone.now().date()
-    print(f"Final selected_date={selected_date}")
+    # Validate/parse date
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        if selected_date > current_datetime.date():
+            selected_date = current_datetime.date()
+    except ValueError:
+        selected_date = current_datetime.date()
 
-    # Filter factories
-    factories = Factory.objects.filter(city_id=selected_city_id)
-    print(f"Factories found: {[f.id for f in factories]}")
+    # Filter factories for selected cities
+    factories = Factory.objects.filter(city_id__in=selected_city_ids)
 
-    # Query Devices
-    devices = Device.objects.filter(factory__in=factories)
-    # One query for ProductionData across these factories
+    # Query Devices with select_related to reduce queries
+    devices = Device.objects.filter(factory__in=factories).select_related('factory')
+    
+    # Optimize production data query
     production_qs = ProductionData.objects.filter(
-    device__in=devices, created_at__date=selected_date).order_by('device_id', '-created_at')
-    # Dictionary to store the latest production data per device
+        device__in=devices, 
+        created_at__date=selected_date
+    ).select_related('device').order_by('device_id', '-created_at')
+
+    # Process production data
     latest_production = {}
     for production in production_qs:
         if production.device_id not in latest_production:
             latest_production[production.device_id] = production
-    # Attach sums to each factory; also build city-wide totals in Python
+
     # Initialize city-wide totals
     city_data = {
-        'daily_total': 0, 'weekly_total': 0,
-        'monthly_total': 0, 'yearly_total': 0
+        'daily_total': 0,
+        'weekly_total': 0,
+        'monthly_total': 0,
+        'yearly_total': 0
     }
-    print(f"latest_production: {latest_production}")
-    # Iterate through factories and attach the latest data
+
+    # Process factory data
     for factory in factories:
-        # Find the latest production data for any device in this factory
         factory_total = {
-            'daily_total': 0, 'weekly_total': 0,
-            'monthly_total': 0, 'yearly_total': 0
+            'daily_total': 0,
+            'weekly_total': 0,
+            'monthly_total': 0,
+            'yearly_total': 0
         }
 
-        for production in latest_production.values():
-            print(f"production.device.factory_id | daily_total: {production.device.factory_id} {factory_total['weekly_total']}")
-            if production.device.factory_id == factory.id:
+        factory_devices = [d for d in devices if d.factory_id == factory.id]
+        for device in factory_devices:
+            if device.id in latest_production:
+                production = latest_production[device.id]
                 factory_total['daily_total'] += production.daily_production or 0
                 factory_total['weekly_total'] += production.weekly_production or 0
                 factory_total['monthly_total'] += production.monthly_production or 0
                 factory_total['yearly_total'] += production.yearly_production or 0
 
         # Attach totals to the factory
-        factory.daily_total = factory_total['daily_total']
-        factory.weekly_total = factory_total['weekly_total']
-        factory.monthly_total = factory_total['monthly_total']
-        factory.yearly_total = factory_total['yearly_total']
+        for key, value in factory_total.items():
+            setattr(factory, key, value)
+            city_data[key] += value
 
-        # Accumulate into city totals
-        city_data['daily_total'] += factory.daily_total
-        city_data['weekly_total'] += factory.weekly_total
-        city_data['monthly_total'] += factory.monthly_total
-        city_data['yearly_total'] += factory.yearly_total
-
-        # Debugging output (optional)
-        print(f"Factory {factory.id} => "
-            f"D:{factory.daily_total} W:{factory.weekly_total} "
-            f"M:{factory.monthly_total} Y:{factory.yearly_total}")
-
-    # Debugging output for final city totals
-    print(f"Final city_data: {city_data}")
     context = {
         'cities': cities,
         'factories': factories,
-        'selected_city_id': int(selected_city_id) if selected_city_id else None,
+        'selected_city_ids': selected_city_ids,
         'current_date': selected_date,
         'city_data': city_data,
-        'is_public': request.user.groups.filter(name='public').exists()
+        'is_public': request.user.groups.filter(name='public').exists(),
+        'current_user': request.user.username,
+        'current_datetime': current_datetime.strftime('%Y-%m-%d %H:%M:%S')
     }
     return render(request, 'mill/dashboard.html', context)
