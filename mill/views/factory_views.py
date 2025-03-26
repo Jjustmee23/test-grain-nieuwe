@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+# from django.http import JsonResponse
 from mill.models import Factory, City, Device
 from django.contrib import messages
 from django.db import transaction
@@ -7,6 +8,10 @@ from mill.utils import allowed_cities, allowed_factories, is_allowed_city, is_al
 
 
 def manage_factory(request):
+    # Get search parameters from either GET or POST
+    search_query = request.GET.get('search', '').strip()
+    city_filter = request.GET.get('city_filter', '')
+    
     if request.method == "POST":
         action = request.POST.get('action')
         factory_id = request.POST.get('factory_id')
@@ -76,9 +81,9 @@ def manage_factory(request):
                 print(f"Factory '{factory_name}' has been added.")
                 messages.success(request, f"Factory '{factory_name}' has been added.")
 
-            elif action == "edit_factory":  # Changed from edit_factory_name to match template
+            elif action == "edit_factory":
                 print("Action: Edit factory name")
-                new_factory_name = request.POST.get('factory_name')  # Changed from new_factory_name to match template
+                new_factory_name = request.POST.get('factory_name')
                 factory = is_allowed_factory(request, factory_id)
                 
                 if not factory:
@@ -102,12 +107,23 @@ def manage_factory(request):
             messages.error(request, f"An unexpected error occurred: {str(e)}")
             print(f"Unexpected error: {str(e)}")
 
-        return redirect("manage_factory")
+        # Preserve search parameters in redirect
+        redirect_url = "manage_factory"
+        if search_query or city_filter:
+            redirect_url += f"?search={search_query}&city_filter={city_filter}"
+        return redirect(redirect_url)
 
     print("Rendering manage_factory template with cities and factories.")
 
     cities = allowed_cities(request)
     factories = allowed_factories(request)
+
+    # Apply filters if they exist
+    if search_query:
+        factories = factories.filter(name__icontains=search_query)
+    if city_filter:
+        factories = factories.filter(city_id=city_filter)
+
     factory_data = [
         {
             'id': factory.id,
@@ -118,4 +134,13 @@ def manage_factory(request):
         }
         for factory in factories
     ]
-    return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
+    
+    # Add search parameters to template context
+    context = {
+        'factories': factory_data,
+        'cities': cities,
+        'search_query': search_query,
+        'city_filter': city_filter,
+    }
+    
+    return render(request, 'mill/manage_factory.html', context)

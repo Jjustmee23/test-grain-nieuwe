@@ -15,7 +15,7 @@
 
     <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
 
-    
+
     <!-- Flash Messages -->
     {% if messages %}
         {% for message in messages %}
@@ -124,7 +124,27 @@
 
                 <!-- Existing Devices Section -->
     <h3>{% trans 'Existing Devices' %}</h3>
+    <h4>Filter by city</h4>
 
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="GET" action="{% url 'manage_devices' %}" class="form-inline">
+                <div class="input-group">
+                    <select name="city" class="form-select" onchange="this.form.submit()">
+                        <option value="">{% trans "All Cities" %}</option>
+                        {% for city in cities %}
+                            <option value="{{ city.id }}" {% if selected_city|stringformat:"s" == city.id|stringformat:"s" %}selected{% endif %}>
+                                {{ city.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if selected_city %}
+                        <a href="{% url 'manage_devices' %}" class="btn btn-outline-secondary">{% trans "Clear" %}</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="accordion-body">
         <table class="table table-striped">
             <thead>

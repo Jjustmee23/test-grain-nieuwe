@@ -1,14 +1,43 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
 from mill import views, apis
 from django.conf.urls import handler404
+from django.contrib.auth import views as auth_views
+# from mill. import profile_views
+
+from mill.views import (
+    BatchListView, BatchCreateView, BatchUpdateView, BatchDetailView,
+    sensor_data_receiver, sensor_status,
+    analytics_dashboard, batch_performance,
+    AlertListView, alert_dashboard, acknowledge_alert, profile_views
+)
 
 urlpatterns = [
-    # Admin
+    # Batch URLs
+    path('batches/', BatchListView.as_view(), name='batch-list'),
+    path('batches/create/', BatchCreateView.as_view(), name='batch-create'),
+    path('batches/<int:pk>/', BatchDetailView.as_view(), name='batch-detail'),
+    path('batches/<int:pk>/update/', BatchUpdateView.as_view(), name='batch-update'),
+    
+    # Sensor URLs
+    path('sensor/data/', sensor_data_receiver, name='sensor-data'),
+    path('sensor/status/<str:device_id>/', sensor_status, name='sensor-status'),
+    
+    # Analytics URLs
+    path('analytics/', analytics_dashboard, name='analytics-dashboard'),
+    path('analytics/batch/<int:batch_id>/', batch_performance, name='batch-performance'),
+    
+    # Alert URLs
+    path('alerts/', AlertListView.as_view(), name='alert-list'),
+    path('alerts/dashboard/', alert_dashboard, name='alert-dashboard'),
+    path('alerts/<int:alert_id>/acknowledge/', acknowledge_alert, name='acknowledge-alert'),
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
     path('super-admin/', admin.site.urls),
+    path('', include('mill.urls')),  # Include the mill app URLs
+    path('change-password/', views.change_password, name='change_password'),
+    path('profile/manage/', profile_views.manage_profile, name='manage_profile'),
+
 
     # Authentication
     # path('login/', auth_views.LoginView.as_view(template_name='mill/login.html'), name='login'),
@@ -35,6 +64,7 @@ urlpatterns = [
     path('manage-devices/', views.manage_devices, name='manage_devices'),
     path('manage-tables/', views.manage_tables, name='manage_tables'),
     path('manage-factory/', views.manage_factory, name='manage_factory'),
+    # path('manage-batch/', views.manage_batches, name='manage_batches'),
     path('manage-city/', views.manage_city, name='manage_city'),
 
     # Device operations
