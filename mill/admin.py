@@ -49,8 +49,8 @@ class CityAdmin(admin.ModelAdmin):
 # admin.site.register(Factory)
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'status', 'error', 'created_at')
-    list_filter = ('status', 'error', 'city')
+    list_display = ('name', 'city', 'status', 'error','group', 'created_at')
+    list_filter = ('status', 'error', 'city', 'group')
     search_fields = ('name',)
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)

@@ -16,10 +16,17 @@ class City(models.Model):
 
 # Factory model
 class Factory(models.Model):
+    GROUP_CHOICES = [
+        ('public', 'Public'),
+        ('private', 'Private'),
+        ('commercial', 'Commercial')
+    ]
+    
     name = models.CharField(max_length=255)
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, related_name='factories')
     status = models.BooleanField(default=True)
     error = models.BooleanField(default=False)
+    group = models.CharField(max_length=30, choices=GROUP_CHOICES, default='public')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -184,4 +191,4 @@ class Alert(models.Model):
 
     def __str__(self):
         return f"Alert: {self.alert_type} for Batch {self.batch.batch_number}"
-    
+
