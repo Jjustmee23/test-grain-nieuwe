@@ -4,7 +4,26 @@ from django.contrib import messages
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from mill.utils import allowed_cities, allowed_factories, is_allowed_city, is_allowed_factory
+from django.utils.translation import gettext as _
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
+def log_activity(user, obj, action_flag, change_message):
+    """Helper function to log user activity"""
+    try:
+        content_type = ContentType.objects.get_for_model(obj)
+        LogEntry.objects.create(
+            user_id=user.id,
+            content_type_id=content_type.id,
+            object_id=str(obj.id),
+            object_repr=str(obj),
+            action_flag=action_flag,
+            change_message=change_message,
+            action_time=timezone.now()
+        )
+    except Exception as e:
+        print(f"Error logging activity: {e}")
 
 def manage_factory(request):
     if request.method == "POST":
@@ -18,17 +37,19 @@ def manage_factory(request):
                     factory = Factory.objects.get(id=factory_id)
                     device = Device.objects.select_for_update().get(id=device_id)
                     
-                    print(f"Before linking - Device {device.id} factory: {device.factory}")
-                    
-                    # Force update the device's factory
+                    old_factory = device.factory
                     Device.objects.filter(id=device_id).update(factory=factory)
-                    
-                    # Refresh from database to verify
                     device.refresh_from_db()
-                    print(f"After linking - Device {device.id} factory: {device.factory}")
                     
                     if device.factory == factory:
                         messages.success(request, f"Device '{device.name}' successfully linked to factory '{factory.name}'")
+                        # Log device linking
+                        log_activity(
+                            user=request.user,
+                            obj=device,
+                            action_flag=CHANGE,
+                            change_message=f"Linked device '{device.name}' to factory '{factory.name}'"
+                        )
                     else:
                         messages.error(request, "Failed to link device to factory")
 
@@ -37,32 +58,44 @@ def manage_factory(request):
                     device = Device.objects.select_for_update().get(id=device_id)
                     old_factory = device.factory
                     
-                    # Force update to remove factory
-                    Device.objects.filter(id=device_id).update(factory=None)
-                    
-                    # Verify the update
-                    device.refresh_from_db()
-                    if device.factory is None:
-                        messages.success(request, f"Device '{device.name}' successfully unlinked from factory")
-                    else:
-                        messages.error(request, "Failed to unlink device from factory")
+                    if old_factory:  # Only log if device was actually linked to a factory
+                        old_factory_name = old_factory.name
+                        Device.objects.filter(id=device_id).update(factory=None)
+                        device.refresh_from_db()
+                        
+                        if device.factory is None:
+                            messages.success(request, f"Device '{device.name}' successfully unlinked from factory")
+                            # Log device unlinking
+                            log_activity(
+                                user=request.user,
+                                obj=device,
+                                action_flag=CHANGE,
+                                change_message=f"Unlinked device '{device.name}' from factory '{old_factory_name}'"
+                            )
+                        else:
+                            messages.error(request, "Failed to unlink device from factory")
 
             elif action == "remove_factory":
-                print("Action: Remove factory")
                 factory = is_allowed_factory(request, factory_id)
                 if not factory:
                     messages.error(request, "You are not allowed to remove this factory.")
                     return redirect("manage_factory")
-                print(f"Factory found: {factory.name}. Removing now...")
+                
+                factory_name = factory.name
+                # Log factory deletion before deleting
+                log_activity(
+                    user=request.user,
+                    obj=factory,
+                    action_flag=DELETION,
+                    change_message=f"Deleted factory '{factory_name}'"
+                )
+                
                 factory.delete()
-                print("Factory removed successfully.")
                 messages.success(request, _("Factory removed successfully."))
 
             elif action == "add_factory":
-                print("Action: Add factory")
                 factory_name = request.POST.get('factory_name')
                 city_id = request.POST.get('city_id')
-                print(f"Factory Name: {factory_name}, City ID: {city_id}")
 
                 city = is_allowed_city(request, city_id)
                 if not city:
@@ -71,9 +104,16 @@ def manage_factory(request):
 
                 factory = Factory(name=factory_name)
                 factory.city = city
-                print(f"City found: {city.name}. Assigning to new factory.")
                 factory.save()
-                print(f"Factory '{factory_name}' has been added.")
+                
+                # Log factory creation
+                log_activity(
+                    user=request.user,
+                    obj=factory,
+                    action_flag=ADDITION,
+                    change_message=f"Created new factory '{factory_name}' in city '{city.name}'"
+                )
+                
                 messages.success(request, f"Factory '{factory_name}' has been added.")
 
         except ObjectDoesNotExist as e:
@@ -84,8 +124,6 @@ def manage_factory(request):
             print(f"Unexpected error: {str(e)}")
 
         return redirect("manage_factory")
-
-    print("Rendering manage_factory template with cities and factories.")
 
     cities = allowed_cities(request)
     factories = allowed_factories(request)
@@ -100,4 +138,3 @@ def manage_factory(request):
         for factory in factories
     ]
     return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
-
