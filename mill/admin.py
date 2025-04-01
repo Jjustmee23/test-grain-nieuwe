@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
 # Register your models here.
-from .models import Device, ProductionData, City, Factory, UserProfile
+from .models import Device, Notification, NotificationCategory, ProductionData, City, Factory, UserProfile
 
 admin.site.site_header = 'Mill Admin'
 admin.site.site_title = 'Mill Admin'
@@ -27,8 +27,8 @@ class LogEntryAdmin(admin.ModelAdmin):
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'status','selected_counter', 'factory', 'created_at')
-    list_filter = ('status', 'factory')
-    search_fields = ('id', 'name')
+    list_filter = ('status', 'factory', 'factory__city')  # Added factory__city to enable city filtering
+    search_fields = ('id', 'name', 'factory__city__name')  # Added factory__city__name to enable city name searching
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     fieldsets = (
@@ -37,6 +37,7 @@ class DeviceAdmin(admin.ModelAdmin):
         }),
     )
     readonly_fields = ('created_at',)
+
 # admin.site.register(ProductionData)
 @admin.register(ProductionData)
 class ProductionDataAdmin(admin.ModelAdmin):
@@ -66,8 +67,8 @@ class CityAdmin(admin.ModelAdmin):
 # admin.site.register(Factory)
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'status', 'error', 'created_at')
-    list_filter = ('status', 'error', 'city')
+    list_display = ('name', 'city', 'status', 'error','group', 'created_at')
+    list_filter = ('status', 'error', 'city', 'group')
     search_fields = ('name',)
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
@@ -81,3 +82,22 @@ class FactoryAdmin(admin.ModelAdmin):
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user',)
     filter_horizontal = ('allowed_cities',) 
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'category', 'message', 'read', 'timestamp')
+    list_filter = ('category', 'read', 'timestamp')
+    search_fields = ('user', 'message')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'category', 'message', 'read', 'timestamp')
+        }),
+    )
+    readonly_fields = ('timestamp',)
+
+@admin.register(NotificationCategory)
+class NotificationCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name','description')
+    search_fields = ('name','description')

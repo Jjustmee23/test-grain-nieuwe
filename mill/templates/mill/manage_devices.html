@@ -3,6 +3,7 @@
 {% load i18n %}
 {% block title %}Manage Devices{% endblock %}
 
+
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/admin.css' %}">
 {% endblock %}
@@ -14,7 +15,7 @@
 
     <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
 
-    
+
     <!-- Flash Messages -->
     {% if messages %}
         {% for message in messages %}
@@ -51,6 +52,7 @@
                     <tr>
                         <th>{% trans "Serial Number" %}</th>
                         <th>{% trans "Device Name" %}</th>
+                        <th>{% trans "City" %}</th>
                         <th>{% trans "Status" %}</th>
                         <th>{% trans "Selected Counter" %}</th>
                         <th>{% trans "Actions" %}</th>
@@ -63,6 +65,13 @@
                             <tr id="device-row-{{ device.id }}">
                                 <td>{{ device.id }}</td>
                                 <td>{{ device.name }}</td>
+                                <td>
+                                    {% if device.city %}
+                                        {{ device.city.name }}
+                                    {% else %}
+                                        {% trans "Not Assigned" %}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
                                         {% csrf_token %}
@@ -115,13 +124,34 @@
 
                 <!-- Existing Devices Section -->
     <h3>{% trans 'Existing Devices' %}</h3>
+    <h4>Filter by city</h4>
 
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="GET" action="{% url 'manage_devices' %}" class="form-inline">
+                <div class="input-group">
+                    <select name="city" class="form-select" onchange="this.form.submit()">
+                        <option value="">{% trans "All Cities" %}</option>
+                        {% for city in cities %}
+                            <option value="{{ city.id }}" {% if selected_city|stringformat:"s" == city.id|stringformat:"s" %}selected{% endif %}>
+                                {{ city.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if selected_city %}
+                        <a href="{% url 'manage_devices' %}" class="btn btn-outline-secondary">{% trans "Clear" %}</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="accordion-body">
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>{% trans "Serial Number" %}</th>
                     <th>{% trans "Device Name" %}</th>
+                    <th>{% trans "City" %}</th>
                     <th>{% trans "Status" %}</th>
                     <th>{% trans "Selected Counter" %}</th>
                     <th>{% trans "Actions" %}</th>
@@ -131,9 +161,17 @@
             <tbody id="existing-devices-table-body">
                 {% for device in existing_devices %}
                     {% if device.name != device.id %}
+                    
                         <tr id="device-row-{{ device.id }}">
                             <td>{{ device.id }}</td>
                             <td>{{ device.name }}</td>
+                            <td>
+                                {% if device.city %}
+                                    {{ device.city.name }}
+                                {% else %}
+                                    {% trans "Not Assigned" %}
+                                {% endif %}
+                            </td>
                             <td>
                                 <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
                                     {% csrf_token %}
@@ -178,6 +216,7 @@
                                 <button type="button" class="btn btn-primary btn-sm" onclick="showPairDeviceModal('{{ device.id }}')">{% trans "Pair" %}</button>
                             </td> {% endcomment %}
                         </tr>
+                        
                     {% endif %}
                 {% endfor %}
             </tbody>

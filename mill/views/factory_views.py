@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+# from django.http import JsonResponse
 from mill.models import Factory, City, Device
 from django.contrib import messages
 from django.db import transaction
@@ -26,6 +27,10 @@ def log_activity(user, obj, action_flag, change_message):
         print(f"Error logging activity: {e}")
 
 def manage_factory(request):
+    # Get search parameters from either GET or POST
+    search_query = request.GET.get('search', '').strip()
+    city_filter = request.GET.get('city_filter', '')
+    
     if request.method == "POST":
         action = request.POST.get('action')
         factory_id = request.POST.get('factory_id')
@@ -116,6 +121,25 @@ def manage_factory(request):
                 
                 messages.success(request, f"Factory '{factory_name}' has been added.")
 
+            elif action == "edit_factory":
+                print("Action: Edit factory name")
+                new_factory_name = request.POST.get('factory_name')
+                factory = is_allowed_factory(request, factory_id)
+                
+                if not factory:
+                    messages.error(request, "You are not allowed to edit this factory.")
+                    return redirect("manage_factory")
+
+                if not new_factory_name or new_factory_name.strip() == "":
+                    messages.error(request, "Factory name cannot be empty.")
+                    return redirect("manage_factory")
+
+                print(f"Factory found: {factory.name}. Updating name to {new_factory_name}.")
+                factory.name = new_factory_name.strip()
+                factory.save()
+                print(f"Factory name updated to '{new_factory_name}'.")
+                messages.success(request, f"Factory name updated to '{new_factory_name}'.")
+
         except ObjectDoesNotExist as e:
             messages.error(request, f"Error: {str(e)}")
             print(f"Error occurred: {str(e)}")
@@ -123,10 +147,21 @@ def manage_factory(request):
             messages.error(request, f"An unexpected error occurred: {str(e)}")
             print(f"Unexpected error: {str(e)}")
 
-        return redirect("manage_factory")
+        # Preserve search parameters in redirect
+        redirect_url = "manage_factory"
+        if search_query or city_filter:
+            redirect_url += f"?search={search_query}&city_filter={city_filter}"
+        return redirect(redirect_url)
 
     cities = allowed_cities(request)
     factories = allowed_factories(request)
+
+    # Apply filters if they exist
+    if search_query:
+        factories = factories.filter(name__icontains=search_query)
+    if city_filter:
+        factories = factories.filter(city_id=city_filter)
+
     factory_data = [
         {
             'id': factory.id,
@@ -136,5 +171,14 @@ def manage_factory(request):
             'devices': Device.objects.filter(factory=factory)
         }
         for factory in factories
-    ]
-    return render(request, 'mill/manage_factory.html', {'factories': factory_data, 'cities': cities,})
+    ]   
+    # Add search parameters to template context
+    context = {
+        'factories': factory_data,
+        'cities': cities,
+        'search_query': search_query,
+        'city_filter': city_filter,
+    }
+    
+    return render(request, 'mill/manage_factory.html', context)
+
