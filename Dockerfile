@@ -18,7 +18,7 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Run migrations during container build (not recommended for production)
-RUN python manage.py makemigrations && python manage.py migrate
+RUN python manage.py makemigrations 
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
