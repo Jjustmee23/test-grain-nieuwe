@@ -2,7 +2,19 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from mill.models import Device , City
 from django.contrib import messages
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
+from django.contrib.contenttypes.models import ContentType
 
+def log_activity(user, obj, action_flag, change_message):
+    """Helper function to log user activity"""
+    LogEntry.objects.log_action(
+        user_id=user.id,
+        content_type_id=ContentType.objects.get_for_model(obj).pk,
+        object_id=obj.pk,
+        object_repr=str(obj),
+        action_flag=action_flag,
+        change_message=change_message
+    )
 # Function to get the highest counter value for the device for each day
 
 def manage_devices(request):

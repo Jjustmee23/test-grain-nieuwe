@@ -1,10 +1,28 @@
 from django.contrib import admin
-
+from django.contrib.admin.models import LogEntry
 # Register your models here.
 from .models import Device, Notification, NotificationCategory, ProductionData, City, Factory, UserProfile
 
 admin.site.site_header = 'Mill Admin'
 admin.site.site_title = 'Mill Admin'
+
+# Add LogEntry to admin panel
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ['action_time', 'user', 'content_type', 'object_repr', 'action_flag', 'change_message']
+    list_filter = ['action_time', 'user', 'content_type', 'action_flag']
+    search_fields = ['object_repr', 'change_message']
+    date_hierarchy = 'action_time'
+    readonly_fields = [field.name for field in LogEntry._meta.fields]
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
 # Add all fields of Device model to the admin panel.
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
