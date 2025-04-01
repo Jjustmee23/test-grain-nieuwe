@@ -192,3 +192,34 @@ class Alert(models.Model):
     def __str__(self):
         return f"Alert: {self.alert_type} for Batch {self.batch.batch_number}"
 
+# models.py
+from django.db import models
+from django.contrib.auth.models import User
+
+class NotificationCategory(models.Model):
+    name = models.CharField(max_length=50)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+
+class UserNotificationPreference(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    enabled_category = models.ManyToManyField(NotificationCategory, blank=True)
+    receive_in_app = models.BooleanField(default=True)
+    receive_email = models.BooleanField(default=False)
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.ForeignKey(NotificationCategory, on_delete=models.CASCADE)
+    message = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
+    link = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.category}: {self.message}"
+
+    class Meta:
+        ordering = ['-timestamp']
