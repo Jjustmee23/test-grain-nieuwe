@@ -40,6 +40,10 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://grain05.midaweb.be',
     'https://www.grain05.midaweb.be',
+    'https://mathanti.com',
+    'https://www.mathanti.com',
+    'https://tasneehobob.com',
+    'https://www.tasneehobob.com',
 ]
 
 # Application definition
