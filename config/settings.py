@@ -31,11 +31,19 @@ ALLOWED_HOSTS = [
     'www.grain05.midaweb.be',
     '127.0.0.1',  # If needed for local development
     'localhost',  # If needed for local development
+    'tasneehobob.com',
+    'www.tasneehobob.com',
+    'mathanti.com',
+    'www.mathanti.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://grain05.midaweb.be',
     'https://www.grain05.midaweb.be',
+    'https://mathanti.com',
+    'https://www.mathanti.com',
+    'https://tasneehobob.com',
+    'https://www.tasneehobob.com',
 ]
 
 # Application definition
@@ -67,7 +75,10 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Add this line
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'mill', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,7 +86,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.i18n',  # Add this line
+                'django.template.context_processors.i18n',
+                # 'mill.context_processors.notifications',  
             ],
         },
     },

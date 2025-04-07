@@ -57,6 +57,30 @@
     </form>
 
     <h3>{% trans 'Existing Factories' %}</h3>
+    <!-- Search and Filter Section -->
+<div class="mb-4">
+    <h4>{% trans 'Search and Filter' %}</h4>
+    <form method="GET" class="row g-3">
+        <div class="col-md-4">
+            <input type="text" class="form-control" name="search" 
+                   value="{{ search_query }}" placeholder="{% trans 'Search by factory name...' %}">
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" name="city_filter">
+                <option value="">{% trans 'All Cities' %}</option>
+                {% for city in cities %}
+                    <option value="{{ city.id }}" {% if city.id|stringformat:"s" == city_filter %}selected{% endif %}>
+                        {{ city.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">{% trans 'Search' %}</button>
+            <a href="{% url 'manage_factory' %}" class="btn btn-secondary">{% trans 'Clear' %}</a>
+        </div>
+    </form>
+</div>
     <table class="table">
         <thead>
             <tr>

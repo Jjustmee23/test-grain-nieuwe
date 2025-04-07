@@ -1,34 +1,17 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from .models import Factory
-from mill.models import Batch
+from models import Batch
 
-
-
-class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password1', 'password2')
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        if commit:
-            user.save()
-        return user
-
-class FactoryForm(forms.ModelForm):
-    class Meta:
-        model = Factory
-        fields = ['name', 'city', 'status']
 class BatchForm(forms.ModelForm):
     class Meta:
         model = Batch
-        fields = ['batch_number', 'factory', 'wheat_amount', 'waste_factor']
+        fields = ['batch_number', 'factory', 'wheat_amount', 'waste_factor', 'start_date']
         widgets = {
+            'start_date': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control'
+                }
+            ),
             'waste_factor': forms.NumberInput(
                 attrs={
                     'min': '0',

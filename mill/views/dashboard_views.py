@@ -5,6 +5,7 @@ from mill.utils import calculate_start_time, calculate_stop_time, check_factory_
 from mill.models import City, Factory, Device, ProductionData
 from django.db.models import Sum
 from datetime import datetime
+from mill.utils import allowed_cities
 
 def index(request):
     return render(request, 'mill/index.html')

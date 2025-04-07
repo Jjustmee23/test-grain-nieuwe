@@ -132,7 +132,9 @@ def is_allowed_factory(request, factory_id):
     factory = get_object_or_404(Factory, id=factory_id)
     if request.user.groups.filter(name='Superadmin').exists():
         return factory
-    if request.user.userprofile.allowed_cities.filter(id=factory.city.id).exists():
+    # if request.user.userprofile.allowed_cities.filter(id=factory.city.id).exists():
+    #     return factory
+    if request.user.userprofile.allowed_factories.filter(id=factory.id).exists():
         return factory
     return None
     
@@ -150,10 +152,30 @@ def allowed_cities(request):
         return City.objects.all()
     print(request.user.userprofile.allowed_cities.all())
     return request.user.userprofile.allowed_cities.all()
+
 def allowed_factories(request):
     if request.user.groups.filter(name='Superadmin').exists():
         print("Superadmin detected. Returning all factories.")
         return Factory.objects.all()
     print("Returning allowed factories.")
-    print(request.user.userprofile.allowed_cities.all())
-    return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())
+    # print(request.user.userprofile.allowed_cities.all())
+    # return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())
+    return Factory.objects.filter(id__in=request.user.userprofile.allowed_factories.all())
+
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+def send_notification_email(user, notification):
+    subject = f"New Notification: {notification.category.name}"
+    message = f"""
+    {notification.message}
+    View details: {notification.link or ''}
+    """
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
+    )
