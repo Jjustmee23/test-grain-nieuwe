@@ -63,6 +63,7 @@ def create_user(request):
                 team=request.user.username,
             )
             new_user_profile.allowed_cities.set(creater_profile.allowed_cities.all())
+            new_user_profile.allowed_factories.set(creater_profile.allowed_factories.all())
             new_user_profile.save()
             messages.success(request, f"User created {new_user.username}")
         else:

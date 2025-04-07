@@ -80,6 +80,7 @@ class UserProfile(models.Model):
     team = models.CharField(max_length=100, blank=True, null=True)
     # Only for non-super_admin users (admins and public_users)
     allowed_cities = models.ManyToManyField(City, blank=True)
+    allowed_factories = models.ManyToManyField(Factory, blank=True)
 
     def __str__(self):
         return f"Profile for {self.user.username}"
