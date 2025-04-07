@@ -12,6 +12,7 @@ from .admin_views import change_password
 # from .admin_views import *
 from .city_views import manage_city
 from .stats_views import view_statistics
+from .export_views import export_data, preview_data
 
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import login

@@ -1,0 +1,207 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Export Data{% endblock %}
+
+{% block content %}
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                {% if not user.groups.all.0.name == 'Public' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container my-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Export Data</h4>
+        </div>
+        <div class="card-body">
+            <form id="exportForm" method="post" action="{% url 'export_data' %}">
+                {% csrf_token %}
+                <!-- Date Range Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+
+                <!-- City Selection -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Select Cities</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="selectAllCities" onchange="handleSelectAll()">
+                                    <label class="form-check-label" for="selectAllCities">
+                                        Select All Cities
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="city-checkboxes">
+                                    {% for city in cities %}
+                                    <div class="form-check">
+                                        <input class="form-check-input city-checkbox" type="checkbox" 
+                                               name="cities" value="{{ city.id }}" 
+                                               id="city{{ city.id }}">
+                                        <label class="form-check-label" for="city{{ city.id }}">
+                                            {{ city.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Data Preview Card -->
+<div class="card">
+    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Data Preview</h4>
+        <span class="badge bg-light text-dark">
+            Showing latest data for selected cities
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>City</th>
+                        <th>Factory</th>
+                        <th>Device</th>
+                        <th>Status</th>
+                        <th>Daily</th>
+                        <th>Weekly</th>
+                        <th>Monthly</th>
+                        <th>Yearly</th>
+                    </tr>
+                </thead>
+                <tbody id="previewData">
+                    {% if preview_data %}
+                        {% for item in preview_data %}
+                        <tr>
+                            <td>{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ item.device.factory.city.name }}</td>
+                            <td>{{ item.device.factory.name }}</td>
+                            <td>{{ item.device.name }}</td>
+                            <td>
+                                {% if item.device.status %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.daily_production }}</td>
+                            <td>{{ item.weekly_production }}</td>
+                            <td>{{ item.monthly_production }}</td>
+                            <td>{{ item.yearly_production }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center">Select date range and cities to preview data</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% if preview_data %}
+            <div class="text-muted mt-2">
+                <small>Showing {{ preview_data|length }} records. Export CSV to get complete data.</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+
+<script>
+function handleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCities');
+    const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+    
+    cityCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set min date for date inputs to prevent selecting future dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start_date').max = today;
+    document.getElementById('end_date').max = today;
+    
+    // Validate date range
+    document.getElementById('exportForm').onsubmit = function(e) {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const selectedCities = document.querySelectorAll('.city-checkbox:checked');
+        
+        if (startDate > endDate) {
+            alert('Start date cannot be later than end date');
+            e.preventDefault();
+            return false;
+        }
+        
+        if (selectedCities.length === 0) {
+            alert('Please select at least one city');
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    };
+});
+</script>
+
+<style>
+.city-checkboxes {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.form-check {
+    margin-bottom: 8px;
+}
+</style>
+{% endblock %}
