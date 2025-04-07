@@ -81,7 +81,7 @@ class FactoryAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user',)
-    filter_horizontal = ('allowed_cities',) 
+    filter_horizontal = ('allowed_cities','allowed_factories') 
 
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
