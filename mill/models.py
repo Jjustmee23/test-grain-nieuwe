@@ -74,7 +74,38 @@ class TransactionData(models.Model):
         ]
     def __str__(self):
         return f"Production Data for {self.device.name} at {self.created_at}"
+from django.db import models
 
+class RawData(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='raw_data')
+    timestamp = models.DateTimeField(null=True, blank=True)
+    mobile_signal = models.IntegerField(null=True, blank=True)
+    dout_enabled = models.CharField(max_length=255, null=True, blank=True)
+    dout = models.CharField(max_length=255, null=True, blank=True)
+    di_mode = models.CharField(max_length=255, null=True, blank=True)
+    din = models.CharField(max_length=255, null=True, blank=True)
+    counter_1 = models.IntegerField(null=True, blank=True)
+    counter_2 = models.IntegerField(null=True, blank=True)
+    counter_3 = models.IntegerField(null=True, blank=True)
+    counter_4 = models.IntegerField(null=True, blank=True)
+    ain_mode = models.CharField(max_length=255, null=True, blank=True)
+    ain1_value = models.FloatField(null=True, blank=True)
+    ain2_value = models.FloatField(null=True, blank=True)
+    ain3_value = models.FloatField(null=True, blank=True)
+    ain4_value = models.FloatField(null=True, blank=True)
+    ain5_value = models.FloatField(null=True, blank=True)
+    ain6_value = models.FloatField(null=True, blank=True)
+    ain7_value = models.FloatField(null=True, blank=True)
+    ain8_value = models.FloatField(null=True, blank=True)
+    start_flag = models.IntegerField(null=True, blank=True)
+    type = models.IntegerField(null=True, blank=True)
+    length = models.IntegerField(null=True, blank=True)
+    version = models.IntegerField(null=True, blank=True)
+    end_flag = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.device} - {self.timestamp}"
+    
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     team = models.CharField(max_length=100, blank=True, null=True)
