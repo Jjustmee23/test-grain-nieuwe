@@ -51,6 +51,24 @@
                     </div>
                 </div>
 
+                <!-- Export Format Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="export_format" class="form-label">Export Format</label>
+                        <div class="btn-group w-100" role="group" aria-label="Export format selection">
+                            <input type="radio" class="btn-check" name="export_format" id="csv_format" value="csv" checked>
+                            <label class="btn btn-outline-primary" for="csv_format">
+                                <i class="fas fa-file-csv me-2"></i>CSV
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="export_format" id="pdf_format" value="pdf">
+                            <label class="btn btn-outline-primary" for="pdf_format">
+                                <i class="fas fa-file-pdf me-2"></i>PDF
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- City Selection -->
                 <div class="row mb-3">
                     <div class="col-12">
@@ -84,75 +102,75 @@
                 <!-- Buttons -->
                 <div class="row">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Export CSV
+                        <button type="submit" class="btn btn-primary" id="exportButton">
+                            <i class="fas fa-download me-2"></i><span id="exportButtonText">Export Data</span>
                         </button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
-</div>
-<!-- Data Preview Card -->
-<div class="card">
-    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Data Preview</h4>
-        <span class="badge bg-light text-dark">
-            Showing latest data for selected cities
-        </span>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>City</th>
-                        <th>Factory</th>
-                        <th>Device</th>
-                        <th>Status</th>
-                        <th>Daily</th>
-                        <th>Weekly</th>
-                        <th>Monthly</th>
-                        <th>Yearly</th>
-                    </tr>
-                </thead>
-                <tbody id="previewData">
-                    {% if preview_data %}
-                        {% for item in preview_data %}
-                        <tr>
-                            <td>{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
-                            <td>{{ item.device.factory.city.name }}</td>
-                            <td>{{ item.device.factory.name }}</td>
-                            <td>{{ item.device.name }}</td>
-                            <td>
-                                {% if item.device.status %}
-                                    <span class="badge bg-success">Active</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.daily_production }}</td>
-                            <td>{{ item.weekly_production }}</td>
-                            <td>{{ item.monthly_production }}</td>
-                            <td>{{ item.yearly_production }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="9" class="text-center">Select date range and cities to preview data</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+
+    <!-- Data Preview Card -->
+    <div class="card mt-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Data Preview</h4>
+            <span class="badge bg-light text-dark">
+                Showing latest data for selected cities
+            </span>
         </div>
-        {% if preview_data %}
-            <div class="text-muted mt-2">
-                <small>Showing {{ preview_data|length }} records. Export CSV to get complete data.</small>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>City</th>
+                            <th>Factory</th>
+                            <th>Device</th>
+                            <th>Status</th>
+                            <th>Daily</th>
+                            <th>Weekly</th>
+                            <th>Monthly</th>
+                            <th>Yearly</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewData">
+                        {% if preview_data %}
+                            {% for item in preview_data %}
+                            <tr>
+                                <td>{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ item.device.factory.city.name }}</td>
+                                <td>{{ item.device.factory.name }}</td>
+                                <td>{{ item.device.name }}</td>
+                                <td>
+                                    {% if item.device.status %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.daily_production }}</td>
+                                <td>{{ item.weekly_production }}</td>
+                                <td>{{ item.monthly_production }}</td>
+                                <td>{{ item.yearly_production }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center">Select date range and cities to preview data</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-        {% endif %}
+            {% if preview_data %}
+                <div class="text-muted mt-2">
+                    <small>Showing {{ preview_data|length }} records. Export to get complete data.</small>
+                </div>
+            {% endif %}
+        </div>
     </div>
-</div>
 </div>
 
 <script>
@@ -171,7 +189,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('start_date').max = today;
     document.getElementById('end_date').max = today;
     
-    // Validate date range
+    // Update export button text based on format selection
+    const updateExportButtonText = () => {
+        const format = document.querySelector('input[name="export_format"]:checked').value;
+        const exportButtonText = document.getElementById('exportButtonText');
+        exportButtonText.textContent = `Export ${format.toUpperCase()}`;
+    };
+
+    // Add event listeners for format selection
+    document.querySelectorAll('input[name="export_format"]').forEach(radio => {
+        radio.addEventListener('change', updateExportButtonText);
+    });
+
+    // Initial button text update
+    updateExportButtonText();
+    
+    // Validate form submission
     document.getElementById('exportForm').onsubmit = function(e) {
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
@@ -188,6 +221,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             return false;
         }
+
+        // Show loading state
+        const exportButton = document.getElementById('exportButton');
+        const exportButtonText = document.getElementById('exportButtonText');
+        const format = document.querySelector('input[name="export_format"]:checked').value;
+        
+        exportButton.disabled = true;
+        exportButtonText.textContent = `Generating ${format.toUpperCase()}...`;
         
         return true;
     };
@@ -202,6 +243,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .form-check {
     margin-bottom: 8px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-group .btn {
+    flex: 1;
+    border-radius: 4px !important;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-responsive {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+/* Loading state styles */
+#exportButton:disabled {
+    opacity: 0.7;
+    cursor: wait;
 }
 </style>
 {% endblock %}
