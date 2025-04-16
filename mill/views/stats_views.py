@@ -9,6 +9,9 @@ from mill.utils import calculate_chart_data, is_allowed_factory
 
 @login_required
 def view_statistics(request, factory_id):
+    context = {
+        'current_year': datetime.now().year,
+    }
     # Read factory & date from query
     selected_date_str = request.GET.get('date')
     
@@ -64,5 +67,5 @@ def view_statistics(request, factory_id):
         'yearly_previous': 0,
         # 'chart_data': chart_data,
     }    
-    # Render the HTML template with the context
+      # Render the HTML template with the context
     return render(request, 'mill/view_statistics.html', context)
