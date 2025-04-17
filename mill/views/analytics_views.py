@@ -1,0 +1,68 @@
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Avg, F
+from django.db.models.functions import TruncDate, TruncHour
+from mill.models import Batch, FlourBagCount
+from datetime import datetime, timedelta
+from django.shortcuts import get_object_or_404
+
+
+@login_required
+def analytics_dashboard(request):
+    # Get date range from request or default to last 30 days
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    date_range = request.GET.get('date_range', '30')  # default to 30 days
+
+    # Get factory filter
+    factory_id = request.GET.get('factory')
+
+    # Base queryset
+    batches = Batch.objects.filter(
+        created_at__range=[start_date, end_date]
+    )
+    
+    if factory_id:
+        batches = batches.filter(factory_id=factory_id)
+
+    # Calculate KPIs
+    kpis = {
+        'total_batches': batches.count(),
+        'total_wheat': batches.aggregate(Sum('wheat_amount'))['wheat_amount__sum'] or 0,
+        'total_flour': batches.aggregate(Sum('actual_flour_output'))['actual_flour_output__sum'] or 0,
+        'average_yield': batches.annotate(
+            yield_ratio=(F('actual_flour_output') / F('wheat_amount') * 100)
+        ).aggregate(Avg('yield_ratio'))['yield_ratio__avg'] or 0,
+    }
+
+    # Daily production data
+    daily_production = batches.annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        wheat_amount=Sum('wheat_amount'),
+        flour_output=Sum('actual_flour_output')
+    ).order_by('date')
+
+    return render(request, 'analytics/dashboard.html', {
+        'kpis': kpis,
+        'daily_production': daily_production,
+        'start_date': start_date,
+        'end_date': end_date,
+    })
+
+@login_required
+def batch_performance(request, batch_id):
+    batch = get_object_or_404(Batch, id=batch_id)
+    
+    # Get hourly production data
+    hourly_data = batch.flour_bag_counts.annotate(
+        hour=TruncHour('timestamp')
+    ).values('hour').annotate(
+        total_bags=Sum('bag_count'),
+        total_weight=Sum('bags_weight')
+    ).order_by('hour')
+
+    return render(request, 'analytics/batch_details.html', {
+        'batch': batch,
+        'hourly_data': hourly_data,
+    })

@@ -39,6 +39,8 @@
             <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Cities" %}</a>
             {% endif %}
             <a href="{% url 'manage_factory' %}" class="btn btn-primary mb-3">{% trans "Manage Factories" %}</a>
+            <!-- New Batch Management Button -->
+            <a href="{% url 'batch-list' %}" class="btn btn-primary mb-3">{% trans "Manage Batches" %}</a>
         </div>
         {% if user.groups.all.0.name == 'Superadmin' %}
         <div class="col-md-6">
