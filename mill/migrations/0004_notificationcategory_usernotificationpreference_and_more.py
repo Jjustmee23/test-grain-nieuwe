@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('mill', '0002_factory_group_flourbagcount'),
+        ('mill', '0003_alter_batch_factory_alter_batch_start_date'),
     ]
 
     operations = [

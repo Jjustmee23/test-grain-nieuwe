@@ -31,11 +31,19 @@ ALLOWED_HOSTS = [
     'www.grain05.midaweb.be',
     '127.0.0.1',  # If needed for local development
     'localhost',  # If needed for local development
+    'tasneehobob.com',
+    'www.tasneehobob.com',
+    'mathanti.com',
+    'www.mathanti.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://grain05.midaweb.be',
     'https://www.grain05.midaweb.be',
+    'https://mathanti.com',
+    'https://www.mathanti.com',
+    'https://tasneehobob.com',
+    'https://www.tasneehobob.com',
 ]
 
 # Application definition

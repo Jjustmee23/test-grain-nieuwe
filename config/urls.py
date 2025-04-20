@@ -58,6 +58,9 @@ urlpatterns = [
     path('dashboard', views.dashboard, name='dashboard'),
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('view-tables/', views.view_tables, name='view_tables'),
+    path('export-data/', views.export_data, name='export_data'),
+    path('preview-data/', views.preview_data, name='preview_data'),
+
 
     # Management
     path('manage-databases/', views.manage_databases, name='manage_databases'),

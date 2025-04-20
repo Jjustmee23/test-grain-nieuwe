@@ -20,6 +20,9 @@
                     </li>
                     {% endif %}
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'export_data' %}">Export Data</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'logout' %}">Logout</a>
                     </li>
                     <!-- <li class="nav-item">
@@ -38,12 +41,34 @@
         <!-- Filters: City Selector en Date Picker -->
         <div class="row mb-4">
             <div class="col-md-4 mb-3">
-                <select id="citySelector" class="form-select" onchange="window.location.href='/dashboard?city=' + this.value">
-                    <option value="all">All Cities</option>
-                    {% for city in cities %}
-                        <option value="{{ city.id }}" {% if selected_city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
-                    {% endfor %}
-                </select>
+                <div class="card">
+                    <div class="card-header bg-light">
+                        Select Cities
+                    </div>
+                    <div class="card-body city-selector">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="selectAllCities" 
+                                   {% if not selected_city_ids %}checked{% endif %} onchange="handleSelectAll()">
+                            <label class="form-check-label" for="selectAllCities">
+                                All Cities
+                            </label>
+                        </div>
+                        <hr>
+                        <div class="city-checkboxes">
+                            {% for city in cities %}
+                                <div class="form-check">
+                                    <input class="form-check-input city-checkbox" type="checkbox" 
+                                           id="city{{ city.id }}" value="{{ city.id }}"
+                                           {% if selected_city_ids and city.id in selected_city_ids %}checked{% endif %}
+                                           onchange="handleCitySelection()">
+                                    <label class="form-check-label" for="city{{ city.id }}">
+                                        {{ city.name }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-2 mb-3">
                 <input type="date" id="dashboardDatePicker" class="form-control" onchange="updateDashboard()" value="{{ current_date|date:"Y-m-d" }}">
@@ -119,6 +144,102 @@
 
     <!-- JavaScript bestanden -->
 <script src="{% static 'js/index.js' %}"></script>
+<style>
+    .city-selector {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .city-checkboxes {
+        padding-left: 10px;
+    }
+    
+    .form-check {
+        margin-bottom: 8px;
+    }
+    
+    .form-check-label {
+        cursor: pointer;
+    }
+    
+    .card-header {
+        font-weight: bold;
+    }
+    </style>
+    
+    <!-- Add this JavaScript at the end of your template, before the closing body tag -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initial state check
+        updateSelectAllState();
+    });
+    
+    function handleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAllCities');
+        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+        
+        cityCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.disabled = selectAllCheckbox.checked;
+        });
+        
+        updateDashboard();
+    }
+    
+    function handleCitySelection() {
+        const selectAllCheckbox = document.getElementById('selectAllCities');
+        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+        const checkedCities = document.querySelectorAll('.city-checkbox:checked');
+        
+        // If any individual city is selected, uncheck "Select All"
+        selectAllCheckbox.checked = false;
+        
+        // If no cities are selected, check "Select All"
+        if (checkedCities.length === 0) {
+            selectAllCheckbox.checked = true;
+            cityCheckboxes.forEach(checkbox => {
+                checkbox.disabled = true;
+            });
+        }
+        
+        updateDashboard();
+    }
+    
+    function updateSelectAllState() {
+        const selectAllCheckbox = document.getElementById('selectAllCities');
+        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+        
+        if (selectAllCheckbox.checked) {
+            cityCheckboxes.forEach(checkbox => {
+                checkbox.disabled = true;
+                checkbox.checked = false;
+            });
+        }
+    }
+    
+    function updateDashboard() {
+        const selectAllCheckbox = document.getElementById('selectAllCities');
+        const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
+        let selectedCities = [];
+        
+        if (selectAllCheckbox.checked) {
+            window.location.href = '/dashboard';
+            return;
+        }
+        
+        cityCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedCities.push(checkbox.value);
+            }
+        });
+        
+        if (selectedCities.length > 0) {
+            window.location.href = '/dashboard?cities=' + selectedCities.join(',');
+        } else {
+            window.location.href = '/dashboard';
+        }
+    }
+    </script>
 
 {% endblock %}
 
