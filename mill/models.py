@@ -147,6 +147,13 @@ class Batch(models.Model):
     )
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True, blank=True)
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_process', 'In Process'),
+        ('completed', 'Completed'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
