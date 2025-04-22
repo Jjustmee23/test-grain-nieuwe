@@ -13,13 +13,19 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Batch)
 def notify_admins_on_batch_creation(sender, instance, created, **kwargs):
     if created:
-        admin_group = Group.objects.get(name='Admin')  # Change to your group name
+        try:
+            admin_group = Group.objects.get(name='Admin')  
+        except:
+            pass  
         users = User.objects.all()
-
+    # TODO:
+        #get user with group admin
+        # filter these users that user.Userprofile.allowed_factories contains instance.factory
+        # 
         for user in users:
             Notification.objects.create(
                 user=user,
                 category=NotificationCategory.objects.get(name='Batch'),
-                message=f"New batch created",
+                message=f"New batch is created with batch id {instance.id} for factory {instance.factory.name}",
                 link=f"/batches/"  
             )

@@ -127,10 +127,13 @@ def calculate_chart_data(date,factory_id):
     return { 'daily_labels': DailyLabels, 'daily_data': DailyData, 'monthly_labels': MonthlyLabels, 'monthly_data': MonthlyData, 'yearly_current': YearlyCurrent, 'yearly_previous': YearlyPrevious , 'daily_total': DailyData[-1], 'monthly_total': MonthlyData[-1], 'weekly_total': WeeklyData}
 
 
+def is_super_admin(user):
+    return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
+
 # Check Allowlists
 def is_allowed_factory(request, factory_id):
     factory = get_object_or_404(Factory, id=factory_id)
-    if request.user.groups.filter(name='Superadmin').exists():
+    if is_super_admin(request.user):
         return factory
     # if request.user.userprofile.allowed_cities.filter(id=factory.city.id).exists():
     #     return factory
@@ -140,24 +143,21 @@ def is_allowed_factory(request, factory_id):
     
 def is_allowed_city(request, city_id):
     city = get_object_or_404(City, id=city_id)
-    if request.user.groups.filter(name='Superadmin').exists():
+    if is_super_admin(request.user):
         return city
     if request.user.userprofile.allowed_cities.filter(id=city.id).exists():
         return city
     return None
 
 def allowed_cities(request):
-    if request.user.groups.filter(name='Superadmin').exists():
-        print("SU allowed all cities")
+    if is_super_admin(request.user):
         return City.objects.all()
     print(request.user.userprofile.allowed_cities.all())
     return request.user.userprofile.allowed_cities.all()
 
 def allowed_factories(request):
-    if request.user.groups.filter(name='Superadmin').exists():
-        print("Superadmin detected. Returning all factories.")
+    if is_super_admin(request.user):
         return Factory.objects.all()
-    print("Returning allowed factories.")
     # print(request.user.userprofile.allowed_cities.all())
     # return Factory.objects.filter(city__in=request.user.userprofile.allowed_cities.all())
     return Factory.objects.filter(id__in=request.user.userprofile.allowed_factories.all())
@@ -179,3 +179,6 @@ def send_notification_email(user, notification):
         [user.email],
         fail_silently=True,
     )
+
+def is_admin(user): 
+    return user.is_superuser or user.groups.filter(name='Admin').exists()

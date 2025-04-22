@@ -3,6 +3,7 @@ from .auth_views import *
 from .device_views import *
 from .factory_views import manage_factory
 from .batch_views import *
+from .notification_views import *
 # from .batch_views import BatchListView, BatchCreateView, BatchDetailView
 from .alert_views import *
 from .analytics_views import *
@@ -13,6 +14,7 @@ from .admin_views import change_password
 from .city_views import manage_city
 from .stats_views import view_statistics
 from .export_views import export_data, preview_data
+from .profile_views import *
 
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import login
