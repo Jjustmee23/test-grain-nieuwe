@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Batches</h1>
+{% if is_super_admin %}
     <a href="{% url 'batch-create' %}" class="action-button">
         <i class="fas fa-plus"></i> Create New Batch
     </a>
+    {% endif %}
 </div>
 
 <div class="card">
