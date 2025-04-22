@@ -57,7 +57,6 @@ def mark_notification_read( request, pk):
         return redirect('notifications')
     notification.read = True
     notification.save()
-    messages.success(request, 'Notification marked as read.')
     return redirect('notifications')
 
 @login_required
@@ -67,5 +66,4 @@ def delete_notification(request, pk):
         messages.error(request, 'Notification not found.')
         return redirect('notifications')
     notification.delete()
-    messages.success(request, 'Notification deleted successfully.')
     return redirect('notifications')
