@@ -9,10 +9,19 @@ from mill.views import (
     BatchListView, BatchCreateView, BatchUpdateView, BatchDetailView,
     sensor_data_receiver, sensor_status,
     analytics_dashboard, batch_performance,
-    AlertListView, alert_dashboard, acknowledge_alert, profile_views
+    AlertListView, alert_dashboard, acknowledge_alert, profile_views,
+    contact
 )
 
+
 urlpatterns = [
+        # path('', include('mill.urls')),  # Make sure this line exists
+        
+
+        path('contact/', contact, name='contact'),  # Add this line
+
+        path('', include(('mill.urls', 'mill'), namespace='mill')),
+
     # Batch URLs
     path('batches/', BatchListView.as_view(), name='batch-list'),
     path('batches/create/', BatchCreateView.as_view(), name='batch-create'),

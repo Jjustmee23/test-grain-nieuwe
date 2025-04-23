@@ -9,6 +9,7 @@ from .analytics_views import *
 from .sensor_views import *
 # from .admin_views import manage_admin_view
 from .admin_views import change_password
+from .contact_views import *
 # from .admin_views import *
 from .city_views import manage_city
 from .stats_views import view_statistics
