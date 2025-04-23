@@ -43,7 +43,7 @@ urlpatterns = [
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
     path('super-admin/', admin.site.urls),
-    path('', include('mill.urls')),  # Include the mill app URLs
+    # path('', include('mill.urls')),  # Include the mill app URLs
     path('change-password/', views.change_password, name='change_password'),
     path('profile/manage/', profile_views.manage_profile, name='manage_profile'),
 
@@ -101,7 +101,7 @@ urlpatterns = [
     path('api/devices/',apis.get_devices,name='get-devices'),
 
     # Include mill URLs
-    path('', include('mill.urls')),
+    path('', include(('mill.urls', 'mill'), namespace='mill')),
 ]
 
 handler404 = 'mill.views.custom_404_view'

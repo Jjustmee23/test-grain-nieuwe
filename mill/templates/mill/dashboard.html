@@ -1,8 +1,108 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Control Pannel{% endblock %}
-
+{% block title %}Dashboard - Mill Management System{% endblock %}
+{% block extra_head %}
+<style>
+    .city-selector {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .city-checkboxes {
+        padding-left: 10px;
+    }
+    
+    .form-check-label {
+        cursor: pointer;
+    }
+    
+    .date-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-card.primary { border-left-color: var(--primary-color); }
+    .stat-card.warning { border-left-color: var(--warning-color); }
+    .stat-card.danger { border-left-color: var(--danger-color); }
+    .stat-card.success { border-left-color: var(--success-color); }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+    
+    .factory-card {
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .factory-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .factory-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .factory-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    
+    .factory-stat {
+        padding: 0.5rem;
+        background-color: var(--bg-light);
+        border-radius: var(--border-radius);
+    }
+    
+    .factory-stat-label {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        margin-bottom: 0.25rem;
+    }
+    
+    .factory-stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-active {
+        background-color: rgba(72, 187, 120, 0.2);
+        color: var(--success-dark);
+    }
+    
+    .status-inactive {
+        background-color: rgba(160, 174, 192, 0.2);
+        color: var(--text-light);
+    }
+    
+    .status-error {
+        background-color: rgba(229, 62, 62, 0.2);
+        color: var(--danger-dark);
+    }
+</style>
+{% endblock %}
 {% block content %}
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -36,210 +136,350 @@
         </div>
     </nav>
 
-    <!-- Hoofdcontainer -->
-    <div class="container my-4">
-        <!-- Filters: City Selector en Date Picker -->
-        <div class="row mb-4">
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        Select Cities
-                    </div>
-                    <div class="card-body city-selector">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="selectAllCities" 
-                                   {% if not selected_city_ids %}checked{% endif %} onchange="handleSelectAll()">
-                            <label class="form-check-label" for="selectAllCities">
-                                All Cities
-                            </label>
-                        </div>
-                        <hr>
-                        <div class="city-checkboxes">
-                            {% for city in cities %}
-                                <div class="form-check">
-                                    <input class="form-check-input city-checkbox" type="checkbox" 
-                                           id="city{{ city.id }}" value="{{ city.id }}"
-                                           {% if selected_city_ids and city.id in selected_city_ids %}checked{% endif %}
-                                           onchange="handleCitySelection()">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-0">{% trans "Dashboard" %}</h1>
+            <p class="text-muted">{% trans "Monitor and manage mill production metrics" %}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="date-container justify-content-end">
+                <label for="dashboardDatePicker" class="mb-0 fw-bold">{% trans "Date:" %}</label>
+                <input type="date" id="dashboardDatePicker" class="form-control w-auto" onchange="updateDashboard()"
+                    value="{{ current_date|date:'Y-m-d' }}">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content area -->
+    <div class="row">
+        <!-- Sidebar / Filters -->
+        <div class="col-md-3 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{% trans "Filter Options" %}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">{% trans "Select Cities" %}</label>
+                        <div class="city-selector">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="selectAllCities" {% if not selected_city_ids %}checked{% endif %} onchange="handleSelectAll()">
+                                <label class="form-check-label" for="selectAllCities">
+                                    {% trans "All Cities" %}
+                                </label>
+                            </div>
+                            <hr class="my-2">
+                            <div class="city-checkboxes">
+                                {% for city in cities %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input city-checkbox" type="checkbox" id="city{{ city.id }}"
+                                        value="{{ city.id }}" {% if selected_city_ids and city.id in selected_city_ids %}checked{% endif %} onchange="handleCitySelection()">
                                     <label class="form-check-label" for="city{{ city.id }}">
                                         {{ city.name }}
                                     </label>
                                 </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+    
+                    <!-- Sector Filters -->
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">{% trans "Filter by Sector" %}</label>
+                        <div class="sector-selector">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorAll" {% if not selected_sector %}checked{% endif %} value="" onchange="updateSector(this.value)">
+                                <label class="form-check-label" for="sectorAll">
+                                    {% trans "All Sectors" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorPrivate" {% if selected_sector == 'private' %}checked{% endif %} value="private" onchange="updateSector(this.value)">
+                                <label class="form-check-label" for="sectorPrivate">
+                                    {% trans "Private" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorGovernment" {% if selected_sector == 'government' %}checked{% endif %} value="government" onchange="updateSector(this.value)">
+                                <label class="form-check-label" for="sectorGovernment">
+                                    {% trans "Government" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorCommercial" {% if selected_sector == 'commercial' %}checked{% endif %} value="commercial" onchange="updateSector(this.value)">
+                                <label class="form-check-label" for="sectorCommercial">
+                                    {% trans "Commercial" %}
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-2 mb-3">
-                <input type="date" id="dashboardDatePicker" class="form-control" onchange="updateDashboard()" value="{{ current_date|date:"Y-m-d" }}">
-            </div>
         </div>
-
-        <!-- Totale Productiekaarten voor de Stad -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">City Daily Total</div>
-                    <div class="card-body">
-                        <h5 class="card-title" id="city-daily-total">{{ city_data.daily_total }}</h5>
+    
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <!-- Summary Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card primary shadow h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar-day text-primary fs-4"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">{% trans "Daily Total" %}</h5>
+                            <div class="stat-value" id="city-daily-total">{{ city_data.daily_total }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card warning shadow h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar-week text-warning fs-4"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">{% trans "Weekly Total" %}</h5>
+                            <div class="stat-value" id="city-weekly-total">{{ city_data.weekly_total }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card danger shadow h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar-month text-danger fs-4"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">{% trans "Monthly Total" %}</h5>
+                            <div class="stat-value" id="city-month-total">{{ city_data.monthly_total }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card stat-card success shadow h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="bi bi-calendar-fill text-success fs-4"></i>
+                            </div>
+                            <h5 class="text-muted mb-1">{% trans "Yearly Total" %}</h5>
+                            <div class="stat-value" id="city-year-total">{{ city_data.yearly_total }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
-                <div class="card mb-3">
-                    <div class="card-header bg-warning text-white">City Weekly Total</div>
-                    <div class="card-body">
-                        <h5 class="card-title" id="city-weekly-total">{{ city_data.weekly_total }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card mb-3">
-                    <div class="card-header bg-danger text-white">City Monthly Total</div>
-                    <div class="card-body">
-                        <h5 class="card-title" id="city-month-total">{{ city_data.monthly_total }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">City Yearly Total</div>
-                    <div class="card-body">
-                        <h5 class="card-title" id="city-year-total">{{ city_data.yearly_total }}</h5>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Fabriekkaarten -->
-        <div class="row">
-            {% for factory in factories %}
-                <div class="col-md-4 mb-4">
-                    <div class="card factory-card h-100">
-                        <div class="card-header bg-secondary text-white">
-                            <h5>{{ factory.name }}</h5>
+    
+            <!-- Factories -->
+            <h3 class="mb-3">{% trans "Factories" %}</h3>
+            <div class="row">
+                {% for factory in factories %}
+                <div class="col-md-6 mb-4">
+                    <div class="card factory-card shadow h-100">
+                        <div class="card-header p-3 bg-white">
+                            <div class="factory-header">
+                                <h5 class="mb-0">{{ factory.name }}</h5>
+                                <span
+                                    class="status-badge {% if factory.error %}status-error{% elif factory.status %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if factory.error %}Error{% elif factory.status %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                            <!-- New factory status indicators -->
+                            <div class="factory-status-indicators mt-2">
+                                <div class="d-flex justify-content-end">
+                                    <span class="me-3" title="Power Status">
+                                        <i
+                                            class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
+                                        <small class="text-dark fw-bold">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
+                                    </span>
+                                    <span title="Door Status">
+                                        <i
+                                            class="bi {% if factory.status_info.door_status %}bi-door-open text-warning{% else %}bi-door-closed text-success{% endif %}"></i>
+                                        <small class="text-dark fw-bold">Door: {% if factory.status_info.door_status %}Open{% else %}Closed{% endif %}</small>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             {% if factory.error %}
-                                <div class="alert alert-danger" role="alert">
-                                    Error retrieving data
-                                </div>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {% trans "Error retrieving data" %}
+                            </div>
                             {% else %}
-                                <p><strong>Daily Total:</strong> {{ factory.daily_total }}</p>
-                                <p><strong>Weekly Total:</strong> {{ factory.weekly_total }}</p>
-                                <p><strong>Monthly Total:</strong> {{ factory.monthly_total }}</p>
-                                <p><strong>Yearly Total:</strong> {{ factory.yearly_total }}</p>
-                                <p><strong>Start Time:</strong> {{ factory.start_time }}</p>
-                                <p><strong>Stop Time:</strong> {{ factory.stop_time }}</p>
+                            <div class="factory-stats mb-3">
+                                <div class="factory-stat">
+                                    <div class="factory-stat-label">{% trans "Daily" %}</div>
+                                    <div class="factory-stat-value">{{ factory.daily_total }}</div>
+                                </div>
+                                <div class="factory-stat">
+                                    <div class="factory-stat-label">{% trans "Weekly" %}</div>
+                                    <div class="factory-stat-value">{{ factory.weekly_total }}</div>
+                                </div>
+                                <div class="factory-stat">
+                                    <div class="factory-stat-label">{% trans "Monthly" %}</div>
+                                    <div class="factory-stat-value">{{ factory.monthly_total }}</div>
+                                </div>
+                                <div class="factory-stat">
+                                    <div class="factory-stat-label">{% trans "Yearly" %}</div>
+                                    <div class="factory-stat-value">{{ factory.yearly_total }}</div>
+                                </div>
+                            </div>
+    
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <small class="text-muted">{% trans "Start Time" %}</small>
+                                    <div>{{ factory.start_time|default:"--" }}</div>
+                                </div>
+                                <div>
+                                    <small class="text-muted">{% trans "Stop Time" %}</small>
+                                    <div>{{ factory.stop_time|default:"--" }}</div>
+                                </div>
+                            </div>
                             {% endif %}
                         </div>
-                        <div class="card-footer text-center">
-                            <button class="btn btn-sm btn-outline-primary" onclick="handleFactoryClick({{ factory.id }})">View Statistics</button>
+                        <div class="card-footer bg-white border-top p-3">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'mill:view_statistics' factory_id=factory.id %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-graph-up me-1"></i> {% trans "View Statistics" %}
+                                </a>
+                            <a href="{% url 'mill:manage_devices' %}?factory={{ factory.id }}"
+                                class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-cpu me-1"></i> {% trans "Devices" %}
+                            </a> 
+                            </div>
                         </div>
                     </div>
                 </div>
-            {% endfor %}
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        {% trans "No factories available for the selected cities" %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
-
-    <!-- JavaScript bestanden -->
-<script src="{% static 'js/index.js' %}"></script>
-<style>
-    .city-selector {
-        max-height: 300px;
-        overflow-y: auto;
-    }
     
-    .city-checkboxes {
-        padding-left: 10px;
-    }
-    
-    .form-check {
-        margin-bottom: 8px;
-    }
-    
-    .form-check-label {
-        cursor: pointer;
-    }
-    
-    .card-header {
-        font-weight: bold;
-    }
-    </style>
-    
-    <!-- Add this JavaScript at the end of your template, before the closing body tag -->
+    {% block extra_js %}
+    <script src="{% static 'js/index.js' %}"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initial state check
-        updateSelectAllState();
-    });
-    
-    function handleSelectAll() {
-        const selectAllCheckbox = document.getElementById('selectAllCities');
-        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
-        
-        cityCheckboxes.forEach(checkbox => {
-            checkbox.checked = false;
-            checkbox.disabled = selectAllCheckbox.checked;
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initial state check
+            updateSelectAllState();
         });
-        
-        updateDashboard();
-    }
     
-    function handleCitySelection() {
-        const selectAllCheckbox = document.getElementById('selectAllCities');
-        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
-        const checkedCities = document.querySelectorAll('.city-checkbox:checked');
-        
-        // If any individual city is selected, uncheck "Select All"
-        selectAllCheckbox.checked = false;
-        
-        // If no cities are selected, check "Select All"
-        if (checkedCities.length === 0) {
-            selectAllCheckbox.checked = true;
-            cityCheckboxes.forEach(checkbox => {
-                checkbox.disabled = true;
-            });
-        }
-        
-        updateDashboard();
-    }
+        function handleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllCities');
+            const cityCheckboxes = document.querySelectorAll('.city-checkbox');
     
-    function updateSelectAllState() {
-        const selectAllCheckbox = document.getElementById('selectAllCities');
-        const cityCheckboxes = document.querySelectorAll('.city-checkbox');
-        
-        if (selectAllCheckbox.checked) {
             cityCheckboxes.forEach(checkbox => {
-                checkbox.disabled = true;
                 checkbox.checked = false;
+                checkbox.disabled = selectAllCheckbox.checked;
             });
-        }
-    }
     
-    function updateDashboard() {
-        const selectAllCheckbox = document.getElementById('selectAllCities');
-        const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
-        let selectedCities = [];
-        
-        if (selectAllCheckbox.checked) {
-            window.location.href = '/dashboard';
-            return;
+            updateDashboard();
         }
-        
-        cityCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                selectedCities.push(checkbox.value);
+    
+        function handleCitySelection() {
+            const selectAllCheckbox = document.getElementById('selectAllCities');
+            const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+            const checkedCities = document.querySelectorAll('.city-checkbox:checked');
+    
+            // If any individual city is selected, uncheck "Select All"
+            selectAllCheckbox.checked = false;
+    
+            // If no cities are selected, check "Select All"
+            if (checkedCities.length === 0) {
+                selectAllCheckbox.checked = true;
+                cityCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                });
             }
-        });
-        
-        if (selectedCities.length > 0) {
-            window.location.href = '/dashboard?cities=' + selectedCities.join(',');
-        } else {
-            window.location.href = '/dashboard';
+    
+            updateDashboard();
         }
-    }
+    
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('selectAllCities');
+            const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+    
+            if (selectAllCheckbox.checked) {
+                cityCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                    checkbox.checked = false;
+                });
+            }
+        }
+    
+        function updateDashboard() {
+            const selectAllCheckbox = document.getElementById('selectAllCities');
+            const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
+            const datePicker = document.getElementById('dashboardDatePicker');
+            const selectedSector = document.querySelector('input[name="sector"]:checked').value;
+            let selectedCities = [];
+            let url = '/dashboard';
+    
+            // Add date parameter if available
+            if (datePicker && datePicker.value) {
+                url += '?date=' + datePicker.value;
+            }
+    
+            if (!selectAllCheckbox.checked) {
+                cityCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedCities.push(checkbox.value);
+                    }
+                });
+    
+                if (selectedCities.length > 0) {
+                    url += (url.includes('?') ? '&' : '?') + 'cities=' + selectedCities.join(',');
+                }
+            }
+    
+            // Preserve the sector filter if one is selected
+            if (selectedSector) {
+                url += (url.includes('?') ? '&' : '?') + 'sector=' + selectedSector;
+            }
+    
+            window.location.href = url;
+        }
+    
+        function handleFactoryClick(factoryId) {
+            window.location.href = '/view-statistics/?factory=' + factoryId;
+        }
+    
+        function updateSector(sectorValue) {
+            const selectAllCheckbox = document.getElementById('selectAllCities');
+            const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
+            const datePicker = document.getElementById('dashboardDatePicker');
+            let selectedCities = [];
+            let url = '/dashboard';
+    
+            // Add date parameter if available
+            if (datePicker && datePicker.value) {
+                url += '?date=' + datePicker.value;
+            }
+    
+            if (!selectAllCheckbox.checked) {
+                cityCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedCities.push(checkbox.value);
+                    }
+                });
+    
+                if (selectedCities.length > 0) {
+                    url += (url.includes('?') ? '&' : '?') + 'cities=' + selectedCities.join(',');
+                }
+            }
+    
+            // Add sector parameter if it's not empty
+            if (sectorValue) {
+                url += (url.includes('?') ? '&' : '?') + 'sector=' + sectorValue;
+            }
+    
+            window.location.href = url;
+        }
     </script>
-
-{% endblock %}
-
+    {% endblock %}
+    
+    {% endblock %}
