@@ -337,10 +337,10 @@
                         </div>
                         <div class="card-footer bg-white border-top p-3">
                             <div class="d-flex justify-content-between">
-                                <a href="{% url 'mill:view_statistics' factory_id=factory.id %}" class="btn btn-sm btn-primary">
+                                <a href="{% url 'view_statistics' factory_id=factory.id %}" class="btn btn-sm btn-primary">
                                     <i class="bi bi-graph-up me-1"></i> {% trans "View Statistics" %}
                                 </a>
-                            <a href="{% url 'mill:manage_devices' %}?factory={{ factory.id }}"
+                            <a href="{% url 'manage_devices' %}?factory={{ factory.id }}"
                                 class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-cpu me-1"></i> {% trans "Devices" %}
                             </a> 
