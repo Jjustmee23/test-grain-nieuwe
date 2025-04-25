@@ -53,6 +53,14 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="mb-3">
+            <label for="group" class="form-label">{% trans 'Select Sector' %}:</label>
+            <select id="group" name="group" class="form-control">
+                <option value="public">{% trans 'Public' %}</option>
+                <option value="private">{% trans 'Private' %}</option>
+                <option value="commercial">{% trans 'Commercial' %}</option>
+            </select>
+        </div>
         <button type="submit" name="action" value="add_factory" class="btn btn-primary">{% trans 'Add Factory' %}</button>
     </form>
 
@@ -86,6 +94,7 @@
             <tr>
                 <th>{% trans 'Factory Name' %}</th>
                 <th>{% trans 'City' %}</th>
+                <th>{% trans 'Sector' %}</th>
                 <th>{% trans 'Status' %}</th>
                 <th>{% trans 'Linked Devices' %}</th>
                 {% comment %} <th>{% trans 'Device Counters' %}</th> {% endcomment %}
@@ -97,6 +106,17 @@
             <tr>
                 <td>{{ factory.name }}</td>
                 <td>{{ factory.city.name }}</td>
+                <td>
+                    {% if factory.group == 'public' %}
+                        {% trans 'Public' %}
+                    {% elif factory.group == 'private' %}
+                        {% trans 'Private' %}
+                    {% elif factory.group == 'commercial' %}
+                        {% trans 'Commercial' %}
+                    {% else %}
+                        {{ factory.group|title }}
+                    {% endif %}
+                </td>
                 <td>
                     <form method="POST" style="display:inline;">
                         {% csrf_token %}
@@ -140,12 +160,17 @@
                     {% endif %}
                 </td>
                 <td>
-                    <!-- Edit Factory Name -->
+                    <!-- Edit Factory -->
                     <form method="POST" style="display:inline;">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="edit_factory">
                         <input type="hidden" name="factory_id" value="{{ factory.id }}">
                         <input type="text" name="factory_name" value="{{ factory.name }}" required>
+                        <select name="group" class="form-select form-select-sm d-inline-block" style="width: auto; margin-left: 5px;">
+                            <option value="public" {% if factory.group == 'public' %}selected{% endif %}>{% trans 'Public' %}</option>
+                            <option value="private" {% if factory.group == 'private' %}selected{% endif %}>{% trans 'Private' %}</option>
+                            <option value="commercial" {% if factory.group == 'commercial' %}selected{% endif %}>{% trans 'Commercial' %}</option>
+                        </select>
                         <button type="submit" class="btn btn-warning">{% trans 'Edit' %}</button>
                     </form>
                     
@@ -158,10 +183,10 @@
                     </form>
                     
                     <!-- Link Device to Factory -->
-                    <button class="btn btn-success" onclick="openDeviceModal('link', {{ factory.id }});">{% trans 'Link Device' %}</button>
+                    <button class="btn btn-success" onclick="openDeviceModal('link', '{{ factory.id }}');">{% trans 'Link Device' %}</button>
                     
                     <!-- Unlink Device from Factory -->
-                    <button class="btn btn-warning" onclick="openDeviceModal('unlink', {{ factory.id }});">{% trans 'Unlink Device' %}</button>
+                    <button class="btn btn-warning" onclick="openDeviceModal('unlink', '{{ factory.id }}');">{% trans 'Unlink Device' %}</button>
                 </td>
             </tr>
             {% endfor %}

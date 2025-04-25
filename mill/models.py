@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 from django.utils import timezone
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 
 # City model
@@ -102,7 +104,8 @@ class RawData(models.Model):
     length = models.IntegerField(null=True, blank=True)
     version = models.IntegerField(null=True, blank=True)
     end_flag = models.IntegerField(null=True, blank=True)
-
+    
+    
     def __str__(self):
         return f"{self.device} - {self.timestamp}"
     
@@ -259,6 +262,154 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.category}: {self.message}"
+    
 
     class Meta:
         ordering = ['-timestamp']
+
+class DoorOpenLogs(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='door_open_logs')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    counter_id = models.IntegerField()  # Store the counter_4 value
+    is_resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='door_logs_resolved'  # Changed this to avoid conflict
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Door Open Log'
+        verbose_name_plural = 'Door Open Logs'
+
+    def __str__(self):
+        return f"Door Open Log - Device: {self.device.name} at {self.timestamp}"
+        
+class ContactTicket(models.Model):
+    TICKET_TYPES = [
+        ('TECHNICAL', 'Technical Support'),
+        ('ACCOUNT', 'Account Issues'),
+        ('FEATURE', 'Feature Request'),
+        ('BUG', 'Bug Report'),
+        ('OTHER', 'Other Inquiry'),
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+        ('URGENT', 'Urgent'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('PENDING', 'Pending User Response'),
+        ('RESOLVED', 'Resolved'),
+        ('CLOSED', 'Closed'),
+    ]
+    
+    # Basic Information
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    
+    # Ticket Details
+    ticket_type = models.CharField(max_length=20, choices=TICKET_TYPES)
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_LEVELS, default='MEDIUM')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='NEW')
+    
+    # Relations
+    factory = models.ForeignKey(Factory, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='submitted_tickets'
+    )
+    assigned_to = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='assigned_tickets'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']  # Note: You had '-timestamp' but the field is 'created_at'
+        verbose_name = 'Contact Ticket'
+        verbose_name_plural = 'Contact Tickets'
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['ticket_type', 'status']),
+            models.Index(fields=['created_by', 'status']),
+            models.Index(fields=['assigned_to', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.ticket_type} - {self.subject} ({self.status})"
+    
+    def get_status_display_class(self):
+        """Returns Bootstrap class for status badge"""
+        return {
+            'NEW': 'bg-primary',
+            'IN_PROGRESS': 'bg-warning',
+            'PENDING': 'bg-info',
+            'RESOLVED': 'bg-success',
+            'CLOSED': 'bg-secondary',
+        }.get(self.status, 'bg-secondary')
+    
+    def get_priority_display_class(self):
+        """Returns Bootstrap class for priority badge"""
+        return {
+            'LOW': 'bg-success',
+            'MEDIUM': 'bg-info',
+            'HIGH': 'bg-warning',
+            'URGENT': 'bg-danger',
+        }.get(self.priority, 'bg-secondary')
+    
+    @property
+    def is_closed(self):
+        """Check if the ticket is closed"""
+        return self.status in ['RESOLVED', 'CLOSED']
+    
+    @property
+    def resolution_time(self):
+        """Calculate the time taken to resolve the ticket"""
+        if self.is_closed and self.updated_at and self.created_at:
+            return self.updated_at - self.created_at
+        return None
+
+       
+@receiver(pre_save, sender=RawData)
+def handle_counter_4_change(sender, instance, **kwargs):
+    try:
+        # Get the previous state of this RawData instance
+        old_instance = RawData.objects.get(id=instance.id)
+        
+        # Check if counter_4 has changed from null to a value
+        if old_instance.counter_4 is None and instance.counter_4 is not None:
+            # Create a new DoorOpenLogs entry
+            DoorOpenLogs.objects.create(
+                device=instance.device,
+                counter_id=instance.counter_4
+            )
+    except RawData.DoesNotExist:
+        # This is a new instance
+        if instance.counter_4 is not None:
+            # Create a new DoorOpenLogs entry for new instances with counter_4
+            DoorOpenLogs.objects.create(
+                device=instance.device,
+                counter_id=instance.counter_4
+            )

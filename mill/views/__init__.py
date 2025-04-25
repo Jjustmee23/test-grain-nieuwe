@@ -1,4 +1,4 @@
-from .dashboard_views import index, dashboard
+from .dashboard_views import *
 from .auth_views import *
 from .device_views import *
 from .factory_views import manage_factory
@@ -10,9 +10,12 @@ from .analytics_views import *
 from .sensor_views import *
 # from .admin_views import manage_admin_view
 from .admin_views import change_password
+from .profile_views import manage_profile
+from .contact_views import *
+from .notification_views import *
 # from .admin_views import *
 from .city_views import manage_city
-from .stats_views import view_statistics
+from .stats_views import *
 from .export_views import export_data, preview_data
 from .profile_views import *
 

@@ -1,94 +1,49 @@
+
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
 {% block title %}Mill Statistics{% endblock %}
 
 {% block content %}
-<div class="statistics-page">
-    <!-- Header Section -->
-    <!-- <div class="header d-flex justify-content-between align-items-center p-3 bg-light">
-        <img src="{% static 'images/logo-left.png' %}" alt="Logo Left" class="logo-left" style="height: 60px;">
+    {% comment %} <div class="header d-flex justify-content-between align-items-center p-3 bg-light">
+        <img src="{{ url_for('static', filename='pictures/logo-left.png') }}" alt="Logo Left" class="logo-left" style="height: 50px;">
         <div class="text-center">
-            <h1 class="mb-0">{{ factory_name }}</h1>
-            <h2 class="mb-0">إحصائيات المطحنة</h2>
+            <h1>{{ factory_name }}</h1>
+            <h2>إحصائيات</h2>
         </div>
-        <img src="{% static 'images/logo-right.png' %}" alt="Logo Right" class="logo-right" style="height: 60px;">
-    </div> -->
-
-    <!-- User Info and DateTime Section -->
-    <div class="user-info-section bg-light py-2 px-3 mb-3">
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-0"><strong>المستخدم:</strong> {{ request.user.username }}</p>
-            </div>
-            <div class="col-md-6 text-end">
-                <p class="mb-0" id="currentDateTime"></p>
-            </div>
-        </div>
-    </div>
+        <img src="{{ url_for('static', filename='pictures/logo-right.png') }}" alt="Logo Right" class="logo-right" style="height: 50px;">
+    </div> {% endcomment %}
 
     <div class="container my-4">
-        <!-- Control Buttons Section -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <input type="date" id="datePicker" class="form-control" onchange="refreshCharts()" value="{{ selected_date|date:'Y-m-d' }}" />
-            </div>
-            <div class="col-md-3">
-                <button id="backToDashboard" class="btn btn-primary w-100" onclick="window.location.href='/dashboard';">
-                    <i class="fas fa-tachometer-alt me-2"></i>العودة إلى لوحة التحكم
-                </button>
-            </div>
-            <div class="col-md-3">
-                <button id="downloadPDF" class="btn btn-success w-100" onclick="generatePDF();">
-                    <i class="fas fa-file-pdf me-2"></i>تحميل PDF
-                </button>
-            </div>
-            <div class="col-md-3">
-                <button id="refreshData" class="btn btn-info w-100" onclick="refreshCharts();">
-                    <i class="fas fa-sync-alt me-2"></i>تحديث البيانات
-                </button>
-            </div>
-        </div>
-
-        <!-- Factory Image Section -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="factory-image-container text-center">
-                    <img src="{% static 'images/factory-banner.jpg' %}" alt="Factory View" class="img-fluid rounded shadow" style="max-height: 200px; width: 100%; object-fit: cover;">
-                </div>
-            </div>
-        </div>
-
-        <!-- Statistics Cards Section -->
         <div class="row mb-4">
             <div class="col-md-4">
-                <div class="card text-white bg-success mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي يومي</span>
-                        <i class="fas fa-calendar-day"></i>
-                    </div>
+                <input type="date" id="datePicker" class="form-control" onchange="refreshCharts()" value="{{ selected_date|date:"Y-m-d" }}" />
+            </div>
+            <div class="col-md-2">
+                <button id="backToDashboard" class="btn btn-primary" onclick="window.location.href='/dashboard';">العودة إلى لوحة التحكم</button>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-header">إجمالي يومي</div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-daily">{{ factory.daily_total }}</h5>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white bg-secondary mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي أسبوعي</span>
-                        <i class="fas fa-calendar-week"></i>
-                    </div>
+                <div class="card text-white bg-secondary mb-3">
+                    <div class="card-header">إجمالي أسبوعي</div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-week">{{ factory.weekly_total }}</h5>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white bg-info mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي شهري</span>
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-header">إجمالي شهري</div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-month">{{ factory.monthly_total }}</h5>
                     </div>
@@ -96,24 +51,18 @@
             </div>
         </div>
 
-        <div class="row ">
-            <div class="col-md-6">
-                <div class="card text-white bg-warning mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي سنوي حالي</span>
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-warning mb-3">
+                    <div class="card-header">إجمالي سنوي حالي</div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-year">{{ factory.yearly_total }}</h5>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card text-white bg-danger mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي سنوي سابق</span>
-                        <i class="fas fa-calendar-minus"></i>
-                    </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-danger mb-3">
+                    <div class="card-header">إجمالي سنوي سابق</div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-previous">{{ yearly_previous }}</h5>
                     </div>
@@ -121,114 +70,30 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="row mt-8" style="width: 80%; margin-top: 8rem;">
-            <div class="col-md-9 mt-2" style="width: 80%;">
-                <div class="chart-box bg-white p-3 rounded shadow">
-                    <h3 class="text-center mb-3">إنتاج يومي</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج يومي</h3>
                     <canvas id="dailyChart"></canvas>
                 </div>
             </div>
-            
-            <div class="col-md-9 mt-6" style="width: 80%; margin-top: 9rem;"></div>
-                <div class="chart-box bg-white p-3 rounded shadow">
-                    <h3 class="text-center mb-3">إنتاج شهري</h3>
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج شهري</h3>
                     <canvas id="monthlyChart"></canvas>
                 </div>
             </div>
         </div>
         <div class="row mt-4">
-            <div class="col-md-6" style="width: 40%; margin-top: 7rem;">
-            <div class="chart-box bg-white p-3 rounded shadow">
-                <h3 class="text-center mb-3">إنتاج سنوي</h3>
-                <canvas id="yearlyChart"></canvas>
-            </div>
-            </div>
-        </div>
-
-        <!-- Footer Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="footer bg-light p-3 text-center rounded shadow">
-                    <img src="{% static 'images/footer-logo.png' %}" alt="Footer Logo" style="height: 40px;">
-                    <p class="mb-0 mt-2">© {{ current_year }} {{ factory_name }}. جميع الحقوق محفوظة</p>
+            <div class="col-md-6">
+                <div class="chart-box">
+                    <h3>إنتاج سنوي</h3>
+                    <canvas id="yearlyChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <input id="factoryId" hidden value={{factory.id}}></input>
-</div>
-
-<!-- Required CSS -->
-<style>
-    /* .statistics-page {
-        background-color: #f8f9fa;
-    } */
-    .chart-box {
-        background-color: white;
-        /* border-radius: 8px; */
-        /* margin-bottom: 20px; */
-    }
-    .card {
-        transition: transform 0.2s;
-    }
-    .card:hover {
-        transform: translateY(-5px);
-    }
-    .factory-image-container {
-        overflow: hidden;
-        /* border-radius: 8px; */
-    }
-    @media print {
-        .btn {
-            display: none;
-        }
-    }
-</style>
-
-<!-- Required JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
-<script src="{% static 'js/view_statistics.js' %}"></script>
-
-<script>
-    // Update current date and time
-    function updateDateTime() {
-        const now = new Date();
-        const formatted = now.getUTCFullYear() + '-' + 
-                         String(now.getUTCMonth() + 1).padStart(2, '0') + '-' + 
-                         String(now.getUTCDate()).padStart(2, '0') + ' ' + 
-                         String(now.getUTCHours()).padStart(2, '0') + ':' + 
-                         String(now.getUTCMinutes()).padStart(2, '0') + ':' + 
-                         String(now.getUTCSeconds()).padStart(2, '0');
-        document.getElementById('currentDateTime').textContent = 'التاريخ والوقت: ' + formatted;
-    }
-
-    // Update time every second
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // PDF Generation
-    function generatePDF() {
-        const element = document.querySelector('.statistics-page');
-        const opt = {
-            margin: 1,
-            filename: 'mill-statistics.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-        };
-
-        // Show loading message
-        const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'position-fixed top-50 start-50 translate-middle bg-white p-1 rounded shadow';
-        loadingDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> جاري إنشاء PDF...</div>';
-        document.body.appendChild(loadingDiv);
-
-        html2pdf().set(opt).from(element).save().then(() => {
-            document.body.removeChild(loadingDiv);
-        });
-    }
-</script>
-{% endblock %}
+    <input id="factoryId" hidden value={{factory.id}}>{{ factory.id }}</input>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/view_statistics.js' %}"></script>
+    {% endblock %}

@@ -1,0 +1,346 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Contact Us" %} - Mill Management System{% endblock %}
+
+{% block extra_head %}
+<style>
+    .contact-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: var(--primary-dark);
+        color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .contact-form-container label {
+        color: white;
+    }
+    
+    .contact-form {
+        margin-top: 1.5rem;
+    }
+    
+    .contact-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .contact-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .contact-option {
+        flex: 1;
+        min-width: 200px;
+        background: var(--primary-color);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+    }
+    
+    .contact-option:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        background: var(--primary-dark);
+    }
+    
+    .contact-option.active {
+        background: var(--primary-dark);
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .contact-option i {
+        font-size: 2rem;
+        color: white;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .contact-option h4 {
+        margin-bottom: 0.5rem;
+        color: white;
+    }
+    
+    .contact-option p {
+        color: white;
+    }
+    
+    .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-col {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .form-info {
+        font-size: 0.875rem;
+        color: white;
+        margin-top: 0.5rem;
+    }
+    
+    .required-field::after {
+        content: "*";
+        color: var(--danger-color);
+        margin-left: 0.25rem;
+    }
+    
+    .submit-container {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    .btn-submit {
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="contact-form-container">
+        <div class="contact-header">
+            <h2>{% trans "Contact Us" %}</h2>
+            <p>{% trans "We're here to help. Let us know how we can assist you." %}</p>
+        </div>
+        
+        <div class="contact-options">
+            <div class="contact-option" id="email-option" onclick="showEmailForm()">
+                <i class="bi bi-envelope"></i>
+                <h4>{% trans "Email Support" %}</h4>
+                <p>support@millmanagement.com</p>
+                <p class="text-white small">{% trans "We respond within 24 hours" %}</p>
+            </div>
+            
+            <div class="contact-option" id="ticket-option" onclick="showTicketForm()">
+                <i class="bi bi-ticket-perforated"></i>
+                <h4>{% trans "Ticket System" %}</h4>
+                <p>{% trans "Submit your issue below" %}</p>
+                <p class="text-white small">{% trans "Efficient tracking & resolution" %}</p>
+            </div>
+        </div>
+        
+        <div class="ticket-system-section">
+            <h3 class="mb-4">{% trans "Submit a Support Ticket" %}</h3>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post" class="contact-form">
+                {% csrf_token %}
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="required-field" for="{{ form.name.id_for_label }}">{% trans "Your Name" %}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="required-field" for="{{ form.email.id_for_label }}">{% trans "Email Address" %}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ form.phone.id_for_label }}">{% trans "Phone Number" %}</label>
+                            {{ form.phone }}
+                            <small class="form-info">{% trans "Optional" %}</small>
+                            {% if form.phone.errors %}
+                                <div class="text-danger">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="required-field" for="{{ form.ticket_type.id_for_label }}">{% trans "Issue Type" %}</label>
+                            {{ form.ticket_type }}
+                            {% if form.ticket_type.errors %}
+                                <div class="text-danger">{{ form.ticket_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="required-field" for="{{ form.subject.id_for_label }}">{% trans "Subject" %}</label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="text-danger">{{ form.subject.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ form.priority.id_for_label }}">{% trans "Priority" %}</label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <div class="text-danger">{{ form.priority.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ form.factory.id_for_label }}">{% trans "Related Factory" %}</label>
+                            {{ form.factory }}
+                            <small class="form-info">{% trans "If your issue is related to a specific factory" %}</small>
+                            {% if form.factory.errors %}
+                                <div class="text-danger">{{ form.factory.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mt-3">
+                    <label class="required-field" for="{{ form.message.id_for_label }}">{% trans "Message" %}</label>
+                    {{ form.message }}
+                    {% if form.message.errors %}
+                        <div class="text-danger">{{ form.message.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="submit-container">
+                    <button type="submit" class="btn btn-primary btn-submit">{% trans "Submit Ticket" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // E-mailformulier sectie
+    let emailFormSection;
+    // Ticketsysteem sectie
+    let ticketFormSection = document.querySelector('.ticket-system-section');
+    // De contactopties
+    let emailOption = document.getElementById('email-option');
+    let ticketOption = document.getElementById('ticket-option');
+    
+    // Bij het laden van de pagina, voeg het e-mailformulier toe en verberg het
+    document.addEventListener('DOMContentLoaded', function() {
+        // Maak een e-mailformulier sectie aan
+        emailFormSection = document.createElement('div');
+        emailFormSection.className = 'email-form-section';
+        emailFormSection.innerHTML = `
+            <h3 class="mb-4">{% trans "Send us an Email" %}</h3>
+            <div class="email-form">
+                <div class="form-group mb-3">
+                    <label class="required-field">{% trans "Your Name" %}</label>
+                    <input type="text" class="form-control" id="email-name" value="{{ user.get_full_name }}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="required-field">{% trans "Your Email" %}</label>
+                    <input type="email" class="form-control" id="email-address" value="{{ user.email }}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="required-field">{% trans "Subject" %}</label>
+                    <input type="text" class="form-control" id="email-subject">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="required-field">{% trans "Message" %}</label>
+                    <textarea class="form-control" id="email-message" rows="5"></textarea>
+                </div>
+                <div class="submit-container">
+                    <button onclick="sendEmail()" class="btn btn-primary btn-submit">{% trans "Send Email" %}</button>
+                </div>
+            </div>
+        `;
+        
+        // Voeg het e-mailformulier toe aan de pagina na de contactopties
+        let contactOptions = document.querySelector('.contact-options');
+        contactOptions.parentNode.insertBefore(emailFormSection, ticketFormSection);
+        
+        // Verberg het e-mailformulier
+        emailFormSection.style.display = 'none';
+        
+        // Maak ticket systeem de standaardoptie
+        ticketOption.classList.add('active');
+    });
+    
+    // Toon het e-mailformulier en verberg het ticketformulier
+    function showEmailForm() {
+        emailFormSection.style.display = 'block';
+        ticketFormSection.style.display = 'none';
+        
+        // Update actieve status
+        emailOption.classList.add('active');
+        ticketOption.classList.remove('active');
+    }
+    
+    // Toon het ticketformulier en verberg het e-mailformulier
+    function showTicketForm() {
+        emailFormSection.style.display = 'none';
+        ticketFormSection.style.display = 'block';
+        
+        // Update actieve status
+        ticketOption.classList.add('active');
+        emailOption.classList.remove('active');
+    }
+    
+    // Functie om een e-mail te verzenden (simulatie)
+    function sendEmail() {
+        const name = document.getElementById('email-name').value;
+        const email = document.getElementById('email-address').value;
+        const subject = document.getElementById('email-subject').value;
+        const message = document.getElementById('email-message').value;
+        
+        // Validatie
+        if (!name || !email || !subject || !message) {
+            alert('{% trans "Please fill in all required fields." %}');
+            return;
+        }
+        
+        // Hier zou je normaal gesproken een API-call doen naar de server, maar we simuleren succes
+        alert('{% trans "Your email has been sent successfully! We will respond within 24 hours." %}');
+        
+        // Maak de velden leeg
+        document.getElementById('email-subject').value = '';
+        document.getElementById('email-message').value = '';
+    }
+</script>
+{% endblock %}

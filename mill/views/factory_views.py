@@ -101,6 +101,7 @@ def manage_factory(request):
             elif action == "add_factory":
                 factory_name = request.POST.get('factory_name')
                 city_id = request.POST.get('city_id')
+                group = request.POST.get('group', 'public')  # Default to 'public' if not provided
 
                 city = is_allowed_city(request, city_id)
                 if not city:
@@ -109,6 +110,7 @@ def manage_factory(request):
 
                 factory = Factory(name=factory_name)
                 factory.city = city
+                factory.group = group
                 factory.save()
                 
                 # Log factory creation
@@ -116,14 +118,15 @@ def manage_factory(request):
                     user=request.user,
                     obj=factory,
                     action_flag=ADDITION,
-                    change_message=f"Created new factory '{factory_name}' in city '{city.name}'"
+                    change_message=f"Created new factory '{factory_name}' in city '{city.name}' with sector '{group}'"
                 )
                 
                 messages.success(request, f"Factory '{factory_name}' has been added.")
 
             elif action == "edit_factory":
-                print("Action: Edit factory name")
+                print("Action: Edit factory")
                 new_factory_name = request.POST.get('factory_name')
+                new_group = request.POST.get('group')
                 factory = is_allowed_factory(request, factory_id)
                 
                 if not factory:
@@ -134,11 +137,16 @@ def manage_factory(request):
                     messages.error(request, "Factory name cannot be empty.")
                     return redirect("manage_factory")
 
-                print(f"Factory found: {factory.name}. Updating name to {new_factory_name}.")
+                print(f"Factory found: {factory.name}. Updating name to {new_factory_name} and sector to {new_group}.")
                 factory.name = new_factory_name.strip()
+                
+                # Update group/sector if provided
+                if new_group:
+                    factory.group = new_group
+                
                 factory.save()
-                print(f"Factory name updated to '{new_factory_name}'.")
-                messages.success(request, f"Factory name updated to '{new_factory_name}'.")
+                print(f"Factory updated: name='{new_factory_name}', sector='{factory.group}'.")
+                messages.success(request, f"Factory updated: '{new_factory_name}' (Sector: {factory.group})")
 
         except ObjectDoesNotExist as e:
             messages.error(request, f"Error: {str(e)}")
@@ -168,6 +176,7 @@ def manage_factory(request):
             'name': factory.name,
             'city': factory.city,
             'status': factory.status,
+            'group': factory.group,  # Add the group/sector
             'devices': Device.objects.filter(factory=factory)
         }
         for factory in factories

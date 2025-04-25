@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status
-from mill.models import City, Factory, Device, ProductionData
+from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs
 from django.db.models import Sum
 from datetime import datetime
 from mill.utils import allowed_cities
@@ -99,6 +100,18 @@ def dashboard(request):
             setattr(factory, key, value)
             city_data[key] += value
 
+    for factory in factories:
+        # Get the latest unresolved door log for any device in this factory
+        latest_door_log = DoorOpenLogs.objects.filter(
+            device__factory=factory,
+            is_resolved=False
+        ).first()
+        
+        factory.status_info = {
+            'power_status': factory.status,  # Use existing status for power
+            'door_status': latest_door_log is not None  # True if there's an unresolved door log
+        }
+
     context = {
         'cities': cities,
         'factories': factories,
@@ -110,3 +123,17 @@ def dashboard(request):
         'current_datetime': current_datetime.strftime('%Y-%m-%d %H:%M:%S')
     }
     return render(request, 'mill/dashboard.html', context)
+
+@login_required
+def resolve_door_alert(request, log_id):
+    if request.method == 'POST':
+        try:
+            door_log = DoorOpenLogs.objects.get(id=log_id, is_resolved=False)
+            door_log.is_resolved = True
+            door_log.resolved_by = request.user
+            door_log.resolved_at = timezone.now()
+            door_log.save()
+            return JsonResponse({'status': 'success'})
+        except DoorOpenLogs.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Log not found'}, status=404)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
