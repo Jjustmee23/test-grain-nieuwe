@@ -480,6 +480,46 @@
             window.location.href = url;
         }
     </script>
+    <script>
+        function resolveDoorAlert(logId) {
+    if (confirm('Are you sure you want to resolve this door alert?')) {
+        fetch(`/resolve-door-alert/${logId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Refresh the page to update the door status
+                location.reload();
+            } else {
+                alert('Error resolving door alert');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error resolving door alert');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+    </script>
     {% endblock %}
     
     {% endblock %}

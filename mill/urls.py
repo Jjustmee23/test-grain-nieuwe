@@ -14,5 +14,7 @@ urlpatterns = [
     path('contact/success/', contact_views.contact_success, name='contact_success'),
     path('tickets/', contact_views.my_tickets, name='my_tickets'),
     path('tickets/<int:ticket_id>/update/', contact_views.ticket_update, name='ticket_update'),
+    path('resolve-door-alert/<int:log_id>/', resolve_door_alert, name='resolve_door_alert'),
+
     
 ]

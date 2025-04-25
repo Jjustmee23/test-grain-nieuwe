@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 from django.utils import timezone
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 
 # City model
@@ -102,7 +104,8 @@ class RawData(models.Model):
     length = models.IntegerField(null=True, blank=True)
     version = models.IntegerField(null=True, blank=True)
     end_flag = models.IntegerField(null=True, blank=True)
-
+    
+    
     def __str__(self):
         return f"{self.device} - {self.timestamp}"
     
@@ -257,6 +260,27 @@ class Notification(models.Model):
     class Meta:
         ordering = ['-timestamp']
 
+class DoorOpenLogs(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='door_open_logs')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    counter_id = models.IntegerField()  # Store the counter_4 value
+    is_resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='door_logs_resolved'  # Changed this to avoid conflict
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Door Open Log'
+        verbose_name_plural = 'Door Open Logs'
+
+    def __str__(self):
+        return f"Door Open Log - Device: {self.device.name} at {self.timestamp}"
         
 class ContactTicket(models.Model):
     TICKET_TYPES = [
@@ -359,3 +383,26 @@ class ContactTicket(models.Model):
         if self.is_closed and self.updated_at and self.created_at:
             return self.updated_at - self.created_at
         return None
+
+       
+@receiver(pre_save, sender=RawData)
+def handle_counter_4_change(sender, instance, **kwargs):
+    try:
+        # Get the previous state of this RawData instance
+        old_instance = RawData.objects.get(id=instance.id)
+        
+        # Check if counter_4 has changed from null to a value
+        if old_instance.counter_4 is None and instance.counter_4 is not None:
+            # Create a new DoorOpenLogs entry
+            DoorOpenLogs.objects.create(
+                device=instance.device,
+                counter_id=instance.counter_4
+            )
+    except RawData.DoesNotExist:
+        # This is a new instance
+        if instance.counter_4 is not None:
+            # Create a new DoorOpenLogs entry for new instances with counter_4
+            DoorOpenLogs.objects.create(
+                device=instance.device,
+                counter_id=instance.counter_4
+            )

@@ -101,7 +101,9 @@ urlpatterns = [
     path('api/devices/',apis.get_devices,name='get-devices'),
 
     # Include mill URLs
-    path('', include(('mill.urls', 'mill'), namespace='mill')),
+    path('', include(('mill.urls', 'mill'))),
+    path('resolve-door-alert/<int:log_id>/', views.resolve_door_alert, name='resolve_door_alert'),
+
 ]
 
 handler404 = 'mill.views.custom_404_view'

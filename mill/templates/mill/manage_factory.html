@@ -183,10 +183,10 @@
                     </form>
                     
                     <!-- Link Device to Factory -->
-                    <button class="btn btn-success" onclick="openDeviceModal('link', {{ factory.id }});">{% trans 'Link Device' %}</button>
+                    <button class="btn btn-success" onclick="openDeviceModal('link', '{{ factory.id }}');">{% trans 'Link Device' %}</button>
                     
                     <!-- Unlink Device from Factory -->
-                    <button class="btn btn-warning" onclick="openDeviceModal('unlink', {{ factory.id }});">{% trans 'Unlink Device' %}</button>
+                    <button class="btn btn-warning" onclick="openDeviceModal('unlink', '{{ factory.id }}');">{% trans 'Unlink Device' %}</button>
                 </td>
             </tr>
             {% endfor %}
