@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.db import transaction
 from mill.models import Batch, Factory, FlourBagCount
 from mill.forms import BatchForm
+from mill.utils import is_super_admin , allowed_factories
 from datetime import datetime
 import logging
 
@@ -20,15 +21,15 @@ class BatchListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # Filter by factory if specified
-        factory_id = self.request.GET.get('factory')
-        if factory_id:
-            queryset = queryset.filter(factory_id=factory_id)
+        allowed_factories_list = allowed_factories(self.request)
+        queryset = queryset.filter(factory__in=allowed_factories_list)
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['factories'] = Factory.objects.filter(status=True)
+        print('context data')
+        # context['factories'] = [Factory.objects.filter(status=True)]
+        context['is_super_admin'] = is_super_admin(self.request.user)
         return context
 
 class BatchCreateView(LoginRequiredMixin, CreateView):

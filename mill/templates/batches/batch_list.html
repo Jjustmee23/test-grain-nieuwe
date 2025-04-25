@@ -5,9 +5,11 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Batches</h1>
+{% if is_super_admin %}
     <a href="{% url 'batch-create' %}" class="action-button">
         <i class="fas fa-plus"></i> Create New Batch
     </a>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -35,10 +37,14 @@
                         <td>{{ batch.expected_flour_output }}</td>
                         <td>{{ batch.actual_flour_output }}</td>
                         <td>
-                            {% if batch.is_completed %}
+                            {% if batch.status == "completed" %}
                             <span class="badge bg-success">Completed</span>
+                            {% elif batch.status == "pending" %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif batch.status == "rejected" %}
+                            <span class="badge bg-danger">Rejected</span>
                             {% else %}
-                            <span class="badge bg-primary">In Progress</span>
+                            <span class="badge bg-primary">In Progress {{ batch.status }}</span>
                             {% endif %}
                         </td>
                         <td>{{ batch.created_at|date:"Y-m-d H:i" }}</td>

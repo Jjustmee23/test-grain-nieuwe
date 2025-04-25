@@ -6,7 +6,6 @@ from .views_new import testmill
 from mill import views, apis
 from django.contrib.auth import views as auth_views
 
-
 urlpatterns = [
     path('/', views.index, name='index'),
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
@@ -83,11 +82,13 @@ urlpatterns = [
     path('upload-devices/', views.upload_devices, name='upload_devices'),
 
     # Notifications Urls
-    # path('notifications/', views.NotificationListView.as_view(), name='notifications'),
+
+    path('notifications/', views.NotificationListView.as_view(), name='notifications'),
     path('notifications/mark-read/<int:pk>/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/delete/<int:pk>/', views.delete_notification, name='delete_notification'),
     # path('notifications/create/', views.NotificationCreateView.as_view(), name='notification-create'),
-    # path('notifications/<int:pk>/', views.NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/<int:pk>/', views.NotificationDetailView.as_view(), name='notification-detail'),
+
     # path('notifications/<int:pk>/update/', views.NotificationUpdateView.as_view(), name='notification-update'),
 
     # API endpoints
@@ -95,6 +96,7 @@ urlpatterns = [
     path('api/factory-devices/<int:factory_id>/', views.api_get_factory_devices, name='api_get_factory_devices'),
 
     path('api/chart_data/', apis.chart_data, name='chart_data'),
+
     path('api/devices/',apis.get_devices,name='get-devices'),
     path('resolve-door-alert/<int:log_id>/', views.resolve_door_alert, name='resolve_door_alert'),
     
@@ -107,4 +109,8 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/update/', views.ticket_update, name='ticket_update'),
     
 
+
+    path('api/devices/',apis.get_devices,name='get-devices')
+
 ]
+
