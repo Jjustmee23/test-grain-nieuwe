@@ -13,7 +13,7 @@ WORKDIR /app
 
 # Copy the current directory contents into the container at /app
 COPY . /app
-
+RUN ping -c 4 pypi.org
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt --timeout=100 --retries=5
 
