@@ -36,6 +36,10 @@ jobs:
               git pull origin master
             fi
             
+            
+            ping -c 4 pypi.org
+            curl -v https://pypi.org/simple/
+
             # Stop and remove all running containers if any
             docker-compose down 
             

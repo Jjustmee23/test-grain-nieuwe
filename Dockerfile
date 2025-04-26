@@ -15,7 +15,7 @@ WORKDIR /app
 COPY . /app
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --timeout=100 --retries=5
 
 # Run migrations during container build (not recommended for production)
 RUN python manage.py makemigrations 
