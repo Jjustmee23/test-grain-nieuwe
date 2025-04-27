@@ -29,13 +29,13 @@
     <div class="notifications-container">
         {% include 'mill/notifications.html' %}
     </div>
-    <main class="content">
+  
         <div>
     {% block content %}
     <!-- Content from child templates will go here -->
     {% endblock %}
         </div>
-    </main>
+  
     {% block footer %}
        {% include 'mill/footer.html' %}
     {% endblock %}
