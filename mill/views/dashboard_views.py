@@ -17,7 +17,7 @@ def dashboard(request):
     current_datetime = timezone.now()
     
     # Grab all cities
-    cities= allowed_cities(request.user)
+    cities= allowed_cities(request)
     
     # Read cities & date from query
     selected_cities_param = request.GET.get('cities')
