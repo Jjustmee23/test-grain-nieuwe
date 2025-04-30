@@ -49,7 +49,7 @@ def dashboard(request):
         selected_date = current_datetime.date()
 
     # Filter factories for selected cities
-    factories =  allowed_factories(request.user).filter(city_id__in=selected_city_ids)
+    factories =  allowed_factories(request).filter(city_id__in=selected_city_ids)
 
     # Query Devices with select_related to reduce queries
     devices = Device.objects.filter(factory__in=factories).select_related('factory')
