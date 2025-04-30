@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status
+from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status, allowed_cities, allowed_factories
 from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs
 from django.db.models import Sum
 from datetime import datetime
@@ -17,10 +17,7 @@ def dashboard(request):
     current_datetime = timezone.now()
     
     # Grab all cities
-    if request.user.groups.filter(name='super_admin').exists():
-        cities = City.objects.all()
-    else:
-        cities = request.user.userprofile.allowed_cities.all()    
+    cities= allowed_cities(request.user)
     
     # Read cities & date from query
     selected_cities_param = request.GET.get('cities')
@@ -52,7 +49,7 @@ def dashboard(request):
         selected_date = current_datetime.date()
 
     # Filter factories for selected cities
-    factories = Factory.objects.filter(city_id__in=selected_city_ids)
+    factories =  allowed_factories(request.user).filter(city_id__in=selected_city_ids)
 
     # Query Devices with select_related to reduce queries
     devices = Device.objects.filter(factory__in=factories).select_related('factory')
