@@ -246,6 +246,148 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('editBatchForm');
+    
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create and show success alert
+                const alertHTML = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Success!</strong> ${data.message || 'Batch updated successfully.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                // Insert alert at the top of the container
+                const container = document.querySelector('.container-fluid');
+                container.insertAdjacentHTML('afterbegin', alertHTML);
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editBatchModal'));
+                modal.hide();
+                
+                // Update charts with new data
+                setTimeout(() => {
+                    const batchData = {
+                        wheatAmount: data.batch_data.wheat_amount,
+                        expectedOutput: data.batch_data.expected_flour_output,
+                        actualOutput: data.batch_data.actual_flour_output,
+                        wasteFactor: data.batch_data.waste_factor,
+                    };
+                    
+                    // Update all charts with new data
+                    updateCharts(batchData);
+                    
+                    // Update the displayed values in the Production Stats card
+                    updateProductionStats(data.batch_data);
+                }, 100);
+                
+                // Auto-dismiss alert after 5 seconds
+                setTimeout(() => {
+                    const alert = document.querySelector('.alert');
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            } else {
+                // Show error alert
+                const alertHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Error!</strong> ${data.error || 'An error occurred while updating the batch.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                const container = document.querySelector('.container-fluid');
+                container.insertAdjacentHTML('afterbegin', alertHTML);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Show error alert
+            const alertHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error!</strong> An unexpected error occurred while updating the batch.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            const container = document.querySelector('.container-fluid');
+            container.insertAdjacentHTML('afterbegin', alertHTML);
+        });
+    });
+
+    // Function to update charts with new data
+    function updateCharts(batchData) {
+        // Update Production Timeline Chart
+        const timelineChart = Chart.getChart('productionTimelineChart');
+        if (timelineChart) {
+            timelineChart.data.datasets[0].data = [0, 
+                batchData.expectedOutput * 0.25,
+                batchData.expectedOutput * 0.5,
+                batchData.expectedOutput * 0.75,
+                batchData.expectedOutput
+            ];
+            timelineChart.data.datasets[1].data = [0,
+                batchData.actualOutput * 0.25,
+                batchData.actualOutput * 0.5,
+                batchData.actualOutput * 0.75,
+                batchData.actualOutput
+            ];
+            timelineChart.update();
+        }
+
+        // Update Output Comparison Chart
+        const outputChart = Chart.getChart('outputComparisonChart');
+        if (outputChart) {
+            outputChart.data.datasets[0].data = [
+                batchData.wheatAmount,
+                batchData.expectedOutput,
+                batchData.actualOutput
+            ];
+            outputChart.update();
+        }
+
+        // Update Efficiency Metrics Chart
+        const efficiencyChart = Chart.getChart('efficiencyMetricsChart');
+        if (efficiencyChart) {
+            const yieldRate = (batchData.actualOutput / batchData.expectedOutput) * 100;
+            efficiencyChart.data.datasets[0].data = [yieldRate, batchData.wasteFactor];
+            efficiencyChart.update();
+        }
+    }
+
+    // Function to update production stats display
+    function updateProductionStats(data) {
+        // Update wheat amount
+        const wheatElement = document.querySelector('.card-body h3:nth-of-type(1)');
+        if (wheatElement) wheatElement.textContent = `${data.wheat_amount} tons`;
+
+        // Update expected output
+        const expectedElement = document.querySelector('.card-body h3:nth-of-type(2)');
+        if (expectedElement) expectedElement.textContent = `${data.expected_flour_output} tons`;
+
+        // Update actual output
+        const actualElement = document.querySelector('.card-body h3:nth-of-type(3)');
+        if (actualElement) actualElement.textContent = `${data.actual_flour_output} tons`;
+
+        // Update yield rate
+        const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
+        const yieldElement = document.querySelector('.card-body h3:nth-of-type(4)');
+        if (yieldElement) yieldElement.textContent = `${yieldRate}%`;
+    }
+});
+    document.addEventListener('DOMContentLoaded', function() {
         // Get the batch data from the template
         const batchData = {
             wheatAmount: {{ batch.wheat_amount }},

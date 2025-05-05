@@ -5,6 +5,7 @@ from django.db.models.functions import TruncDate, TruncHour
 from mill.models import Batch, FlourBagCount
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 
 
 @login_required
@@ -66,6 +67,37 @@ def batch_performance(request, batch_id):
         'batch': batch,
         'hourly_data': hourly_data,
     })
+
+def batch_update(request, pk):
+    if request.method == 'POST':
+        batch = get_object_or_404(Batch, pk=pk)
+        try:
+            # Update batch with form data
+            batch.wheat_amount = float(request.POST.get('wheat_amount', batch.wheat_amount))
+            batch.waste_factor = float(request.POST.get('waste_factor', batch.waste_factor))
+            batch.actual_flour_output = float(request.POST.get('actual_flour_output', batch.actual_flour_output))
+            batch.is_completed = request.POST.get('is_completed') == 'true'
+            batch.save()
+
+            # Return success response with updated data
+            return JsonResponse({
+                'success': True,
+                'message': 'Batch updated successfully',
+                'batch_data': {
+                    'wheat_amount': batch.wheat_amount,
+                    'expected_flour_output': batch.expected_flour_output,
+                    'actual_flour_output': batch.actual_flour_output,
+                    'waste_factor': batch.waste_factor,
+                }
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
 def batch_detail(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     yield_rate = (batch.actual_flour_output / batch.expected_flour_output * 100) if batch.expected_flour_output else 0
