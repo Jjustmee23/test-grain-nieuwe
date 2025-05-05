@@ -89,7 +89,7 @@
         </div>
     </div>
 
-    <!-- Production Timeline -->
+    <!-- Production Timeline
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="card-title mb-0">Production Timeline</h5>
@@ -97,7 +97,45 @@
         <div class="card-body">
             <canvas id="productionChart"></canvas>
         </div>
+    </div> -->
+    <div class="row mb-4">
+        <!-- Production Timeline Chart -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Production Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productionTimelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Comparison Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Output Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="outputComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Efficiency Metrics Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Efficiency Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="efficiencyMetricsChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
+    
 
     <!-- Alerts Section -->
     {% if alerts %}
@@ -207,47 +245,143 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const editForm = document.getElementById('editBatchForm');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the batch data from the template
+        const batchData = {
+            wheatAmount: {{ batch.wheat_amount }},
+            expectedOutput: {{ batch.expected_flour_output }},
+            actualOutput: {{ batch.actual_flour_output }},
+            wasteFactor: {{ batch.waste_factor }},
+        };
     
-    editForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: new FormData(this),
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        // Production Timeline Chart
+        const timelineCtx = document.getElementById('productionTimelineChart').getContext('2d');
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: ['Start', '25%', '50%', '75%', 'Current'],
+                datasets: [{
+                    label: 'Expected Output',
+                    data: [0, 
+                        batchData.expectedOutput * 0.25,
+                        batchData.expectedOutput * 0.5,
+                        batchData.expectedOutput * 0.75,
+                        batchData.expectedOutput
+                    ],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    fill: false
+                },
+                {
+                    label: 'Actual Output',
+                    data: [0,
+                        batchData.actualOutput * 0.25,
+                        batchData.actualOutput * 0.5,
+                        batchData.actualOutput * 0.75,
+                        batchData.actualOutput
+                    ],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Production Progress Over Time'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Output (tons)'
+                        }
+                    }
+                }
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success message
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    ${data.message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.d-flex'));
-                
-                // Close modal and refresh page after a short delay
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editBatchModal'));
-                modal.hide();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
-            } else {
-                // Show error message
-                alert(data.error || 'An error occurred while updating the batch.');
+        });
+    
+        // Output Comparison Chart
+        const outputCtx = document.getElementById('outputComparisonChart').getContext('2d');
+        new Chart(outputCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Wheat Input', 'Expected Output', 'Actual Output'],
+                datasets: [{
+                    data: [
+                        batchData.wheatAmount,
+                        batchData.expectedOutput,
+                        batchData.actualOutput
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Input vs Output Comparison'
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (tons)'
+                        }
+                    }
+                }
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while updating the batch.');
+        });
+    
+        // Efficiency Metrics Chart
+        const efficiencyCtx = document.getElementById('efficiencyMetricsChart').getContext('2d');
+        const yieldRate = (batchData.actualOutput / batchData.expectedOutput) * 100;
+        new Chart(efficiencyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Yield Rate', 'Waste Factor'],
+                datasets: [{
+                    data: [yieldRate, batchData.wasteFactor],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Efficiency Metrics (%)'
+                    }
+                }
+            }
         });
     });
-});
-</script>
-{% endblock %}
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% endblock %}

@@ -66,3 +66,13 @@ def batch_performance(request, batch_id):
         'batch': batch,
         'hourly_data': hourly_data,
     })
+def batch_detail(request, pk):
+    batch = get_object_or_404(Batch, pk=pk)
+    yield_rate = (batch.actual_flour_output / batch.expected_flour_output * 100) if batch.expected_flour_output else 0
+    
+    context = {
+        'batch': batch,
+        'yield_rate': yield_rate,
+        'alerts': batch.alerts.all() if hasattr(batch, 'alerts') else [],
+    }
+    return render(request, 'mill/batch_details.html', context)
