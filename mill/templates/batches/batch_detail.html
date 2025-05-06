@@ -134,6 +134,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Production Statistics Chart -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Production Statistics</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">Hourly</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">Daily</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">Monthly</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="yearly">Yearly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="productionStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
     
 
@@ -366,6 +384,7 @@
             efficiencyChart.update();
         }
     }
+    
 
     // Function to update production stats display
     function updateProductionStats(data) {
@@ -525,5 +544,192 @@
         });
     });
     </script>
+ <script>
+ document.addEventListener('DOMContentLoaded', function() {
+    try {
+        let productionStatsChart = null;
+        const productionStatsCtx = document.getElementById('productionStatsChart');
+        
+        if (!productionStatsCtx) {
+            console.error("Could not find productionStatsChart canvas element");
+            return;
+        }
+
+        // Default sample data structure with actual batch data
+        const defaultProductionStats = {
+            hourly: Array.from({length: 24}, (_, i) => ({
+                period: new Date(Date.now() - i * 3600000).toISOString(),
+                production: {{ batch.wheat_amount }}, // Use actual wheat amount
+                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+            })),
+            daily: Array.from({length: 7}, (_, i) => ({
+                period: new Date(Date.now() - i * 86400000).toISOString(),
+                production: {{ batch.wheat_amount }},
+                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+            })),
+            monthly: Array.from({length: 12}, (_, i) => ({
+                period: new Date(Date.now() - i * 2592000000).toISOString(),
+                production: {{ batch.wheat_amount }},
+                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+            })),
+            yearly: Array.from({length: 5}, (_, i) => ({
+                period: new Date(Date.now() - i * 31536000000).toISOString(),
+                production: {{ batch.wheat_amount }},
+                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+            }))
+        };
+
+        function createProductionStatsChart(timeScale = 'hourly') {
+            try {
+                const stats = defaultProductionStats[timeScale];
+                
+                // Destroy existing chart if it exists
+                if (productionStatsChart) {
+                    productionStatsChart.destroy();
+                }
+
+                productionStatsChart = new Chart(productionStatsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: stats.map(item => {
+                            const date = new Date(item.period);
+                            switch(timeScale) {
+                                case 'hourly':
+                                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                case 'daily':
+                                    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                                case 'monthly':
+                                    return date.toLocaleDateString([], { month: 'short', year: 'numeric' });
+                                case 'yearly':
+                                    return date.getFullYear().toString();
+                                default:
+                                    return date.toLocaleDateString();
+                            }
+                        }),
+                        datasets: [
+                            {
+                                label: 'Wheat Amount (tons)',
+                                data: stats.map(item => item.production),
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                yAxisID: 'y',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Utilization (%)',
+                                data: stats.map(item => item.utilization),
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                yAxisID: 'y1',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                titleColor: '#000',
+                                bodyColor: '#000',
+                                borderColor: '#ddd',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: true
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'Wheat Amount (tons)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0,0,0,0.05)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'Utilization (%)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    drawOnChartArea: false
+                                },
+                                min: 0,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating chart:', error);
+            }
+        }
+
+        // Initialize with hourly data
+        createProductionStatsChart('hourly');
+
+        // Add event listeners for time scale buttons
+        document.querySelectorAll('[data-time-scale]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const timeScale = e.target.dataset.timeScale;
+                document.querySelectorAll('[data-time-scale]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                e.target.classList.add('active');
+                createProductionStatsChart(timeScale);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+    }
+});
+ </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% endblock %}

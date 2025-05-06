@@ -1,13 +1,79 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Avg, F
-from django.db.models.functions import TruncDate, TruncHour
+from django.db.models import Sum, Avg, F, FloatField, ExpressionWrapper
+from django.db.models.functions import TruncDate, TruncHour, TruncMonth, TruncYear
 from mill.models import Batch, FlourBagCount
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 
-
+@login_required
+def get_production_stats(request):
+    batch_id = request.GET.get('batch_id')
+    timeScale = request.GET.get('timeScale', 'hourly')
+    
+    if not batch_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'Batch ID is required'
+        })
+    
+    try:
+        batch = Batch.objects.get(id=batch_id)
+        
+        # Get the flour bag counts for this batch
+        flour_counts = FlourBagCount.objects.filter(batch=batch)
+        
+        if timeScale == 'hourly':
+            flour_counts = flour_counts.annotate(
+                period=TruncHour('timestamp')
+            )
+        elif timeScale == 'daily':
+            flour_counts = flour_counts.annotate(
+                period=TruncDate('timestamp')
+            )
+        elif timeScale == 'monthly':
+            flour_counts = flour_counts.annotate(
+                period=TruncMonth('timestamp')
+            )
+        else:  # yearly
+            flour_counts = flour_counts.annotate(
+                period=TruncYear('timestamp')
+            )
+        
+        # Aggregate the data
+        stats = flour_counts.values('period').annotate(
+            production=Sum('bags_weight'),
+            utilization=ExpressionWrapper(
+                (F('bags_weight') * 100.0) / batch.wheat_amount,
+                output_field=FloatField()
+            )
+        ).order_by('period')
+        
+        # Format the response data
+        response_data = []
+        for stat in stats:
+            response_data.append({
+                'period': stat['period'].isoformat(),
+                'production': float(stat['production'] or 0),
+                'utilization': float(stat['utilization'] or 0)
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'data': response_data
+        })
+        
+    except Batch.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Batch not found'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 @login_required
 def analytics_dashboard(request):
     # Get date range from request or default to last 30 days
@@ -99,7 +165,7 @@ def batch_update(request, pk):
 
 
 def batch_detail(request, pk):
-    batch = get_object_or_404(Batch, pk=pk)
+    batch = get_object_or_404(Batch.objects.prefetch_related('flour_bag_counts'), pk=pk)
     yield_rate = (batch.actual_flour_output / batch.expected_flour_output * 100) if batch.expected_flour_output else 0
     
     context = {
