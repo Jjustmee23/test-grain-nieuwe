@@ -37,8 +37,14 @@ def dashboard(request):
             selected_city_ids = []
 
     # If no cities are selected or invalid selection, use all available cities
-    if not selected_city_ids:
+    # Check if explicitly unselecting all cities
+    unselect_all = request.GET.get('unselect_all', 'false') == 'true'
+
+    # If no cities are selected or invalid selection, and not explicitly unselecting all
+    if not selected_city_ids and not unselect_all:
         selected_city_ids = list(cities.values_list('id', flat=True))
+    elif not selected_city_ids and unselect_all:
+        selected_city_ids = []
 
     # Validate/parse date
     try:
