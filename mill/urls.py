@@ -53,6 +53,7 @@ urlpatterns = [
     # Views
     path('', views.index, name='index'),
     path('dashboard', views.dashboard, name='dashboard'),
+    path('batch/<int:pk>/', views.batch_detail, name='batch-detail'),
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
