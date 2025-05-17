@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Avg, F, FloatField, ExpressionWrapper
 from django.db.models.functions import TruncDate, TruncHour, TruncMonth, TruncYear
-from mill.models import Batch, FlourBagCount
+from mill.models import Batch, FlourBagCount, Factory
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -174,3 +174,78 @@ def batch_detail(request, pk):
         'alerts': batch.alerts.all() if hasattr(batch, 'alerts') else [],
     }
     return render(request, 'mill/batch_details.html', context)
+
+# @login_required
+def get_batch_details_by_factory(factory_name):
+    """
+    Utility function to get batch details for a factory
+    """
+    try:
+        # Get the factory object
+        factory = Factory.objects.get(name=factory_name)
+        
+        # Get all batches for this factory with related data
+        batches = Batch.objects.filter(
+            factory=factory
+        ).select_related(
+            'factory'
+        ).prefetch_related(
+            'flour_bag_counts',
+            'alerts'
+        ).order_by('-created_at')
+        
+        batch_details = []
+        for batch in batches:
+            # Calculate yield rate
+            yield_rate = (batch.actual_flour_output / batch.expected_flour_output * 100) if batch.expected_flour_output else 0
+            
+            # Get hourly production data for this batch
+            hourly_data = batch.flour_bag_counts.annotate(
+                hour=TruncHour('timestamp')
+            ).values('hour').annotate(
+                total_bags=Sum('bag_count'),
+                total_weight=Sum('bags_weight')
+            ).order_by('hour')
+            
+            # Create batch detail object
+            batch_detail = {
+                'id': batch.id,
+                'batch_number': batch.batch_number,
+                'start_date': batch.start_date.isoformat() if batch.start_date else None,
+                'end_date': batch.end_date.isoformat() if batch.end_date else None,
+                'status': batch.get_status_display(),
+                'is_completed': batch.is_completed,
+                'wheat_amount': float(batch.wheat_amount or 0),
+                'expected_flour_output': float(batch.expected_flour_output or 0),
+                'actual_flour_output': float(batch.actual_flour_output or 0),
+                'waste_factor': float(batch.waste_factor or 0),
+                'yield_rate': float(yield_rate),
+                'hourly_data': list(hourly_data),
+                'alerts': [
+                    {
+                        'type': alert.alert_type,
+                        'severity': alert.severity,
+                        'message': alert.message,
+                        'created_at': alert.created_at.isoformat(),
+                        'is_acknowledged': alert.is_acknowledged
+                    } for alert in batch.alerts.all()
+                ]
+            }
+            batch_details.append(batch_detail)
+            
+        return {
+            'success': True,
+            'factory_name': factory_name,
+            'batch_details': batch_details
+        }
+        
+    except Factory.DoesNotExist:
+        return {
+            'success': False,
+            'error': f'Factory with name {factory_name} not found'
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
