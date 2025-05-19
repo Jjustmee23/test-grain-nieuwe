@@ -70,39 +70,34 @@
                 </div>
 
                 <!-- City Selection -->
-                <div class="form-group mb-3">
-                        <label class="form-label fw-bold">{% trans "Select Cities" %}</label>
-                        <div class="city-selector">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="selectAllCities" 
-                                       {% if not selected_city_ids and not request.GET.unselect_all %}checked{% endif %} 
-                                       onchange="handleSelectAll()">
-                                <label class="form-check-label" for="selectAllCities">
-                                    {% trans "All Cities" %}
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="unselectAllCities" 
-                                       {% if request.GET.unselect_all == 'true' %}checked{% endif %}
-                                       onchange="handleUnselectAll()">
-                                <label class="form-check-label" for="unselectAllCities">
-                                    {% trans "Unselect All Cities" %}
-                                </label>
-                            </div>
-                            <hr class="my-2">
-                            <div class="city-checkboxes">
-                                {% for city in cities %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Select Cities</label>
+                        <div class="card">
+                            <div class="card-body">
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input city-checkbox" type="checkbox" id="city{{ city.id }}"
-                                        value="{{ city.id }}" {% if selected_city_ids and city.id in selected_city_ids %}checked{% endif %} onchange="handleCitySelection()">
-                                    <label class="form-check-label" for="city{{ city.id }}">
-                                        {{ city.name }}
+                                    <input class="form-check-input" type="checkbox" id="selectAllCities" onchange="handleSelectAll()">
+                                    <label class="form-check-label" for="selectAllCities">
+                                        Select All Cities
                                     </label>
                                 </div>
-                                {% endfor %}
+                                <hr>
+                                <div class="city-checkboxes">
+                                    {% for city in cities %}
+                                    <div class="form-check">
+                                        <input class="form-check-input city-checkbox" type="checkbox" 
+                                               name="cities" value="{{ city.id }}" 
+                                               id="city{{ city.id }}">
+                                        <label class="form-check-label" for="city{{ city.id }}">
+                                            {{ city.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
                 <!-- Buttons -->
                 <div class="row">
