@@ -9,6 +9,7 @@ from django.utils.translation import gettext as _
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from mill.utils import admin_required
 
 def log_activity(user, obj, action_flag, change_message):
     """Helper function to log user activity"""
@@ -25,7 +26,8 @@ def log_activity(user, obj, action_flag, change_message):
         )
     except Exception as e:
         print(f"Error logging activity: {e}")
-
+        
+@admin_required
 def manage_factory(request):
     # Get search parameters from either GET or POST
     search_query = request.GET.get('search', '').strip()

@@ -3,7 +3,15 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import Group, User
+from django.core.exceptions import PermissionDenied
 from mill.forms import CustomUserCreationForm, UserCreationForm
+
+def superadmin_required(function):
+    def wrap(request, *args, **kwargs):
+        if request.user.groups.filter(name='Superadmin').exists():
+            return function(request, *args, **kwargs)
+        raise PermissionDenied
+    return wrap
 from django.contrib.auth import login
 from django.contrib import messages
 from mill.models import UserProfile
@@ -38,10 +46,10 @@ def register(request):
         form = CustomUserCreationForm()
     return render(request, 'mill/register.html', {'form': form})
 
-@login_required
+@superadmin_required
 def profile(request):
     return render(request, 'mill/profile.html')
-@login_required
+@superadmin_required
 def manage_users(request):
     # Get all users who are NOT superusers and NOT in the Superadmin group
     users = User.objects.exclude(is_superuser=True).exclude(groups__name='Superadmin').exclude(groups__name='Admin')
@@ -49,7 +57,7 @@ def manage_users(request):
 
 
 # Create new user view
-@login_required
+@superadmin_required
 def create_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
@@ -76,7 +84,7 @@ def create_user(request):
     return render(request, 'mill/create_user.html', {'form': form})
 
 # Edit existing user view
-@login_required
+@superadmin_required
 def edit_user(request, user_id):
     pass
 #     user = get_object_or_404(User, id=user_id)
@@ -90,7 +98,7 @@ def edit_user(request, user_id):
 #     return render(request, 'mill/edit_user.html', {'form': form, 'user': user})
 
 # Delete user view
-@login_required
+@superadmin_required
 def delete_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
@@ -100,7 +108,7 @@ def delete_user(request, user_id):
     return render(request, 'mill/delete_user.html', {'user': user})
 
 # Assign permissions/rights to a user (e.g., add to group)
-@login_required
+@superadmin_required
 def assign_rights(request, user_id):
     user = get_object_or_404(User, id=user_id)
     groups = Group.objects.all()  # Get all available groups (roles)

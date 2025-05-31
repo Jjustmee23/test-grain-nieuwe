@@ -6,6 +6,7 @@ from mill.utils import allowed_cities
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from mill.utils import admin_required
 
 def log_activity(user, obj, action_flag, change_message):
     """Helper function to log user activity"""
@@ -25,8 +26,7 @@ def log_activity(user, obj, action_flag, change_message):
         )
     except Exception as e:
         print(f"Error logging activity: {e}")
-
-@login_required
+@admin_required
 def manage_city(request):
     if request.method == 'POST':
         action = request.POST.get('action')
