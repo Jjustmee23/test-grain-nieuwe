@@ -545,7 +545,7 @@
     });
     </script>
  <script>
- document.addEventListener('DOMContentLoaded', function() {
+   document.addEventListener('DOMContentLoaded', function() {
     try {
         let productionStatsChart = null;
         const productionStatsCtx = document.getElementById('productionStatsChart');
@@ -555,83 +555,81 @@
             return;
         }
 
-        // Default sample data structure with actual batch data
-        const defaultProductionStats = {
+        // Default data structure with actual batch data
+        const productionData = {
             hourly: Array.from({length: 24}, (_, i) => ({
                 period: new Date(Date.now() - i * 3600000).toISOString(),
-                production: {{ batch.wheat_amount }}, // Use actual wheat amount
-                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+                production: {{ batch.wheat_amount }}
             })),
             daily: Array.from({length: 7}, (_, i) => ({
                 period: new Date(Date.now() - i * 86400000).toISOString(),
-                production: {{ batch.wheat_amount }},
-                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+                production: {{ batch.wheat_amount }}
             })),
             monthly: Array.from({length: 12}, (_, i) => ({
                 period: new Date(Date.now() - i * 2592000000).toISOString(),
-                production: {{ batch.wheat_amount }},
-                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+                production: {{ batch.wheat_amount }}
             })),
             yearly: Array.from({length: 5}, (_, i) => ({
                 period: new Date(Date.now() - i * 31536000000).toISOString(),
-                production: {{ batch.wheat_amount }},
-                utilization: ({{ batch.actual_flour_output }} / {{ batch.expected_flour_output }} * 100) || 0
+                production: {{ batch.wheat_amount }}
             }))
         };
 
         function createProductionStatsChart(timeScale = 'hourly') {
             try {
-                const stats = defaultProductionStats[timeScale];
+                const data = productionData[timeScale];
                 
                 // Destroy existing chart if it exists
                 if (productionStatsChart) {
                     productionStatsChart.destroy();
                 }
 
+                const labels = data.map(item => {
+                    const date = new Date(item.period);
+                    switch(timeScale) {
+                        case 'hourly':
+                            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        case 'daily':
+                            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                        case 'monthly':
+                            return date.toLocaleDateString([], { month: 'short', year: 'numeric' });
+                        case 'yearly':
+                            return date.getFullYear().toString();
+                        default:
+                            return date.toLocaleDateString();
+                    }
+                });
+
                 productionStatsChart = new Chart(productionStatsCtx, {
-                    type: 'line',
+                    type: 'bar',
                     data: {
-                        labels: stats.map(item => {
-                            const date = new Date(item.period);
-                            switch(timeScale) {
-                                case 'hourly':
-                                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                case 'daily':
-                                    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                                case 'monthly':
-                                    return date.toLocaleDateString([], { month: 'short', year: 'numeric' });
-                                case 'yearly':
-                                    return date.getFullYear().toString();
-                                default:
-                                    return date.toLocaleDateString();
-                            }
-                        }),
-                        datasets: [
-                            {
-                                label: 'Wheat Amount (tons)',
-                                data: stats.map(item => item.production),
-                                borderColor: 'rgba(75, 192, 192, 1)',
-                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                yAxisID: 'y',
-                                fill: true,
-                                tension: 0.4
-                            },
-                            {
-                                label: 'Utilization (%)',
-                                data: stats.map(item => item.utilization),
-                                borderColor: 'rgba(255, 99, 132, 1)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                                yAxisID: 'y1',
-                                fill: true,
-                                tension: 0.4
-                            }
-                        ]
+                        labels: labels,
+                        datasets: [{
+                            label: 'Production',
+                            data: data.map(item => item.production),
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
                     },
                     options: {
                         responsive: true,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false,
+                        scales: {
+                            x: { 
+                                title: { 
+                                    display: true, 
+                                    text: 'Date',
+                                    font: { weight: 'bold' }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: { 
+                                    display: true, 
+                                    text: 'Production (Units)',
+                                    font: { weight: 'bold' }
+                                }
+                            }
                         },
                         plugins: {
                             title: {
@@ -641,67 +639,6 @@
                                     size: 16,
                                     weight: 'bold'
                                 }
-                            },
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    padding: 15
-                                }
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                titleColor: '#000',
-                                bodyColor: '#000',
-                                borderColor: '#ddd',
-                                borderWidth: 1,
-                                padding: 10,
-                                displayColors: true
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            },
-                            y: {
-                                type: 'linear',
-                                display: true,
-                                position: 'left',
-                                title: {
-                                    display: true,
-                                    text: 'Wheat Amount (tons)',
-                                    font: {
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    color: 'rgba(0,0,0,0.05)'
-                                }
-                            },
-                            y1: {
-                                type: 'linear',
-                                display: true,
-                                position: 'right',
-                                title: {
-                                    display: true,
-                                    text: 'Utilization (%)',
-                                    font: {
-                                        weight: 'bold'
-                                    }
-                                },
-                                grid: {
-                                    drawOnChartArea: false
-                                },
-                                min: 0,
-                                max: 100
                             }
                         }
                     }
