@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from mill.models import Device
-from mill.utils import calculate_chart_data
+from mill.utils import calculate_chart_data, calculate_batch_chart_data
 
 def get_devices(request):
     devices = Device.objects.all()
@@ -17,3 +17,12 @@ def chart_data(request):
     chart_data = calculate_chart_data(date, factory_id)
     print(chart_data)
     return JsonResponse(chart_data)
+
+def batch_chart_data(request):
+    batch_id = request.GET.get('batch_id')
+    if not batch_id :
+        return JsonResponse({'error': 'Invalid parameters'}, status=400)
+    chart_data = calculate_batch_chart_data(batch_id)
+    print(chart_data)
+    return JsonResponse(chart_data)
+

@@ -126,6 +126,11 @@ def calculate_chart_data(date,factory_id):
 
     return { 'daily_labels': DailyLabels, 'daily_data': DailyData, 'monthly_labels': MonthlyLabels, 'monthly_data': MonthlyData, 'yearly_current': YearlyCurrent, 'yearly_previous': YearlyPrevious , 'daily_total': DailyData[-1], 'monthly_total': MonthlyData[-1], 'weekly_total': WeeklyData}
 
+def calculate_batch_chart_data(batch_id):
+
+    # get todatays date and time
+
+    return { 'daily_labels': {}, 'daily_data': {}, 'monthly_labels': {}, 'monthly_data': {}, 'yearly_current': {}, 'yearly_previous': {} }
 
 def is_super_admin(user):
     return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
