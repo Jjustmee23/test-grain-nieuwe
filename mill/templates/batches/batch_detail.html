@@ -346,44 +346,47 @@
     });
 
     // Function to update charts with new data
-    function updateCharts(batchData) {
-        // Update Production Timeline Chart
-        const timelineChart = Chart.getChart('productionTimelineChart');
-        if (timelineChart) {
-            timelineChart.data.datasets[0].data = [0, 
-                batchData.expectedOutput * 0.25,
-                batchData.expectedOutput * 0.5,
-                batchData.expectedOutput * 0.75,
-                batchData.expectedOutput
-            ];
-            timelineChart.data.datasets[1].data = [0,
-                batchData.actualOutput * 0.25,
-                batchData.actualOutput * 0.5,
-                batchData.actualOutput * 0.75,
-                batchData.actualOutput
-            ];
-            timelineChart.update();
-        }
+function updateCharts(batchData) {
+    // Calculate the efficiency using the formula
+    const efficiency = ((batchData.expectedOutput - batchData.actualOutput) / batchData.expectedOutput * 100) + batchData.wasteFactor;
 
-        // Update Output Comparison Chart
-        const outputChart = Chart.getChart('outputComparisonChart');
-        if (outputChart) {
-            outputChart.data.datasets[0].data = [
-                batchData.wheatAmount,
-                batchData.expectedOutput,
-                batchData.actualOutput
-            ];
-            outputChart.update();
-        }
-
-        // Update Efficiency Metrics Chart
-        const efficiencyChart = Chart.getChart('efficiencyMetricsChart');
-        if (efficiencyChart) {
-            const yieldRate = (batchData.actualOutput / batchData.expectedOutput) * 100;
-            efficiencyChart.data.datasets[0].data = [yieldRate, batchData.wasteFactor];
-            efficiencyChart.update();
-        }
+    // Update Production Timeline Chart
+    const timelineChart = Chart.getChart('productionTimelineChart');
+    if (timelineChart) {
+        timelineChart.data.datasets[0].data = [0, 
+            batchData.expectedOutput * 0.25,
+            batchData.expectedOutput * 0.5,
+            batchData.expectedOutput * 0.75,
+            batchData.expectedOutput
+        ];
+        timelineChart.data.datasets[1].data = [0,
+            batchData.actualOutput * 0.25,
+            batchData.actualOutput * 0.5,
+            batchData.actualOutput * 0.75,
+            batchData.actualOutput
+        ];
+        timelineChart.update();
     }
+
+    // Update Output Comparison Chart
+    const outputChart = Chart.getChart('outputComparisonChart');
+    if (outputChart) {
+        outputChart.data.datasets[0].data = [
+            batchData.wheatAmount,
+            batchData.expectedOutput,
+            batchData.actualOutput
+        ];
+        outputChart.update();
+    }
+
+    // Update Efficiency Metrics Chart
+    const efficiencyChart = Chart.getChart('efficiencyMetricsChart');
+    if (efficiencyChart) {
+        // Use the newly calculated efficiency value
+        efficiencyChart.data.datasets[0].data = [efficiency, batchData.wasteFactor];
+        efficiencyChart.update();
+    }
+}
     
 
     // Function to update production stats display
