@@ -1,10 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from mill.models import Device , City
+from mill.utils import admin_required, superadmin_required
 from django.contrib import messages
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 
+@admin_required
 def log_activity(user, obj, action_flag, change_message):
     """Helper function to log user activity"""
     LogEntry.objects.log_action(
@@ -16,7 +18,7 @@ def log_activity(user, obj, action_flag, change_message):
         change_message=change_message
     )
 # Function to get the highest counter value for the device for each day
-
+@admin_required
 def manage_devices(request):
     # Get all cities for the filter dropdown
     cities = City.objects.filter(status=True)
@@ -72,7 +74,7 @@ def manage_devices(request):
 
     existing_devices = Device.objects.all()
     return render(request, 'mill/manage_devices.html', {'existing_devices': existing_devices})
- 
+@admin_required
 def add_device(request):
     if request.method == 'POST':
         device_name = request.POST.get('new_device_name')
@@ -86,7 +88,7 @@ def add_device(request):
             messages.error(request, 'Please provide both device name and serial number.')
 
         return redirect('manage_devices')  # Redirect back to the manage devices page
-
+@admin_required
 def toggle_device_status(request):
     if request.method == 'POST':
         device_id = request.POST.get('device_id')
@@ -98,7 +100,7 @@ def toggle_device_status(request):
             pass  # Handle the case where the device does not exist
 
     return redirect('manage_devices')  # Redirect back to the manage devices page
-    
+@admin_required    
 def remove_device(request):
     if request.method == 'POST':
         device_id = request.POST.get('device_id')

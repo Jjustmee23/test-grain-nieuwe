@@ -6,8 +6,9 @@ from mill.models import Batch, FlourBagCount, Factory
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from mill.utils import admin_required
 
-@login_required
+@admin_required
 def get_production_stats(request):
     batch_id = request.GET.get('batch_id')
     timeScale = request.GET.get('timeScale', 'hourly')
