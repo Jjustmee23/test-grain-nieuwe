@@ -143,6 +143,8 @@ def calculate_batch_chart_data(batch_id):
     batch = get_object_or_404(Batch, id=batch_id)
     date = timezone.now().date()
 
+    
+
     return {
         "hourly_label":{ },
         "hourly_data": { },
@@ -175,51 +177,6 @@ def calculate_batch_chart_data(batch_id):
         "batch_status": batch.get_status_display(),
         "date": date,
 }
-
-def superadmin_required(function):
-    @wraps(function)
-    def wrap(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if is_super_admin(request.user):
-                return function(request, *args, **kwargs)
-            else:
-                messages.error(request, "This page requires super admin privileges.")
-                return redirect('dashboard')  # Redirect to dashboard
-        return redirect('login')  # Redirect to login if not authenticated
-    return wrap
-
-def is_super_admin(user):
-    return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
-
-def is_admin(user): 
-    return user.is_superuser or user.groups.filter(name='Admin').exists()
-
-# Access control functions
-def is_allowed_factory(request, factory_id):
-    factory = get_object_or_404(Factory, id=factory_id)
-    if is_super_admin(request.user) or is_admin(request.user):
-        return factory
-    if request.user.userprofile.allowed_factories.filter(id=factory.id).exists():
-        return factory
-    return None
-    
-def is_allowed_city(request, city_id):
-    city = get_object_or_404(City, id=city_id)
-    if is_super_admin(request.user):
-        return city
-    if request.user.userprofile.allowed_cities.filter(id=city.id).exists():
-        return city
-    return None
-
-def allowed_cities(request):
-    if is_super_admin(request.user):
-        return City.objects.all()
-    return request.user.userprofile.allowed_cities.all()
-
-def allowed_factories(request):
-    if is_super_admin(request.user):
-        return Factory.objects.all()
-    return Factory.objects.filter(id__in=request.user.userprofile.allowed_factories.all())
 
 # Data calculation functions
 def calculate_daily_data(factory_id, selected_date):
