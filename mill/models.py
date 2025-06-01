@@ -148,7 +148,7 @@ class Batch(models.Model):
         validators=[MinValueValidator(0.0)],
         help_text="Actual flour output in tons"
     )
-    start_date = models.DateTimeField(null=True, blank=True)
+    start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
     STATUS_CHOICES = [
         ('pending', 'Pending'),

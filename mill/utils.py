@@ -1,5 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from datetime import datetime, timedelta
+from mill.models import City, Factory, ProductionData, Batch, TransactionData
+
 
 def check_factory_status(counter_data):
     if counter_data.exists():
@@ -21,8 +24,6 @@ def calculate_stop_time(counter_data, factory_status):
     return 'N/A'
 
 
-from datetime import datetime, timedelta
-from mill.models import City, Factory, ProductionData
 
 def calculate_daily_data(factory_id,selected_date):
     print(selected_date, factory_id)
@@ -128,9 +129,41 @@ def calculate_chart_data(date,factory_id):
 
 def calculate_batch_chart_data(batch_id):
 
-    # get todatays date and time
+    batch = get_object_or_404(Batch, id=batch_id)
+    date = timezone.now().date()
 
-    return { 'daily_labels': {}, 'daily_data': {}, 'monthly_labels': {}, 'monthly_data': {}, 'yearly_current': {}, 'yearly_previous': {} }
+    return {
+        "hourly_label":{ },
+        "hourly_data": { },
+
+        "daily_labels": [
+            "2025-05-26",
+            "2025-05-27",
+            "2025-05-28",
+            "2025-05-29",
+            "2025-05-30",
+            "2025-05-31"
+        ],
+        "daily_data": [
+            2126,
+            2834,
+            2584,
+            1723,
+            854,
+            1893
+        ],
+
+        "peresent_data":{
+        "Actual": 11893,
+        "Expected": 15000,  
+        "waste_ratio" : 0.2
+        },
+        "batch_id": batch_id,
+        "batch_number": batch.batch_number,
+        "batch_start_date": batch.start_date,
+        "batch_status": batch.get_status_display(),
+        "date": date,
+}
 
 def is_super_admin(user):
     return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
