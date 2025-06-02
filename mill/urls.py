@@ -97,6 +97,7 @@ urlpatterns = [
     path('api/factory-devices/<int:factory_id>/', views.api_get_factory_devices, name='api_get_factory_devices'),
 
     path('api/chart_data/', apis.chart_data, name='chart_data'),
+    path('api/batch_chart_data/', apis.batch_chart_data, name='batch_chart_data'),
 
     path('api/devices/',apis.get_devices,name='get-devices'),
     path('resolve-door-alert/<int:log_id>/', views.resolve_door_alert, name='resolve_door_alert'),

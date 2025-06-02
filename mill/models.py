@@ -148,8 +148,9 @@ class Batch(models.Model):
         validators=[MinValueValidator(0.0)],
         help_text="Actual flour output in tons"
     )
-    start_date = models.DateTimeField(null=True, blank=True)
+    start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
+    start_value = models.IntegerField(default=0, help_text="Starting counter value from latest transaction")
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('in_process', 'In Process'),
@@ -162,9 +163,19 @@ class Batch(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        if not self.pk:  # Only on creation
+            # Get the latest transaction data for all devices in this factory
+            latest_transaction = TransactionData.objects.filter(
+                device__factory=self.factory
+            ).order_by('-created_at').first()
+            
+            if latest_transaction:
+                self.start_value = latest_transaction.yearly_production
+                
         # Calculate expected flour output based on wheat amount and waste factor
         if not self.expected_flour_output:
             self.expected_flour_output = self.wheat_amount * ((100 - self.waste_factor) / 100)
+            
         super().save(*args, **kwargs)
 
     def __str__(self):

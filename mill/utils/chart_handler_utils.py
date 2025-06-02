@@ -1,5 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from mill.models import City, Factory, ProductionData, Batch, TransactionData
+
 from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
@@ -7,7 +9,6 @@ from django.conf import settings
 from functools import wraps
 from datetime import datetime, date, timedelta
 import calendar
-from mill.models import City, Factory, ProductionData
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -32,64 +33,28 @@ def calculate_stop_time(counter_data, factory_status):
         return counter_data.latest('created_at').created_at.time()
     return 'N/A'
 
-def admin_required(function):
-    @wraps(function)
-    def wrap(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if is_admin(request.user) or is_super_admin(request.user):
-                return function(request, *args, **kwargs)
-            else:
-                messages.error(request, "You don't have permission to access this page.")
-                return redirect('dashboard')  # Redirect to dashboard
-        return redirect('login')  # Redirect to login if not authenticated
-    return wrap
+def get_month_ends(target_date, months_back=12):
+    # Ensure target_date is a date object
+    if isinstance(target_date, datetime):
+        target_date = target_date.date()
 
-def superadmin_required(function):
-    @wraps(function)
-    def wrap(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if is_super_admin(request.user):
-                return function(request, *args, **kwargs)
-            else:
-                messages.error(request, "This page requires super admin privileges.")
-                return redirect('dashboard')  # Redirect to dashboard
-        return redirect('login')  # Redirect to login if not authenticated
-    return wrap
+    month_ends = [target_date]
+    current_year = target_date.year
+    current_month = target_date.month
 
-def is_super_admin(user):
-    return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
+    for _ in range(months_back):
+        last_day = calendar.monthrange(current_year, current_month)[1]
+        end_of_month_date = date(current_year, current_month, last_day)
+        if end_of_month_date <= target_date:
+            month_ends.append(end_of_month_date)
+        # Move to previous month
+        current_month -= 1
+        if current_month == 0:
+            current_month = 12
+            current_year -= 1
 
-def is_admin(user): 
-    return user.is_superuser or user.groups.filter(name='Admin').exists()
+    return month_ends
 
-# Access control functions
-def is_allowed_factory(request, factory_id):
-    factory = get_object_or_404(Factory, id=factory_id)
-    if is_super_admin(request.user) or is_admin(request.user):
-        return factory
-    if request.user.userprofile.allowed_factories.filter(id=factory.id).exists():
-        return factory
-    return None
-    
-def is_allowed_city(request, city_id):
-    city = get_object_or_404(City, id=city_id)
-    if is_super_admin(request.user):
-        return city
-    if request.user.userprofile.allowed_cities.filter(id=city.id).exists():
-        return city
-    return None
-
-def allowed_cities(request):
-    if is_super_admin(request.user):
-        return City.objects.all()
-    return request.user.userprofile.allowed_cities.all()
-
-def allowed_factories(request):
-    if is_super_admin(request.user):
-        return Factory.objects.all()
-    return Factory.objects.filter(id__in=request.user.userprofile.allowed_factories.all())
-
-# Data calculation functions
 def calculate_daily_data(factory_id, selected_date):
     DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
     DailyData = {label: 0 for label in DailyLabels}
@@ -108,6 +73,67 @@ def calculate_daily_data(factory_id, selected_date):
             WeeklyData = data.weekly_production
 
     return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
+
+def calculate_daily_data_batch(factory_id, batch_start_date, selected_date):
+    print("calculate_daily_data_batch", batch_start_date, selected_date)
+    delta = (selected_date - batch_start_date).days + 1
+    DailyLabels = [(batch_start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(delta)]
+    DailyData = {label: 0 for label in DailyLabels}
+
+    # Fixed: Update the date range to use batch_start_date instead of 5 days
+    production_data = ProductionData.objects.filter(
+        device__factory_id=factory_id,
+        created_at__date__range=[batch_start_date, selected_date]
+    ).order_by('-created_at')
+
+    print("Production Data Count:", production_data.count())
+    print("DailyData:", DailyData)
+    
+    # Process all data points
+    for data in production_data:
+        date_str = data.created_at.strftime('%Y-%m-%d')
+        if date_str in DailyData:
+            DailyData[date_str] = data.daily_production
+
+    return DailyLabels, [DailyData[label] for label in DailyLabels]
+
+def calculate_hourly_data_batch(factory_id, batch_start_date, selected_date):
+    # Convert dates to datetime with start and end of day
+    start_datetime = batch_start_date
+    end_datetime = selected_date
+    
+    # Get all production data within the date range
+    production_data = TransactionData.objects.filter(
+        device__factory_id=factory_id,
+        created_at__range=[start_datetime, end_datetime]
+    ).order_by('created_at')
+    
+    # Initialize hourly data dictionary
+    hourly_data = {}
+    
+    # Process each production data entry
+    for data in production_data:
+        # Format datetime to 'YYYY-MM-DD HH:00' to group by hour
+        hour_key = data.created_at.strftime('%Y-%m-%d %H:00')
+        
+        if hour_key not in hourly_data:
+            hourly_data[hour_key] = {
+                'count': 0,
+                'total_production': 0,
+            }
+        
+        hourly_data[hour_key]['count'] += 1
+        hourly_data[hour_key]['total_production'] += data.daily_production
+    
+    # Create sorted lists for labels and data
+    hourly_labels = sorted(hourly_data.keys())
+    hourly_values = [
+        hourly_data[label]['total_production'] / hourly_data[label]['count'] 
+        if hourly_data[label]['count'] > 0 else 0 
+        for label in hourly_labels
+    ]
+    
+    return hourly_labels, hourly_values
 
 def get_month_ends(target_date, months_back=12):
     if isinstance(target_date, datetime):
@@ -163,6 +189,53 @@ def calculate_yearly_data(factory_id, selected_date):
     YearlyPrevious = last_previous_year_entry.yearly_production if last_previous_year_entry else 0
 
     return YearlyCurrent, YearlyPrevious
+
+def calculate_batch_actual_production(batch):
+    batch_recent_value =  ProductionData.objects.filter(
+        device__factory=batch.factory,
+    ).order_by('-created_at').first()
+    print(batch_recent_value.device)
+    print(batch_recent_value.created_at, batch_recent_value.yearly_production, batch.start_value)
+
+    return batch_recent_value.yearly_production - batch.start_value 
+
+def calculate_batch_expected_production(batch, selected_date):
+
+    delta = (selected_date - batch.start_date).days + 1
+    return (batch.expected_flour_output/30 * delta)   # Example calculation
+
+
+def calculate_batch_chart_data(batch_id):
+
+    batch = get_object_or_404(Batch, id=batch_id)
+    if batch.end_date:
+        date = batch.end_date
+    else:
+         date = timezone.now()
+    
+    DailyLabels, DailyData = calculate_daily_data_batch(batch.factory, batch.start_date, date)
+    HourlyLabels, HourlyData = calculate_hourly_data_batch(batch.factory, batch.start_date, date)
+    batch_actual_production = calculate_batch_actual_production(batch)
+    batch_expected_production = calculate_batch_expected_production(batch, date)*1000
+
+    return {
+        "hourly_label":HourlyLabels,
+        "hourly_data": HourlyData,
+
+        "daily_labels": DailyLabels,
+        "daily_data": DailyData,
+
+        "peresent_data":{
+        "Actual": batch_actual_production,
+        "Expected": batch_expected_production,  
+        "waste_ratio" : batch.waste_factor or 0.2,
+        },
+        "batch_id": batch_id,
+        "batch_number": batch.batch_number,
+        "batch_start_date": batch.start_date,
+        "batch_status": batch.get_status_display(),
+        "date": date,
+}
 
 def calculate_chart_data(date, factory_id):
     selected_date = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
