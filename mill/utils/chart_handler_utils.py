@@ -195,15 +195,14 @@ def calculate_batch_actual_production(batch):
         device__factory=batch.factory,
     ).order_by('-created_at').first()
     print(batch_recent_value.device)
+    print(batch_recent_value.created_at, batch_recent_value.yearly_production, batch.start_value)
 
     return batch_recent_value.yearly_production - batch.start_value 
 
 def calculate_batch_expected_production(batch, selected_date):
 
-    # # Assuming expected production is calculated based on the batch's wheat amount and some factor
-    # if batch.wheat_amount and batch.expected_flour_output:
-    #     return (batch.wheat_amount / 100) * batch.expected_flour_output  # Example calculation
-    return 0
+    delta = (selected_date - batch.start_date).days + 1
+    return (batch.expected_flour_output/30 * delta)   # Example calculation
 
 
 def calculate_batch_chart_data(batch_id):
@@ -217,7 +216,7 @@ def calculate_batch_chart_data(batch_id):
     DailyLabels, DailyData = calculate_daily_data_batch(batch.factory, batch.start_date, date)
     HourlyLabels, HourlyData = calculate_hourly_data_batch(batch.factory, batch.start_date, date)
     batch_actual_production = calculate_batch_actual_production(batch)
-    batch_expected_production = calculate_batch_expected_production(batch, date)
+    batch_expected_production = calculate_batch_expected_production(batch, date)*1000
 
     return {
         "hourly_label":HourlyLabels,
