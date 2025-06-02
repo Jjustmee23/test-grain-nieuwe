@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from datetime import datetime, timedelta
 from mill.models import City, Factory, ProductionData, Batch, TransactionData
 
 from django.contrib.auth.decorators import user_passes_test
@@ -10,7 +9,6 @@ from django.conf import settings
 from functools import wraps
 from datetime import datetime, date, timedelta
 import calendar
-from mill.models import City, Factory, ProductionData
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -35,47 +33,6 @@ def calculate_stop_time(counter_data, factory_status):
         return counter_data.latest('created_at').created_at.time()
     return 'N/A'
 
-def admin_required(function):
-    @wraps(function)
-    def wrap(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if is_admin(request.user) or is_super_admin(request.user):
-                return function(request, *args, **kwargs)
-            else:
-                messages.error(request, "You don't have permission to access this page.")
-                return redirect('dashboard')  # Redirect to dashboard
-        return redirect('login')  # Redirect to login if not authenticated
-    return wrap
-
-
-def calculate_daily_data(factory_id,selected_date):
-    print(selected_date, factory_id)
-    # Initial Daily Labels: Last 6 days including the selected date
-    DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
-    DailyData = {label: 0 for label in DailyLabels}
-    WeeklyData = 0
-    print(DailyLabels,"jhghjgjh",DailyData)
-    # Get production entries for the last 6 days
-    production_data = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__date__range=[selected_date - timedelta(days=5), selected_date]
-    ).order_by('-created_at')
-
-    # Map existing data to the corresponding labels
-    for data in production_data:
-        date_str = data.created_at.strftime('%Y-%m-%d')
-        if date_str in DailyData:
-            DailyData[date_str] = data.daily_production
-        if date_str == DailyLabels[-1]:
-            print("Date not in labels")
-            WeeklyData = data.weekly_production
-        print(DailyLabels[-1],date_str)
-
-    return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
-
-from datetime import date, timedelta
-import calendar
-
 def get_month_ends(target_date, months_back=12):
     # Ensure target_date is a date object
     if isinstance(target_date, datetime):
@@ -98,87 +55,6 @@ def get_month_ends(target_date, months_back=12):
 
     return month_ends
 
-
-def calculate_monthly_data(factory_id,selected_date):
-    MonthlyLabels = [(selected_date - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(12)][::-1]
-    # Initialize data with zeros
-    MonthlyData = {label: 0 for label in MonthlyLabels}
-    month_ends = get_month_ends(selected_date)
-    production_data = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__date__in=month_ends
-    ).order_by('created_at')
-
-    # Map existing data to the corresponding labels
-    for data in production_data:
-        month_str = data.created_at.strftime('%Y-%m')
-        if month_str in MonthlyData:
-            MonthlyData[month_str] = data.monthly_production
-
-    # Return labels and data as a list
-    return MonthlyLabels, [MonthlyData[label] for label in MonthlyLabels]
-
-def calculate_yearly_data(factory_id,selected_date):
-    current_year = selected_date.year
-    previous_year = current_year - 1
-        # Current Year: Last created yearly_production value
-    last_current_year_entry = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__year=current_year
-    ).order_by('-created_at').first()
-    YearlyCurrent = last_current_year_entry.yearly_production if last_current_year_entry else 0
-
-    # Previous Year: Last created yearly_production value
-    last_previous_year_entry = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__year=previous_year
-    ).order_by('-created_at').first()
-    YearlyPrevious = last_previous_year_entry.yearly_production if last_previous_year_entry else 0
-    return YearlyCurrent, YearlyPrevious
-
-
-
-def calculate_batch_chart_data(batch_id):
-
-    batch = get_object_or_404(Batch, id=batch_id)
-    date = timezone.now().date()
-
-    
-
-    return {
-        "hourly_label":{ },
-        "hourly_data": { },
-
-        "daily_labels": [
-            "2025-05-26",
-            "2025-05-27",
-            "2025-05-28",
-            "2025-05-29",
-            "2025-05-30",
-            "2025-05-31"
-        ],
-        "daily_data": [
-            2126,
-            2834,
-            2584,
-            1723,
-            854,
-            1893
-        ],
-
-        "peresent_data":{
-        "Actual": 11893,
-        "Expected": 15000,  
-        "waste_ratio" : 0.2
-        },
-        "batch_id": batch_id,
-        "batch_number": batch.batch_number,
-        "batch_start_date": batch.start_date,
-        "batch_status": batch.get_status_display(),
-        "date": date,
-}
-
-# Data calculation functions
 def calculate_daily_data(factory_id, selected_date):
     DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
     DailyData = {label: 0 for label in DailyLabels}
@@ -197,6 +73,67 @@ def calculate_daily_data(factory_id, selected_date):
             WeeklyData = data.weekly_production
 
     return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
+
+def calculate_daily_data_batch(factory_id, batch_start_date, selected_date):
+    print("calculate_daily_data_batch", batch_start_date, selected_date)
+    delta = (selected_date - batch_start_date).days + 1
+    DailyLabels = [(batch_start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(delta)]
+    DailyData = {label: 0 for label in DailyLabels}
+
+    # Fixed: Update the date range to use batch_start_date instead of 5 days
+    production_data = ProductionData.objects.filter(
+        device__factory_id=factory_id,
+        created_at__date__range=[batch_start_date, selected_date]
+    ).order_by('-created_at')
+
+    print("Production Data Count:", production_data.count())
+    print("DailyData:", DailyData)
+    
+    # Process all data points
+    for data in production_data:
+        date_str = data.created_at.strftime('%Y-%m-%d')
+        if date_str in DailyData:
+            DailyData[date_str] = data.daily_production
+
+    return DailyLabels, [DailyData[label] for label in DailyLabels]
+
+def calculate_hourly_data_batch(factory_id, batch_start_date, selected_date):
+    # Convert dates to datetime with start and end of day
+    start_datetime = batch_start_date
+    end_datetime = selected_date
+    
+    # Get all production data within the date range
+    production_data = TransactionData.objects.filter(
+        device__factory_id=factory_id,
+        created_at__range=[start_datetime, end_datetime]
+    ).order_by('created_at')
+    
+    # Initialize hourly data dictionary
+    hourly_data = {}
+    
+    # Process each production data entry
+    for data in production_data:
+        # Format datetime to 'YYYY-MM-DD HH:00' to group by hour
+        hour_key = data.created_at.strftime('%Y-%m-%d %H:00')
+        
+        if hour_key not in hourly_data:
+            hourly_data[hour_key] = {
+                'count': 0,
+                'total_production': 0,
+            }
+        
+        hourly_data[hour_key]['count'] += 1
+        hourly_data[hour_key]['total_production'] += data.daily_production
+    
+    # Create sorted lists for labels and data
+    hourly_labels = sorted(hourly_data.keys())
+    hourly_values = [
+        hourly_data[label]['total_production'] / hourly_data[label]['count'] 
+        if hourly_data[label]['count'] > 0 else 0 
+        for label in hourly_labels
+    ]
+    
+    return hourly_labels, hourly_values
 
 def get_month_ends(target_date, months_back=12):
     if isinstance(target_date, datetime):
@@ -252,6 +189,54 @@ def calculate_yearly_data(factory_id, selected_date):
     YearlyPrevious = last_previous_year_entry.yearly_production if last_previous_year_entry else 0
 
     return YearlyCurrent, YearlyPrevious
+
+def calculate_batch_actual_production(batch):
+    batch_recent_value =  ProductionData.objects.filter(
+        device__factory=batch.factory,
+    ).order_by('-created_at').first()
+    print(batch_recent_value.device)
+
+    return batch_recent_value.yearly_production - batch.start_value 
+
+def calculate_batch_expected_production(batch, selected_date):
+
+    # # Assuming expected production is calculated based on the batch's wheat amount and some factor
+    # if batch.wheat_amount and batch.expected_flour_output:
+    #     return (batch.wheat_amount / 100) * batch.expected_flour_output  # Example calculation
+    return 0
+
+
+def calculate_batch_chart_data(batch_id):
+
+    batch = get_object_or_404(Batch, id=batch_id)
+    if batch.end_date:
+        date = batch.end_date
+    else:
+         date = timezone.now()
+    
+    DailyLabels, DailyData = calculate_daily_data_batch(batch.factory, batch.start_date, date)
+    HourlyLabels, HourlyData = calculate_hourly_data_batch(batch.factory, batch.start_date, date)
+    batch_actual_production = calculate_batch_actual_production(batch)
+    batch_expected_production = calculate_batch_expected_production(batch, date)
+
+    return {
+        "hourly_label":HourlyLabels,
+        "hourly_data": HourlyData,
+
+        "daily_labels": DailyLabels,
+        "daily_data": DailyData,
+
+        "peresent_data":{
+        "Actual": batch_actual_production,
+        "Expected": batch_expected_production,  
+        "waste_ratio" : batch.waste_factor or 0.2,
+        },
+        "batch_id": batch_id,
+        "batch_number": batch.batch_number,
+        "batch_start_date": batch.start_date,
+        "batch_status": batch.get_status_display(),
+        "date": date,
+}
 
 def calculate_chart_data(date, factory_id):
     selected_date = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date

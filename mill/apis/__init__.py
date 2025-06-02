@@ -19,10 +19,10 @@ def chart_data(request):
     return JsonResponse(chart_data)
 
 def batch_chart_data(request):
+    print("batch_chart_data")
     batch_id = request.GET.get('batch_id')
     if not batch_id :
         return JsonResponse({'error': 'Invalid parameters'}, status=400)
     chart_data = calculate_batch_chart_data(batch_id)
-    print(chart_data)
     return JsonResponse(chart_data)
 
