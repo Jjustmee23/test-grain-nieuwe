@@ -16,6 +16,7 @@ urlpatterns = [
     path('batches/create/', views.BatchCreateView.as_view(), name='batch-create'),
     path('batches/<int:pk>/', views.BatchDetailView.as_view(), name='batch-detail'),
     path('batches/<int:pk>/update/', views.BatchUpdateView.as_view(), name='batch-update'),
+    path('api/batch/<int:batch_id>/chart-data/', views.batch_chart_data, name='batch_chart_data'),
     
     # Sensor URLs
     path('sensor/data/', views.sensor_data_receiver, name='sensor-data'),
