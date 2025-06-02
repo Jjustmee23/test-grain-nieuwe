@@ -548,111 +548,98 @@ function updateCharts(batchData) {
     });
     </script>
  <script>
-   document.addEventListener('DOMContentLoaded', function() {
-    try {
-        let productionStatsChart = null;
-        const productionStatsCtx = document.getElementById('productionStatsChart');
-        
-        if (!productionStatsCtx) {
-            console.error("Could not find productionStatsChart canvas element");
-            return;
+   
+document.addEventListener('DOMContentLoaded', function() {
+    let productionStatsChart = null;
+    const productionStatsCtx = document.getElementById('productionStatsChart');
+    const batchId = {{ batch.id }}; // Ensure batch.id is available in context
+
+    // Function to fetch chart data
+    function fetchChartData(batchId) {
+        return fetch(`/api/batch/${batchId}/chart-data/`)
+            .then(response => response.json());
+    }
+
+    function createProductionStatsChart(timeScale, chartData) {
+        let labels = [];
+        let data = [];
+
+        switch(timeScale) {
+            case 'hourly':
+                labels = chartData.hourly_label;
+                data = chartData.hourly_data;
+                break;
+            case 'daily':
+                labels = chartData.daily_labels;
+                data = chartData.daily_data;
+                break;
+            case 'monthly':
+                labels = chartData.monthly_labels;
+                data = chartData.monthly_data;
+                break;
+            case 'yearly':
+                // If you have yearly data in chartData, use it; else, dummy
+                labels = ['Previous Year', 'Current Year'];
+                data = [chartData.peresent_data.Expected, chartData.peresent_data.Actual]; // or adjust as needed
+                break;
+            default:
+                labels = [];
+                data = [];
         }
 
-        // Default data structure with actual batch data
-        const productionData = {
-            hourly: Array.from({length: 24}, (_, i) => ({
-                period: new Date(Date.now() - i * 3600000).toISOString(),
-                production: {{ batch.wheat_amount }}
-            })),
-            daily: Array.from({length: 7}, (_, i) => ({
-                period: new Date(Date.now() - i * 86400000).toISOString(),
-                production: {{ batch.wheat_amount }}
-            })),
-            monthly: Array.from({length: 12}, (_, i) => ({
-                period: new Date(Date.now() - i * 2592000000).toISOString(),
-                production: {{ batch.wheat_amount }}
-            })),
-            yearly: Array.from({length: 5}, (_, i) => ({
-                period: new Date(Date.now() - i * 31536000000).toISOString(),
-                production: {{ batch.wheat_amount }}
-            }))
-        };
+        if (productionStatsChart) {
+            productionStatsChart.destroy();
+        }
 
-        function createProductionStatsChart(timeScale = 'hourly') {
-            try {
-                const data = productionData[timeScale];
-                
-                // Destroy existing chart if it exists
-                if (productionStatsChart) {
-                    productionStatsChart.destroy();
-                }
-
-                const labels = data.map(item => {
-                    const date = new Date(item.period);
-                    switch(timeScale) {
-                        case 'hourly':
-                            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        case 'daily':
-                            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                        case 'monthly':
-                            return date.toLocaleDateString([], { month: 'short', year: 'numeric' });
-                        case 'yearly':
-                            return date.getFullYear().toString();
-                        default:
-                            return date.toLocaleDateString();
-                    }
-                });
-
-                productionStatsChart = new Chart(productionStatsCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Production',
-                            data: data.map(item => item.production),
-                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 1
-                        }]
+        productionStatsChart = new Chart(productionStatsCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Production',
+                    data: data,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { 
+                        title: { 
+                            display: true, 
+                            text: 'Date',
+                            font: { weight: 'bold' }
+                        }
                     },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            x: { 
-                                title: { 
-                                    display: true, 
-                                    text: 'Date',
-                                    font: { weight: 'bold' }
-                                }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                title: { 
-                                    display: true, 
-                                    text: 'Production (Units)',
-                                    font: { weight: 'bold' }
-                                }
-                            }
-                        },
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
-                                font: {
-                                    size: 16,
-                                    weight: 'bold'
-                                }
-                            }
+                    y: {
+                        beginAtZero: true,
+                        title: { 
+                            display: true, 
+                            text: 'Production (Units)',
+                            font: { weight: 'bold' }
                         }
                     }
-                });
-            } catch (error) {
-                console.error('Error creating chart:', error);
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
             }
-        }
+        });
+    }
 
+    // Fetch and initialize
+    fetchChartData(batchId).then(chartData => {
         // Initialize with hourly data
-        createProductionStatsChart('hourly');
+        createProductionStatsChart('hourly', chartData);
 
         // Add event listeners for time scale buttons
         document.querySelectorAll('[data-time-scale]').forEach(button => {
@@ -662,14 +649,12 @@ function updateCharts(batchData) {
                     btn.classList.remove('active');
                 });
                 e.target.classList.add('active');
-                createProductionStatsChart(timeScale);
+                createProductionStatsChart(timeScale, chartData);
             });
         });
-
-    } catch (error) {
-        console.error('Error initializing charts:', error);
-    }
+    });
 });
- </script>
+</script>
+ 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% endblock %}

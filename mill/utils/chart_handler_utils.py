@@ -191,13 +191,18 @@ def calculate_yearly_data(factory_id, selected_date):
     return YearlyCurrent, YearlyPrevious
 
 def calculate_batch_actual_production(batch):
-    batch_recent_value =  ProductionData.objects.filter(
+    batch_recent_value = ProductionData.objects.filter(
         device__factory=batch.factory,
     ).order_by('-created_at').first()
-    print(batch_recent_value.device)
-    print(batch_recent_value.created_at, batch_recent_value.yearly_production, batch.start_value)
+    if batch_recent_value is None:
+        # There is no ProductionData for this factory
+        return 0
 
-    return batch_recent_value.yearly_production - batch.start_value 
+    # Remove or keep the print as you need for debugging
+    # print(batch_recent_value.device)
+    # print(batch_recent_value.created_at, batch_recent_value.yearly_production, batch.start_value)
+
+    return batch_recent_value.yearly_production - batch.start_value
 
 def calculate_batch_expected_production(batch, selected_date):
 
