@@ -168,11 +168,18 @@ def batch_update(request, pk):
 def batch_detail(request, pk):
     batch = get_object_or_404(Batch.objects.prefetch_related('flour_bag_counts'), pk=pk)
     yield_rate = (batch.actual_flour_output / batch.expected_flour_output * 100) if batch.expected_flour_output else 0
-    
+
+    # Get alerts if available
+    alerts = batch.alerts.all() if hasattr(batch, 'alerts') else []
+
+    # Get chart data for this batch
+    chart_data = calculate_batch_chart_data(batch.id)
+
     context = {
         'batch': batch,
         'yield_rate': yield_rate,
-        'alerts': batch.alerts.all() if hasattr(batch, 'alerts') else [],
+        'alerts': alerts,
+        'chart_data': chart_data,  # Pass chart data to the template
     }
     return render(request, 'mill/batch_details.html', context)
 
@@ -250,3 +257,10 @@ def get_batch_details_by_factory(factory_name):
             'success': False,
             'error': str(e)
         }
+from django.http import JsonResponse
+from mill.utils.chart_handler_utils import calculate_batch_chart_data
+
+def batch_chart_data(request, batch_id):
+    # You might want to check permissions here!
+    chart_data = calculate_batch_chart_data(batch_id)
+    return JsonResponse(chart_data)
