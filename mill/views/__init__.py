@@ -18,6 +18,7 @@ from .city_views import manage_city
 from .stats_views import *
 from .export_views import export_data, preview_data
 from .profile_views import *
+from .feedback_views import create_feedback, feedback_list
 
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import login

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import *
-from mill.models import Batch, Factory, ContactTicket
+from mill.models import Batch, Factory, ContactTicket, Feedback
 from django.utils.translation import gettext_lazy as _
 
 
@@ -150,3 +150,29 @@ class ContactTicketForm(forms.ModelForm):
         # Filter active factories only if there are any
         if 'factory' in self.fields:
             self.fields['factory'].queryset = Factory.objects.filter(status=True)
+
+class FeedbackForm(forms.ModelForm):
+    factories = forms.ModelMultipleChoiceField(
+        queryset=Factory.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+    
+    class Meta:
+        model = Feedback
+        fields = ['category', 'factories', 'all_factories', 'issue_date', 
+                 'expected_value', 'shown_value', 'subject', 'message', 'priority']
+        widgets = {
+            'issue_date': forms.DateInput(attrs={'type': 'date'}),
+            'message': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        all_factories = cleaned_data.get('all_factories')
+        factories = cleaned_data.get('factories')
+
+        if not all_factories and not factories:
+            raise forms.ValidationError(
+                "Please either select specific factories or check 'All Factories'"
+            )
