@@ -68,6 +68,9 @@ urlpatterns = [
     path('manage-factory/', views.manage_factory, name='manage_factory'),
     # path('manage-batch/', views.manage_batches, name='manage_batches'),
     path('manage-city/', views.manage_city, name='manage_city'),
+    path('feedback/create/', views.create_feedback, name='create_feedback'),
+    path('feedback/list/', views.feedback_list, name='feedback_list'),
+
 
     # Device operations
     path('pair-device/', views.pair_device, name='pair_device'),
