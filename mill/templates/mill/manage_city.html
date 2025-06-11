@@ -9,7 +9,6 @@
 
 {% block content %}
 
-
 <div class="admin-container">
     <h2>{% trans "Manage Cities" %}</h2>
 
@@ -24,6 +23,21 @@
         {% endfor %}
     {% endif %}
 
+    <!-- Add Search Form -->
+    <div class="search-container mb-4">
+        <form method="GET" class="d-flex">
+            <input type="text" 
+                   name="search" 
+                   class="form-control me-2" 
+                   placeholder="{% trans 'Search cities...' %}"
+                   value="{{ request.GET.search|default:'' }}">
+            <button type="submit" class="btn btn-outline-primary">{% trans "Search" %}</button>
+            {% if request.GET.search %}
+                <a href="{% url 'manage_city' %}" class="btn btn-outline-secondary ms-2">{% trans "Clear" %}</a>
+            {% endif %}
+        </form>
+    </div>
+
     <h3>{% trans "Add City" %}</h3>
     <form method="POST">
         {% csrf_token %}
@@ -36,38 +50,48 @@
     </form>
 
     <h3>{% trans "Existing Cities" %}</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>{% trans "City Name" %}</th>
-                <th>{% trans "Factories" %}</th>
-                <th>{% trans "Actions" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for city in cities %}
-            <tr>
-                <td>{{ city.name }}</td>
-                <td>{{ city.factories_count }}</td>
-                <td>
-                    <form method="POST" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="edit_city">
-                        <input type="hidden" name="city_id" value="{{ city.id }}">
-                        <input type="text" name="city_name" value="{{ city.name }}" required>
-                        <button type="submit" class="btn btn-warning">{% trans "Edit" %}</button>
-                    </form>
-                    <form method="POST" action="{% url 'manage_city' %}" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="remove_city">
-                        <input type="hidden" name="city_id" value="{{ city.id }}">
-                        <button type="submit" class="btn btn-danger">{% trans "Remove" %}</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% if cities %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>{% trans "City Name" %}</th>
+                    <th>{% trans "Factories" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for city in cities %}
+                <tr>
+                    <td>{{ city.name }}</td>
+                    <td>{{ city.factories_count }}</td>
+                    <td>
+                        <form method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="edit_city">
+                            <input type="hidden" name="city_id" value="{{ city.id }}">
+                            <input type="text" name="city_name" value="{{ city.name }}" required>
+                            <button type="submit" class="btn btn-warning">{% trans "Edit" %}</button>
+                        </form>
+                        <form method="POST" action="{% url 'manage_city' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="remove_city">
+                            <input type="hidden" name="city_id" value="{{ city.id }}">
+                            <button type="submit" class="btn btn-danger">{% trans "Remove" %}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">
+            {% if request.GET.search %}
+                {% trans "No cities found matching your search." %}
+            {% else %}
+                {% trans "No cities available." %}
+            {% endif %}
+        </div>
+    {% endif %}
 </div>
 
 {% endblock %}
