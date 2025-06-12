@@ -424,3 +424,49 @@ def handle_counter_4_change(sender, instance, **kwargs):
                 device=instance.device,
                 counter_id=instance.counter_4
             )
+from django.db import models
+from django.contrib.auth import get_user_model
+
+class FeedbackCategory(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name_plural = "Feedback Categories"
+
+class Feedback(models.Model):
+    PRIORITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+    ]
+
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('RESOLVED', 'Resolved'),
+        ('CLOSED', 'Closed'),
+    ]
+
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    category = models.ForeignKey(FeedbackCategory, on_delete=models.CASCADE)
+    factories = models.ManyToManyField('Factory', blank=True)
+    all_factories = models.BooleanField(default=False)
+    
+    issue_date = models.DateField()
+    expected_value = models.FloatField(null=True, blank=True)
+    shown_value = models.FloatField(null=True, blank=True)
+    
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='MEDIUM')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.subject} - {self.created_at.date()}"

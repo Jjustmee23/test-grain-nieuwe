@@ -123,74 +123,103 @@
         <div class="container-fluid py-4">
         {# Add this section where you want to display batch information #}
     {% if batches %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Batch Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Batch Number</th>
-                                    <th>Start Date</th>
-                                    <th>Status</th>
-                                    <th>Wheat Amount</th>
-                                    <th>Expected Output</th>
-                                    <th>Actual Output</th>
-                                    <th>Yield Rate</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for batch in batches %}
-                                <tr>
-                                    <td>{{ batch.batch_number }}</td>
-                                    <td>{{ batch.start_date|date:"Y-m-d H:i" }}</td>
-                                    <td>
-                                        <span class="badge {% if batch.is_completed %}bg-success{% else %}bg-warning{% endif %}">
-                                            {{ batch.status }}
-                                        </span>
-                                    </td>
-                                    <td>{{ batch.wheat_amount|floatformat:2 }} tons</td>
-                                    <td>{{ batch.expected_flour_output|floatformat:2 }} tons</td>
-                                    <td>{{ batch.actual_flour_output|floatformat:2 }} tons</td>
-                                    <td>{{ batch.yield_rate|floatformat:1 }}%</td>
-                                    <td>
-                                        <a href="{{ batch.detail_url }}" class="btn btn-sm btn-primary">
-                                            View Details
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Batch Information for {{ factory.name }}</h5>
+                <span class="badge bg-primary">Total Batches: {{ total_batches }}</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Batch Number</th>
+                                <th>Start Date</th>
+                                <th>Status</th>
+                                <th>Wheat Amount</th>
+                                <th>Expected Output</th>
+                                <th>Actual Output</th>
+                                <th>Yield Rate</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batch in batches|safe %}
+                            <tr>
+                                <td>{{ batch.batch_number }}</td>
+                                <td>{{ batch.start_date|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <span class="badge {% if batch.is_completed %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ batch.status }}
+                                    </span>
+                                </td>
+                                <td>{{ batch.wheat_amount|floatformat:2 }} tons</td>
+                                <td>{{ batch.expected_flour_output|floatformat:2 }} tons</td>
+                                <td>{{ batch.actual_flour_output|floatformat:2 }} tons</td>
+                                <td>{{ batch.yield_rate|floatformat:1 }}%</td>
+                                <td>
+                                    <a href="{{ batch.detail_url }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    No batch information available for this factory.
+</div>
+{% endif %}
     </div>
         <!-- Charts Section -->
-        <div class="row mt-8" style="width: 80%; margin-top: 8rem; margin: auto;">
-            <div class="col-md-9 mt-2" style="width: 100%;">
+        <div class="row mt-4">
+            <!-- First Row -->
+            <div class="col-md-6 mb-4">
                 <div class="chart-box bg-white p-3 rounded shadow">
                     <h3 class="text-center mb-3">إنتاج يومي</h3>
                     <canvas id="dailyChart"></canvas>
                 </div>
             </div>
             
-            <div class="col-md-9 mt-6" style="width: 80%; margin-top: 9rem;"></div>
+            <div class="col-md-6 mb-4">
                 <div class="chart-box bg-white p-3 rounded shadow">
                     <h3 class="text-center mb-3">إنتاج شهري</h3>
                     <canvas id="monthlyChart"></canvas>
                 </div>
             </div>
+
+            <!-- Second Row -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Output Comparison</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="batchOutputComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Efficiency Metrics</h5>
+                    </div>
+                    <div class="card-body"></div>
+                        <canvas id="batchEfficiencyMetricsChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="row mt-4">
+        <div class="row mt-4" style="display: none;">
             <div class="col-md-6" style="width: 70%; margin-top: 7rem; margin: auto;">
             <div class="chart-box bg-white p-3 rounded shadow">
                 <h3 class="text-center mb-3">إنتاج سنوي</h3>
@@ -198,7 +227,62 @@
             </div>
             </div>
         </div>
+    <!-- Batch Details Charts Section -->
+<div class="row mb-4">
+    <!-- Production Timeline Chart -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Production Timeline</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="batchProductionTimelineChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Output Comparison Chart -->
+    <!-- <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Output Comparison</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="batchOutputComparisonChart"></canvas>
+            </div>
+        </div>
+    </div> -->
 
+    <!-- Efficiency Metrics Chart -->
+    <!-- <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Efficiency Metrics</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="batchEfficiencyMetricsChart"></canvas>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- Production Statistics Chart -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Production Statistics</h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">Hourly</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">Daily</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">Monthly</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="batchProductionStatsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
         <!-- Footer Section
         <div class="row mt-4">
             <div class="col-12">
@@ -284,7 +368,7 @@
         });
     }
 </script>
-  <script>
+  <!-- <script>
         // Add this to your existing JavaScript
         function showBatchDetails(batchId) {
             // Find the batch data from the existing batches
@@ -370,5 +454,307 @@
             // Initialize any necessary functionality
             console.log('Batch data loaded:', window.batchData);
         });
-    </script>
+    </script> -->
+    <!-- Batch Production Timeline Chart -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const batches = {{ batches|safe }};
+    batches.forEach(batch => {
+        const timelineCtx = document.getElementById('batchProductionTimelineChart').getContext('2d');
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: ['Start', '25%', '50%', '75%', 'Current'],
+                datasets: [{
+                    label: `Expected Output (${batch.batch_number})`,
+                    data: [0, 
+                        batch.expected_flour_output * 0.25,
+                        batch.expected_flour_output * 0.5,
+                        batch.expected_flour_output * 0.75,
+                        batch.expected_flour_output
+                    ],
+                    borderColor: `rgba(54, 162, 235, ${0.5 + batches.indexOf(batch) * 0.2})`,
+                    fill: false
+                },
+                {
+                    label: `Actual Output (${batch.batch_number})`,
+                    data: [0,
+                        batch.actual_flour_output * 0.25,
+                        batch.actual_flour_output * 0.5,
+                        batch.actual_flour_output * 0.75,
+                        batch.actual_flour_output
+                    ],
+                    borderColor: `rgba(255, 99, 132, ${0.5 + batches.indexOf(batch) * 0.2})`,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Production Progress Over Time'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Output (tons)'
+                        }
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+
+<!-- Batch Output Comparison Chart -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const batches = {{ batches|safe }};
+    const outputCtx = document.getElementById('batchOutputComparisonChart').getContext('2d');
+    
+    const datasets = batches.map(batch => ({
+        label: `Batch ${batch.batch_number}`,
+        data: [
+            batch.wheat_amount,
+            batch.expected_flour_output,
+            batch.actual_flour_output
+        ],
+        backgroundColor: [
+            `rgba(255, 206, 86, ${0.5 + batches.indexOf(batch) * 0.2})`,
+            `rgba(54, 162, 235, ${0.5 + batches.indexOf(batch) * 0.2})`,
+            `rgba(255, 99, 132, ${0.5 + batches.indexOf(batch) * 0.2})`
+        ],
+        borderWidth: 1
+    }));
+
+    new Chart(outputCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Wheat Input', 'Expected Output', 'Actual Output'],
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Input vs Output Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Amount (tons)'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<!-- Batch Efficiency Metrics Chart -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const batches = {{ batches|safe }};
+    const efficiencyCtx = document.getElementById('batchEfficiencyMetricsChart').getContext('2d');
+
+    const datasets = batches.map(batch => {
+        const yieldRate = (batch.actual_flour_output / batch.expected_flour_output) * 100;
+        return {
+            label: `Batch ${batch.batch_number}`,
+            data: [yieldRate, batch.waste_factor],
+            backgroundColor: [
+                `rgba(75, 192, 192, ${0.5 + batches.indexOf(batch) * 0.2})`,
+                `rgba(255, 99, 132, ${0.5 + batches.indexOf(batch) * 0.2})`
+            ],
+            borderWidth: 1
+        };
+    });
+
+    new Chart(efficiencyCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Yield Rate', 'Waste Factor'],
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Efficiency Metrics (%)'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+});
+</script>
+
+<!-- Batch Production Stats Chart -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let productionStatsChart = null;
+    const productionStatsCtx = document.getElementById('batchProductionStatsChart');
+    const batches = {{ batches|safe }};
+
+    function createProductionStatsChart(timeScale) {
+        if (productionStatsChart) {
+            productionStatsChart.destroy();
+        }
+
+        const datasets = batches.map(batch => ({
+            label: `Batch ${batch.batch_number}`,
+            data: generateTimeScaleData(batch, timeScale),
+            backgroundColor: `rgba(75, 192, 192, ${0.5 + batches.indexOf(batch) * 0.2})`,
+            borderColor: `rgba(75, 192, 192, ${0.7 + batches.indexOf(batch) * 0.2})`,
+            borderWidth: 1
+        }));
+
+        productionStatsChart = new Chart(productionStatsCtx, {
+            type: 'bar',
+            data: {
+                labels: getTimeScaleLabels(timeScale),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { 
+                        title: { 
+                            display: true, 
+                            text: 'Time Period',
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { 
+                            display: true, 
+                            text: 'Production (tons)',
+                            font: { weight: 'bold' }
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function generateTimeScaleData(batch, timeScale) {
+        // Generate mock data based on the time scale
+        // In a real application, this would come from your backend
+        switch(timeScale) {
+            case 'hourly':
+                return Array(24).fill().map(() => Math.random() * batch.actual_flour_output / 24);
+            case 'daily':
+                return Array(7).fill().map(() => Math.random() * batch.actual_flour_output / 7);
+            case 'monthly':
+                return Array(12).fill().map(() => Math.random() * batch.actual_flour_output / 12);
+            case 'yearly':
+                return Array(2).fill().map(() => batch.actual_flour_output);
+            default:
+                return [];
+        }
+    }
+
+    function getTimeScaleLabels(timeScale) {
+        switch(timeScale) {
+            case 'hourly':
+                return Array(24).fill().map((_, i) => `${i}:00`);
+            case 'daily':
+                return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            case 'monthly':
+                return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            case 'yearly':
+                return ['Previous Year', 'Current Year'];
+            default:
+                return [];
+        }
+    }
+
+    // Initialize with hourly data
+    createProductionStatsChart('hourly');
+
+    // Add event listeners for time scale buttons
+    document.querySelectorAll('[data-time-scale]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const timeScale = e.target.dataset.timeScale;
+            document.querySelectorAll('[data-time-scale]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            createProductionStatsChart(timeScale);
+        });
+    });
+});
+</script>
+<script>
+// Add this to your existing JavaScript
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+}
+
+// Update the table rows with formatted dates
+document.addEventListener('DOMContentLoaded', function() {
+    const batchesData = JSON.parse('{{ batches|safe }}');
+    const tbody = document.querySelector('table tbody');
+    
+    if (tbody && batchesData) {
+        tbody.innerHTML = batchesData.map(batch => `
+            <tr>
+                <td>${batch.batch_number}</td>
+                <td>${formatDate(batch.start_date)}</td>
+                <td>
+                    <span class="badge ${batch.is_completed ? 'bg-success' : 'bg-warning'}">
+                        ${batch.status}
+                    </span>
+                </td>
+                <td>${batch.wheat_amount.toFixed(2)} tons</td>
+                <td>${batch.expected_flour_output.toFixed(2)} tons</td>
+                <td>${batch.actual_flour_output.toFixed(2)} tons</td>
+                <td>${batch.yield_rate.toFixed(1)}%</td>
+                <td>
+                    <a href="${batch.detail_url}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+    }
+});
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 {% endblock %}

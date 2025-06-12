@@ -1,0 +1,167 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Feedback List</h2>
+        <a href="{% url 'create_feedback' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Feedback
+        </a>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if request.GET.category|add:0 == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        {% for status in status_choices %}
+                            <option value="{{ status.0 }}" {% if request.GET.status == status.0 %}selected{% endif %}>
+                                {{ status.1 }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Priority</label>
+                    <select name="priority" class="form-select">
+                        <option value="">All Priorities</option>
+                        {% for priority in priority_choices %}
+                            <option value="{{ priority.0 }}" {% if request.GET.priority == priority.0 %}selected{% endif %}>
+                                {{ priority.1 }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary">Filter</button>
+                    <a href="{% url 'feedback_list' %}" class="btn btn-outline-secondary ms-2">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Feedback List -->
+    {% if feedbacks %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Subject</th>
+                    <th>Factories</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for feedback in feedbacks %}
+                <tr>
+                    <td>{{ feedback.created_at|date:"Y-m-d" }}</td>
+                    <td>{{ feedback.category.name }}</td>
+                    <td>{{ feedback.subject }}</td>
+                    <td>
+                        {% if feedback.all_factories %}
+                            <span class="badge bg-info">All Factories</span>
+                        {% else %}
+                            {% for factory in feedback.factories.all %}
+                                <span class="badge bg-secondary">{{ factory.name }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if feedback.status == 'NEW' %}
+                            <span class="badge bg-primary">{{ feedback.get_status_display }}</span>
+                        {% elif feedback.status == 'IN_PROGRESS' %}
+                            <span class="badge bg-warning">{{ feedback.get_status_display }}</span>
+                        {% elif feedback.status == 'RESOLVED' %}
+                            <span class="badge bg-success">{{ feedback.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ feedback.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if feedback.priority == 'HIGH' %}
+                            <span class="badge bg-danger">{{ feedback.get_priority_display }}</span>
+                        {% elif feedback.priority == 'MEDIUM' %}
+                            <span class="badge bg-warning">{{ feedback.get_priority_display }}</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ feedback.get_priority_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#feedbackModal{{ feedback.id }}">
+                            View Details
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Detail Modal for each feedback -->
+                <div class="modal fade" id="feedbackModal{{ feedback.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Feedback Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Issue Date:</strong> {{ feedback.issue_date|date:"Y-m-d" }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Submitted:</strong> {{ feedback.created_at|date:"Y-m-d H:i" }}
+                                    </div>
+                                </div>
+                                {% if feedback.expected_value or feedback.shown_value %}
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Expected Value:</strong> {{ feedback.expected_value|default_if_none:"-" }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Shown Value:</strong> {{ feedback.shown_value|default_if_none:"-" }}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class="mb-3">
+                                    <strong>Message:</strong>
+                                    <p class="mt-2">{{ feedback.message|linebreaks }}</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No feedback submissions found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

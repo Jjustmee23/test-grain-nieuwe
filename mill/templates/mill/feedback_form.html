@@ -1,0 +1,78 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Feedback{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Submit Feedback</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                    {{ form.category }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Select Factories</label>
+                    <div class="form-check mb-2">
+                        {{ form.all_factories }}
+                        <label class="form-check-label" for="{{ form.all_factories.id_for_label }}">
+                            All Factories
+                        </label>
+                    </div>
+                    <div class="factories-selection">
+                        {{ form.factories }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.issue_date.id_for_label }}" class="form-label">Issue Date</label>
+                            {{ form.issue_date }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.expected_value.id_for_label }}" class="form-label">Expected Value</label>
+                            {{ form.expected_value }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="{{ form.shown_value.id_for_label }}" class="form-label">Shown Value</label>
+                            {{ form.shown_value }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.subject.id_for_label }}" class="form-label">Subject</label>
+                    {{ form.subject }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.message.id_for_label }}" class="form-label">Message</label>
+                    {{ form.message }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.priority.id_for_label }}" class="form-label">Priority</label>
+                    {{ form.priority }}
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

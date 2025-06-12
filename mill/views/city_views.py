@@ -115,8 +115,14 @@ def manage_city(request):
 
         return redirect('manage_city')
 
-    # Handle GET request
+   # Handle GET request with search
+    search_query = request.GET.get('search', '').strip()
     cities = allowed_cities(request)
+    
+    # Apply search filter if search query exists
+    if search_query:
+        cities = cities.filter(name__icontains=search_query)
+
     city_data = [
         {
             'id': city.id,
@@ -126,4 +132,6 @@ def manage_city(request):
         for city in cities
     ]
 
-    return render(request, 'mill/manage_city.html', {'cities': city_data})
+    return render(request, 'mill/manage_city.html', {
+        'cities': city_data,
+    })
