@@ -180,18 +180,42 @@
 {% endif %}
     </div>
         <!-- Charts Section -->
-        <div class="row mt-8" style="width: 80%; margin-top: 8rem; margin: auto;">
-            <div class="col-md-9 mt-2" style="width: 100%;">
+        <div class="row mt-4">
+            <!-- First Row -->
+            <div class="col-md-6 mb-4">
                 <div class="chart-box bg-white p-3 rounded shadow">
                     <h3 class="text-center mb-3">إنتاج يومي</h3>
                     <canvas id="dailyChart"></canvas>
                 </div>
             </div>
             
-            <div class="col-md-9 mt-6" style="width: 80%; margin-top: 9rem;"></div>
+            <div class="col-md-6 mb-4">
                 <div class="chart-box bg-white p-3 rounded shadow">
                     <h3 class="text-center mb-3">إنتاج شهري</h3>
                     <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Second Row -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Output Comparison</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="batchOutputComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Efficiency Metrics</h5>
+                    </div>
+                    <div class="card-body"></div>
+                        <canvas id="batchEfficiencyMetricsChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -218,7 +242,7 @@
     </div>
     
     <!-- Output Comparison Chart -->
-    <div class="col-md-6 mb-4">
+    <!-- <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">Output Comparison</h5>
@@ -227,10 +251,10 @@
                 <canvas id="batchOutputComparisonChart"></canvas>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Efficiency Metrics Chart -->
-    <div class="col-md-6 mb-4">
+    <!-- <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">Efficiency Metrics</h5>
@@ -239,7 +263,7 @@
                 <canvas id="batchEfficiencyMetricsChart"></canvas>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Production Statistics Chart -->
     <div class="col-md-12 mb-4">
