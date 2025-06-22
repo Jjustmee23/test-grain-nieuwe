@@ -30,7 +30,11 @@
                         </label>
                     </div>
                     <div class="factories-selection">
-                        {{ form.factories }}
+                        <button type="button" class="btn btn-outline-secondary mb-2" data-bs-toggle="modal" data-bs-target="#factoriesModal">
+                            Select Factories <span class="badge bg-secondary selected-count">0</span>
+                        </button>
+                        <div id="selectedFactories" class="mb-2"></div>
+                        {{ form.factories.as_hidden }}
                     </div>
                 </div>
 
@@ -75,4 +79,114 @@
         </div>
     </div>
 </div>
+
+<!-- Factories Selection Modal -->
+<div class="modal fade" id="factoriesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Factories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-3" id="factorySearch" placeholder="Search factories...">
+                <div class="factory-list">
+                    {% for factory in form.factories.field.queryset %}
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input factory-checkbox" 
+                               id="factory_{{ factory.id }}" value="{{ factory.id }}">
+                        <label class="form-check-label" for="factory_{{ factory.id }}">
+                            {{ factory.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="applySelection">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get DOM elements
+    const allFactoriesCheckbox = document.getElementById('{{ form.all_factories.id_for_label }}');
+    const factoriesModal = document.getElementById('factoriesModal');
+    const factorySearch = document.getElementById('factorySearch');
+    const selectedFactoriesDiv = document.getElementById('selectedFactories');
+    const factoryCheckboxes = document.querySelectorAll('.factory-checkbox');
+    const selectedCountBadge = document.querySelector('.selected-count');
+    const hiddenInput = document.getElementById('{{ form.factories.id_for_label }}');
+    const applyButton = document.getElementById('applySelection');
+
+    // Initialize modal
+    const modal = new bootstrap.Modal(factoriesModal);
+
+    // Update UI based on initial values
+    updateSelectedFactories();
+
+    // Handle All Factories checkbox
+    allFactoriesCheckbox.addEventListener('change', function() {
+        const factoriesSelection = document.querySelector('.factories-selection');
+        factoriesSelection.style.display = this.checked ? 'none' : 'block';
+    });
+
+    // Handle factory search
+    factorySearch?.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        document.querySelectorAll('.factory-list .form-check').forEach(item => {
+            const factoryName = item.querySelector('label').textContent.toLowerCase();
+            item.style.display = factoryName.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+
+    // Handle Apply button
+    applyButton?.addEventListener('click', function() {
+        updateSelectedFactories();
+        modal.hide(); // Use the modal instance directly
+    });
+
+    function updateSelectedFactories() {
+        if (!factoryCheckboxes.length) return; // Guard clause
+
+        const selectedFactories = [];
+        factoryCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedFactories.push(checkbox.value);
+            }
+        });
+
+        // Update hidden input
+        if (hiddenInput) {
+            hiddenInput.value = selectedFactories.join(',');
+        }
+
+        // Update selected count
+        if (selectedCountBadge) {
+            selectedCountBadge.textContent = selectedFactories.length;
+        }
+
+        // Update visual representation
+        if (selectedFactoriesDiv) {
+            selectedFactoriesDiv.innerHTML = Array.from(factoryCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => `<span class="badge bg-secondary me-1">${cb.nextElementSibling.textContent}</span>`)
+                .join('');
+        }
+    }
+
+    // Initialize from existing selection if any
+    if (hiddenInput && hiddenInput.value) {
+        const selectedIds = hiddenInput.value.split(',');
+        selectedIds.forEach(id => {
+            const checkbox = document.getElementById(`factory_${id}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        updateSelectedFactories();
+    }
+});
+</script>
 {% endblock %}
