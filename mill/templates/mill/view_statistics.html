@@ -4,7 +4,7 @@
 {% block title %}Mill Statistics{% endblock %}
 
 {% block content %}
-<div class="statistics-page">
+<div class="statistics-page" style="margin: 12px;">
     <!-- Header Section -->
     <!-- <div class="header d-flex justify-content-between align-items-center p-3 bg-light">
         <img src="{% static 'images/logo-left.png' %}" alt="Logo Left" class="logo-left" style="height: 60px;">
@@ -181,6 +181,12 @@
     </div>
         <!-- Charts Section -->
         <div class="row mt-4">
+            <div class="col-md-6 mb-4">
+            <div class="chart-box bg-white p-3 rounded shadow">
+                <h3 class="text-center mb-3">Hourly Production</h3>
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
             <!-- First Row -->
             <div class="col-md-6 mb-4">
                 <div class="chart-box bg-white p-3 rounded shadow">
@@ -228,49 +234,25 @@
             </div>
         </div>
     <!-- Batch Details Charts Section -->
-<div class="row mb-4">
+<div class="row mb-4 justify-content-center">
     <!-- Production Timeline Chart -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
+    <div class="col-md-10 mb-4 d-flex justify-content-center">
+        <div class="card w-100" style="max-width: 900px;">
             <div class="card-header">
-                <h5 class="card-title mb-0">Production Timeline</h5>
+                <h5 class="card-title mb-0 text-center">Production Timeline</h5>
             </div>
             <div class="card-body">
                 <canvas id="batchProductionTimelineChart"></canvas>
             </div>
         </div>
     </div>
-    
-    <!-- Output Comparison Chart -->
-    <!-- <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Output Comparison</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="batchOutputComparisonChart"></canvas>
-            </div>
-        </div>
-    </div> -->
-
-    <!-- Efficiency Metrics Chart -->
-    <!-- <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Efficiency Metrics</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="batchEfficiencyMetricsChart"></canvas>
-            </div>
-        </div>
-    </div> -->
 
     <!-- Production Statistics Chart -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
+    <div class="col-md-10 mb-4 d-flex justify-content-center">
+        <div class="card w-100" style="max-width: 900px;">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Production Statistics</h5>
-                <div class="btn-group" role="group">
+                <h5 class="card-title mb-0 text-center flex-grow-1">Production Statistics</h5>
+                <div class="btn-group ms-2" role="group">
                     <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">Hourly</button>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">Daily</button>
                     <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">Monthly</button>
@@ -757,4 +739,28 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const labels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+    const data = Array(24).fill(0).map(() => Math.floor(Math.random() * 100));
+    const ctx = document.getElementById('hourlyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Hourly Production',
+                data: data,
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
