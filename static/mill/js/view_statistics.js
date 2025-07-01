@@ -1,17 +1,16 @@
-// static/js/view_statistics.js
-        let factoryId = 1;
-        const selectedDate = new Date().toLocaleDateString();
-        const initialDailyLabels = []
-        const initialDailyData = [];
-        const initialMonthlyLabels = [];
-        const initialMonthlyData = [];
-        const initialYearlyCurrent = 0;
-        const initialYearlyPrevious = 0;
+let factoryId = 1;
+const selectedDate = new Date().toLocaleDateString();
+const initialDailyLabels = [];
+const initialDailyData = [];
+const initialMonthlyLabels = [];
+const initialMonthlyData = [];
+const initialYearlyCurrent = 0;
+const initialYearlyPrevious = 0;
+const initialHourlyLabels = Array(24).fill().map((_, i) => `${i.toString().padStart(2, '0')}:00`);
+const initialHourlyData = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialiseer de grafieken met de initiële data
-    factoryId = document.getElementById('factoryId').value ;
-    console.log(factoryId);
+    factoryId = document.getElementById('factoryId').value;
     initializeCharts();
     fetchChartData();
 });
@@ -21,7 +20,35 @@ function refreshCharts() {
 }
 
 function initializeCharts() {
-    // Dagelijkse Grafiek
+    // Hourly Chart
+    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    window.hourlyChart = new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: initialHourlyLabels,
+            datasets: [{
+                label: 'Hourly Production',
+                data: initialHourlyData,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: { display: true, text: 'Hour' }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Production (Units)' }
+                }
+            }
+        }
+    });
+
+    // Daily Chart
     const dailyCtx = document.getElementById('dailyChart').getContext('2d');
     window.dailyChart = new Chart(dailyCtx, {
         type: 'bar',
@@ -38,7 +65,7 @@ function initializeCharts() {
         options: {
             responsive: true,
             scales: {
-                x: { 
+                x: {
                     title: { display: true, text: 'Datum' }
                 },
                 y: {
@@ -49,7 +76,7 @@ function initializeCharts() {
         }
     });
 
-    // Maandelijkse Grafiek
+    // Monthly Chart
     const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
     window.monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
@@ -68,7 +95,7 @@ function initializeCharts() {
         options: {
             responsive: true,
             scales: {
-                x: { 
+                x: {
                     title: { display: true, text: 'Maand' }
                 },
                 y: {
@@ -79,7 +106,7 @@ function initializeCharts() {
         }
     });
 
-    // Jaarlijkse Grafiek
+    // Yearly Chart
     const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
     window.yearlyChart = new Chart(yearlyCtx, {
         type: 'pie',
@@ -129,27 +156,40 @@ function fetchChartData() {
                 return;
             }
 
-            // Update Dagelijkse Grafiek
-            if (window.dailyChart) {
+            // Update Hourly Chart
+            if (window.hourlyChart && data.hourly_labels && data.hourly_data) {
+                window.hourlyChart.data.labels = data.hourly_labels;
+                window.hourlyChart.data.datasets[0].data = data.hourly_data;
+                window.hourlyChart.update();
+            }
+
+            // Update Daily Chart
+            if (window.dailyChart && data.daily_labels && data.daily_data) {
                 window.dailyChart.data.labels = data.daily_labels;
                 window.dailyChart.data.datasets[0].data = data.daily_data;
                 window.dailyChart.update();
             }
 
-            // Update Maandelijkse Grafiek
-            if (window.monthlyChart) {
+            // Update Monthly Chart
+            if (window.monthlyChart && data.monthly_labels && data.monthly_data) {
                 window.monthlyChart.data.labels = data.monthly_labels;
                 window.monthlyChart.data.datasets[0].data = data.monthly_data;
                 window.monthlyChart.update();
             }
 
-            // Update Jaarlijkse Grafiek
-            if (window.yearlyChart) {
+            // Update Yearly Chart
+            if (window.yearlyChart && typeof data.yearly_current !== "undefined" && typeof data.yearly_previous !== "undefined") {
                 window.yearlyChart.data.datasets[0].data = [data.yearly_current, data.yearly_previous];
                 window.yearlyChart.update();
             }
 
-            updateCommulative(data.daily_total, data.weekly_total, data.monthly_total, data.yearly_current, data.yearly_previous);
+            updateCommulative(
+                data.daily_total,
+                data.weekly_total,
+                data.monthly_total,
+                data.yearly_current,
+                data.yearly_previous
+            );
         })
         .catch(error => {
             console.error('Error fetching chart data:', error);
@@ -157,7 +197,7 @@ function fetchChartData() {
         });
 }
 
-function updateCommulative(daily_data,weekly_data,monthly_data,yearly_data,previous_data){
+function updateCommulative(daily_data, weekly_data, monthly_data, yearly_data, previous_data) {
     let daily = document.getElementById('total-daily');
     let weekly = document.getElementById('total-week');
     let monthly = document.getElementById('total-month');
