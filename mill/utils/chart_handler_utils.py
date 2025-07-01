@@ -74,6 +74,35 @@ def calculate_daily_data(factory_id, selected_date):
 
     return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
 
+def calculate_hourly_data(factory_id, selected_date):
+    # Get all TransactionData for the selected date
+    start_datetime = datetime.combine(selected_date, datetime.min.time())
+    end_datetime = datetime.combine(selected_date, datetime.max.time())
+
+    production_data = TransactionData.objects.filter(
+        device__factory_id=factory_id,
+        created_at__range=[start_datetime, end_datetime]
+    ).order_by('created_at')
+
+    # Prepare labels for 24 hours
+    HourlyLabels = [(start_datetime + timedelta(hours=i)).strftime('%Y-%m-%d %H:00') for i in range(24)]
+    HourlyData = {label: 0 for label in HourlyLabels}
+    HourlyCounts = {label: 0 for label in HourlyLabels}
+
+    for data in production_data:
+        hour_label = data.created_at.strftime('%Y-%m-%d %H:00')
+        if hour_label in HourlyData:
+            HourlyData[hour_label] += data.daily_production
+            HourlyCounts[hour_label] += 1
+
+    # Optionally, average if multiple entries per hour
+    HourlyAverages = [
+        HourlyData[label] / HourlyCounts[label] if HourlyCounts[label] > 0 else 0
+        for label in HourlyLabels
+    ]
+
+    return HourlyLabels, HourlyAverages
+
 def calculate_daily_data_batch(factory_id, batch_start_date, selected_date):
     print("calculate_daily_data_batch", batch_start_date, selected_date)
     delta = (selected_date - batch_start_date).days + 1
@@ -244,12 +273,15 @@ def calculate_batch_chart_data(batch_id):
 
 def calculate_chart_data(date, factory_id):
     selected_date = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
-    
+    hourly_labels, hourly_data = calculate_hourly_data(factory_id, selected_date)
+
     DailyLabels, DailyData, WeeklyData = calculate_daily_data(factory_id, selected_date)
     MonthlyLabels, MonthlyData = calculate_monthly_data(factory_id, selected_date)
     YearlyCurrent, YearlyPrevious = calculate_yearly_data(factory_id, selected_date)
 
     return {
+        "hourly_labels": hourly_labels,
+        "hourly_data": hourly_data,
         'daily_labels': DailyLabels,
         'daily_data': DailyData,
         'monthly_labels': MonthlyLabels,
