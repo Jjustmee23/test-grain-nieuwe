@@ -10,104 +10,25 @@
                 <h2 class="card-title mb-0">Create New Batch</h2>
             </div>
             <div class="card-body">
-                <form method="post" id="batch-form">
+                <form method="post">
                     {% csrf_token %}
                     
-                    <!-- Batch Number Field -->
+                    {% for field in form %}
                     <div class="mb-3">
-                        <label for="{{ form.batch_number.id_for_label }}" class="form-label">
-                            {{ form.batch_number.label }}
+                        <label for="{{ field.id_for_label }}" class="form-label">
+                            {{ field.label }}
                         </label>
-                        {{ form.batch_number }}
-                        {% if form.batch_number.help_text %}
-                        <div class="form-text">{{ form.batch_number.help_text }}</div>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
                         {% endif %}
-                        {% if form.batch_number.errors %}
+                        {% if field.errors %}
                         <div class="alert alert-danger mt-1">
-                            {{ form.batch_number.errors }}
+                            {{ field.errors }}
                         </div>
                         {% endif %}
                     </div>
-
-                    <!-- City Selection with Checkboxes -->
-                    <div class="mb-3">
-                        <label class="form-label" style="margin-left: -15%;">Select Cities</label>
-                        <div class="city-selector border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                            {% if cities %}
-                                {% for city in cities %}
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input city-checkbox" type="checkbox" id="city{{ city.id }}"
-                                        name="cities" value="{{ city.id }}" onchange="handleCitySelection()">
-                                    <label class="form-check-label" for="city{{ city.id }}">
-                                        {{ city.name }}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-muted text-center">No cities available</div>
-                            {% endif %}
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllCities()">Select All</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllCities()">Deselect All</button>
-                        </div>
-                        {% if form.cities.errors %}
-                        <div class="alert alert-danger mt-1">
-                            {{ form.cities.errors }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Factory Selection with Checkboxes -->
-                    <div class="mb-3">
-                        <label class="form-label" style="margin-left: -15%;">Select Factories</label>
-                        <div id="factory-selector" class="factory-selector border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                            <div class="text-muted text-center">
-                                First select cities to see available factories
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllFactories()">Select All</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFactories()">Deselect All</button>
-                        </div>
-                        {% if form.factories.errors %}
-                        <div class="alert alert-danger mt-1">
-                            {{ form.factories.errors }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Wheat Amount Field -->
-                    <div class="mb-3">
-                        <label for="{{ form.wheat_amount.id_for_label }}" class="form-label">
-                            {{ form.wheat_amount.label }}
-                        </label>
-                        {{ form.wheat_amount }}
-                        {% if form.wheat_amount.help_text %}
-                        <div class="form-text">{{ form.wheat_amount.help_text }}</div>
-                        {% endif %}
-                        {% if form.wheat_amount.errors %}
-                        <div class="alert alert-danger mt-1">
-                            {{ form.wheat_amount.errors }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Waste Factor Field -->
-                    <div class="mb-3">
-                        <label for="{{ form.waste_factor.id_for_label }}" class="form-label">
-                            {{ form.waste_factor.label }}
-                        </label>
-                        {{ form.waste_factor }}
-                        {% if form.waste_factor.help_text %}
-                        <div class="form-text">{{ form.waste_factor.help_text }}</div>
-                        {% endif %}
-                        {% if form.waste_factor.errors %}
-                        <div class="alert alert-danger mt-1">
-                            {{ form.waste_factor.errors }}
-                        </div>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
@@ -122,161 +43,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.city-selector, .factory-selector {
-    background-color: #f8f9fa;
-    border-color: #dee2e6 !important;
-}
-
-/* Ensure checkboxes are on the left side */
-.form-check {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-    gap: 0; /* Remove gap to keep checkbox in place */
-}
-
-.form-check-input {
-    margin-right: 1rem; /* Add space between checkbox and text */
-    margin-left: 0;
-    order: -1; /* This ensures the checkbox comes first (on the left) */
-    flex-shrink: 0; /* Prevent checkbox from shrinking */
-    margin-top: 0.125rem; /* Align with first line of text */
-    position: relative;
-    left: 0;
-}
-
-.form-check-label {
-    margin-left: 0;
-    flex: 1;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    line-height: 1.4;
-    padding-right: 0.5rem;
-    padding-left: 0; /* No left padding needed since checkbox is on the left */
-    cursor: pointer;
-    user-select: none;
-}
-
-.form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-}
-
-.form-check-label:hover {
-    color: var(--bs-primary);
-}
-
-.btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set min date for date inputs to prevent selecting future dates
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Validate form submission
-    document.getElementById('batch-form').onsubmit = function(e) {
-        const selectedCities = document.querySelectorAll('input[name="cities"]:checked');
-        const selectedFactories = document.querySelectorAll('input[name="factories"]:checked');
-        
-        if (selectedCities.length === 0) {
-            alert('Please select at least one city');
-            e.preventDefault();
-            return false;
-        }
-
-        if (selectedFactories.length === 0) {
-            alert('Please select at least one factory');
-            e.preventDefault();
-            return false;
-        }
-
-        return true;
-    };
-});
-
-// Function to handle city selection and load factories
-function handleCitySelection() {
-    const selectedCities = document.querySelectorAll('input[name="cities"]:checked');
-    const factorySelector = document.getElementById('factory-selector');
-    
-    if (selectedCities.length === 0) {
-        factorySelector.innerHTML = '<div class="text-muted text-center">First select cities to see available factories</div>';
-        return;
-    }
-    
-    // Show loading state
-    factorySelector.innerHTML = '<div class="text-muted text-center">Loading factories...</div>';
-    
-    // Get all selected city IDs
-    const cityIds = Array.from(selectedCities).map(cb => cb.value);
-    
-    // Fetch factories for all selected cities
-    Promise.all(cityIds.map(cityId => 
-        fetch(`/api/cities/${cityId}/factories/`)
-            .then(response => response.json())
-            .then(data => data.factories)
-            .catch(error => {
-                console.error('Error loading factories for city', cityId, ':', error);
-                return [];
-            })
-    )).then(allFactories => {
-        // Flatten and deduplicate factories
-        const factories = [];
-        const seenIds = new Set();
-        
-        allFactories.flat().forEach(factory => {
-            if (!seenIds.has(factory.id)) {
-                seenIds.add(factory.id);
-                factories.push(factory);
-            }
-        });
-        
-        // Populate factory selector
-        if (factories.length === 0) {
-            factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
-        } else {
-            factorySelector.innerHTML = '';
-            factories.forEach(factory => {
-                const div = document.createElement('div');
-                div.className = 'form-check mb-2';
-                div.innerHTML = `
-                    <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
-                        name="factories" value="${factory.id}">
-                    <label class="form-check-label" for="factory${factory.id}">
-                        ${factory.name} (${factory.city_name || 'Unknown City'})
-                    </label>
-                `;
-                factorySelector.appendChild(div);
-            });
-        }
-    });
-}
-
-// City selection functions
-function selectAllCities() {
-    document.querySelectorAll('input[name="cities"]').forEach(cb => cb.checked = true);
-    handleCitySelection();
-}
-
-function deselectAllCities() {
-    document.querySelectorAll('input[name="cities"]').forEach(cb => cb.checked = false);
-    handleCitySelection();
-}
-
-// Factory selection functions
-function selectAllFactories() {
-    document.querySelectorAll('input[name="factories"]').forEach(cb => cb.checked = true);
-}
-
-function deselectAllFactories() {
-    document.querySelectorAll('input[name="factories"]').forEach(cb => cb.checked = false);
-}
-</script>
 {% endblock %}

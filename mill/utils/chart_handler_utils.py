@@ -293,45 +293,6 @@ def calculate_chart_data(date, factory_id):
         'weekly_total': WeeklyData
     }
 
-def calculate_date_range_data(factory_id, start_date, end_date):
-    """
-    Calculate production data for a specific date range
-    """
-    start_date = datetime.strptime(start_date, '%Y-%m-%d') if isinstance(start_date, str) else start_date
-    end_date = datetime.strptime(end_date, '%Y-%m-%d') if isinstance(end_date, str) else end_date
-    
-    # Get production data for the date range
-    production_data = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__date__range=[start_date.date(), end_date.date()]
-    ).order_by('created_at')
-    
-    # Create daily data dictionary
-    daily_data = {}
-    current_date = start_date.date()
-    while current_date <= end_date.date():
-        daily_data[current_date.strftime('%Y-%m-%d')] = 0
-        current_date += timedelta(days=1)
-    
-    # Fill in actual production data
-    for data in production_data:
-        date_str = data.created_at.strftime('%Y-%m-%d')
-        if date_str in daily_data:
-            daily_data[date_str] = data.daily_production
-    
-    # Calculate totals
-    total_production = sum(daily_data.values())
-    daily_labels = list(daily_data.keys())
-    daily_values = list(daily_data.values())
-    
-    return {
-        'daily_labels': daily_labels,
-        'daily_data': daily_values,
-        'total_production': total_production,
-        'date_range': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
-        'days_count': len(daily_labels)
-    }
-
 # Email notification function
 def send_notification_email(user, notification):
     subject = f"New Notification: {notification.category.name}"

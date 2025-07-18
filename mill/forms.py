@@ -26,23 +26,9 @@ class FactoryForm(forms.ModelForm):
         model = Factory
         fields = ['name', 'city', 'status']
 class BatchForm(forms.ModelForm):
-    # Change to multiple city selection
-    cities = forms.ModelMultipleChoiceField(
-        queryset=City.objects.filter(status=True).order_by('name'),
-        required=True,
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
-    )
-    
-    # Change to multiple factory selection
-    factories = forms.ModelMultipleChoiceField(
-        queryset=Factory.objects.none(),  # Will be populated dynamically
-        required=True,
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
-    )
-    
     class Meta:
         model = Batch
-        fields = ['batch_number', 'wheat_amount', 'waste_factor']
+        fields = ['batch_number', 'factory', 'wheat_amount', 'waste_factor']
         widgets = {
             'waste_factor': forms.NumberInput(
                 attrs={
@@ -65,12 +51,13 @@ class BatchForm(forms.ModelForm):
                     'placeholder': 'Enter Batch Number'
                 }
             ),
+            'factory': forms.Select(
+                attrs={
+                    'class': 'form-control'
+                }
+            )
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Initially, factory field should be empty
-        self.fields['factories'].queryset = Factory.objects.none()
 
     def clean_batch_number(self):
         batch_number = self.cleaned_data.get('batch_number')
@@ -83,25 +70,6 @@ class BatchForm(forms.ModelForm):
         if waste_factor < 0 or waste_factor > 100:
             raise forms.ValidationError("Waste factor must be between 0 and 100.")
         return waste_factor
-
-    def clean(self):
-        cleaned_data = super().clean()
-        cities = cleaned_data.get('cities')
-        factories = cleaned_data.get('factories')
-        
-        if not cities:
-            raise forms.ValidationError("Please select at least one city.")
-        
-        if not factories:
-            raise forms.ValidationError("Please select at least one factory.")
-        
-        # Validate that selected factories belong to selected cities
-        selected_city_ids = set(cities.values_list('id', flat=True))
-        for factory in factories:
-            if factory.city_id not in selected_city_ids:
-                raise forms.ValidationError(f"Factory '{factory.name}' does not belong to any selected city.")
-        
-        return cleaned_data
 
 class ContactTicketForm(forms.ModelForm):
     class Meta:

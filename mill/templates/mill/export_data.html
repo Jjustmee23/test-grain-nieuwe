@@ -5,6 +5,31 @@
 {% block title %}Export Data{% endblock %}
 
 {% block content %}
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                {% if not user.groups.all.0.name == 'Public' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
 <!-- Main Content -->
 <div class="container my-4">
     <div class="card">
@@ -31,12 +56,7 @@
                     <div class="col-md-12">
                         <label for="export_format" class="form-label">Export Format</label>
                         <div class="btn-group w-100" role="group" aria-label="Export format selection">
-                            <input type="radio" class="btn-check" name="export_format" id="excel_format" value="excel" checked>
-                            <label class="btn btn-outline-primary" for="excel_format">
-                                <i class="fas fa-file-excel me-2"></i>Excel (Recommended)
-                            </label>
-                            
-                            <input type="radio" class="btn-check" name="export_format" id="csv_format" value="csv">
+                            <input type="radio" class="btn-check" name="export_format" id="csv_format" value="csv" checked>
                             <label class="btn btn-outline-primary" for="csv_format">
                                 <i class="fas fa-file-csv me-2"></i>CSV
                             </label>
@@ -46,45 +66,35 @@
                                 <i class="fas fa-file-pdf me-2"></i>PDF
                             </label>
                         </div>
-                        <div class="form-text mt-2">
-                            <i class="fas fa-info-circle me-1"></i>
-                            <strong>Excel:</strong> Beautiful formatted spreadsheet with colors and summary statistics<br>
-                            <strong>CSV:</strong> Simple text file (UTF-8 encoded for Arabic support)<br>
-                            <strong>PDF:</strong> Printable report format
-                        </div>
                     </div>
                 </div>
 
-                <!-- City and Factory Selection -->
+                <!-- City Selection -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label" style="margin-left: -15%;">Select Cities</label>
-                        <div class="city-selector border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                            {% for city in cities %}
-                            <div class="form-check mb-2">
-                                <input class="form-check-input city-checkbox" type="checkbox" id="city{{ city.id }}"
-                                    name="cities" value="{{ city.id }}" onchange="handleCitySelection()">
-                                <label class="form-check-label" for="city{{ city.id }}">
-                                    {{ city.name }}
-                                </label>
+                    <div class="col-12">
+                        <label class="form-label">Select Cities</label>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="selectAllCities" onchange="handleSelectAll()">
+                                    <label class="form-check-label" for="selectAllCities">
+                                        Select All Cities
+                                    </label>
+                                </div>
+                                <hr>
+                                <div class="city-checkboxes">
+                                    {% for city in cities %}
+                                    <div class="form-check">
+                                        <input class="form-check-input city-checkbox" type="checkbox" 
+                                               name="cities" value="{{ city.id }}" 
+                                               id="city{{ city.id }}">
+                                        <label class="form-check-label" for="city{{ city.id }}">
+                                            {{ city.name }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
-                            {% endfor %}
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllCities()">Select All</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllCities()">Deselect All</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label" style="margin-left: -15%;">Select Factories</label>
-                        <div id="factory-selector" class="factory-selector border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                            <div class="text-muted text-center">
-                                First select cities to see available factories
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllFactories()">Select All</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllFactories()">Deselect All</button>
                         </div>
                     </div>
                 </div>
@@ -106,7 +116,7 @@
         <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Data Preview</h4>
             <span class="badge bg-light text-dark">
-                Showing latest data for selected factories
+                Showing latest data for selected cities
             </span>
         </div>
         <div class="card-body">
@@ -148,7 +158,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="9" class="text-center">Select date range and factories to preview data</td>
+                                <td colspan="9" class="text-center">Select date range and cities to preview data</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -164,6 +174,15 @@
 </div>
 
 <script>
+function handleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCities');
+    const cityCheckboxes = document.querySelectorAll('.city-checkbox');
+    
+    cityCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Set min date for date inputs to prevent selecting future dates
     const today = new Date().toISOString().split('T')[0];
@@ -189,8 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('exportForm').onsubmit = function(e) {
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
-        const selectedCities = document.querySelectorAll('input[name="cities"]:checked');
-        const selectedFactories = document.querySelectorAll('input[name="factories"]:checked');
+        const selectedCities = document.querySelectorAll('.city-checkbox:checked');
         
         if (startDate > endDate) {
             alert('Start date cannot be later than end date');
@@ -200,12 +218,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (selectedCities.length === 0) {
             alert('Please select at least one city');
-            e.preventDefault();
-            return false;
-        }
-
-        if (selectedFactories.length === 0) {
-            alert('Please select at least one factory');
             e.preventDefault();
             return false;
         }
@@ -221,87 +233,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     };
 });
-
-// Function to handle city selection and load factories
-function handleCitySelection() {
-    const selectedCities = document.querySelectorAll('input[name="cities"]:checked');
-    const factorySelector = document.getElementById('factory-selector');
-    
-    if (selectedCities.length === 0) {
-        factorySelector.innerHTML = '<div class="text-muted text-center">First select cities to see available factories</div>';
-        return;
-    }
-    
-    // Show loading state
-    factorySelector.innerHTML = '<div class="text-muted text-center">Loading factories...</div>';
-    
-    // Get all selected city IDs
-    const cityIds = Array.from(selectedCities).map(cb => cb.value);
-    
-    // Fetch factories for all selected cities
-    Promise.all(cityIds.map(cityId => 
-        fetch(`/api/cities/${cityId}/factories/`)
-            .then(response => response.json())
-            .then(data => data.factories)
-            .catch(error => {
-                console.error('Error loading factories for city', cityId, ':', error);
-                return [];
-            })
-    )).then(allFactories => {
-        // Flatten and deduplicate factories
-        const factories = [];
-        const seenIds = new Set();
-        
-        allFactories.flat().forEach(factory => {
-            if (!seenIds.has(factory.id)) {
-                seenIds.add(factory.id);
-                factories.push(factory);
-            }
-        });
-        
-        // Populate factory selector
-        if (factories.length === 0) {
-            factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
-        } else {
-            factorySelector.innerHTML = '';
-            factories.forEach(factory => {
-                const div = document.createElement('div');
-                div.className = 'form-check mb-2';
-                div.innerHTML = `
-                    <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
-                        name="factories" value="${factory.id}">
-                    <label class="form-check-label" for="factory${factory.id}">
-                        ${factory.name} (${factory.city_name || 'Unknown City'})
-                    </label>
-                `;
-                factorySelector.appendChild(div);
-            });
-        }
-    });
-}
-
-// City selection functions
-function selectAllCities() {
-    document.querySelectorAll('input[name="cities"]').forEach(cb => cb.checked = true);
-    handleCitySelection();
-}
-
-function deselectAllCities() {
-    document.querySelectorAll('input[name="cities"]').forEach(cb => cb.checked = false);
-    handleCitySelection();
-}
-
-// Factory selection functions
-function selectAllFactories() {
-    document.querySelectorAll('input[name="factories"]').forEach(cb => cb.checked = true);
-}
-
-function deselectAllFactories() {
-    document.querySelectorAll('input[name="factories"]').forEach(cb => cb.checked = false);
-}
 </script>
 
 <style>
+.city-checkboxes {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.form-check {
+    margin-bottom: 8px;
+}
+
 .btn-group {
     display: flex;
     gap: 10px;
@@ -335,60 +278,6 @@ function deselectAllFactories() {
 #exportButton:disabled {
     opacity: 0.7;
     cursor: wait;
-}
-
-.form-control:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.city-selector, .factory-selector {
-    background-color: #f8f9fa;
-    border-color: #dee2e6 !important;
-}
-
-.form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-}
-
-.form-check-label {
-    cursor: pointer;
-    user-select: none;
-}
-
-.btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-
-/* Ensure checkboxes are on the left side */
-.form-check {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-    gap: 0; /* Remove gap to keep checkbox in place */
-}
-
-.form-check-input {
-    margin-right: 1rem; /* Add space between checkbox and text */
-    margin-left: 0;
-    order: -1; /* This ensures the checkbox comes first (on the left) */
-    flex-shrink: 0; /* Prevent checkbox from shrinking */
-    margin-top: 0.125rem; /* Align with first line of text */
-    position: relative;
-    left: 0;
-}
-
-.form-check-label {
-    margin-left: 0;
-    flex: 1;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    line-height: 1.4;
-    padding-right: 0.5rem;
-    padding-left: 0; /* No left padding needed since checkbox is on the left */
 }
 </style>
 {% endblock %}
