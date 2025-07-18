@@ -1,30 +1,34 @@
 # Use official Python image as base
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV DJANGO_DISABLE_MIGRATIONS False
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev gcc python3-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 # Set work directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
-CMD ["ping", "-c", "4", "pypi.org"]
-# Install any needed packages specified in requirements.txt
+# Copy requirements first for better caching
+COPY requirements.txt /app/
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt --timeout=100 --retries=5
 
-# Run migrations during container build (not recommended for production)
-RUN python manage.py makemigrations 
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Create staticfiles directory
+RUN mkdir -p /app/staticfiles
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
-
-# Create a user to run the application
-# RUN echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('USAdmin', 'm.syedwasti@gmail.com', 'Grainbackend1!')" | python manage.py shell
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000

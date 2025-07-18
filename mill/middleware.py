@@ -23,12 +23,12 @@ class AdminAccessMiddleware:
             
             # SuperAdmin paths
             if path.startswith('/super-admin/'):
-                if not (request.user.groups.filter(name='SuperAdmin').exists() or request.user.is_superuser):
+                if not (request.user.groups.filter(name='Superadmin').exists() or request.user.is_superuser):
                     raise PermissionDenied
             
             # Admin paths
             elif path.startswith(('/admin/', '/manage-')):
-                if not (request.user.groups.filter(name__in=['Admin', 'SuperAdmin']).exists() or request.user.is_superuser):
+                if not (request.user.groups.filter(name__in=['Admin', 'Superadmin']).exists() or request.user.is_superuser):
                     raise PermissionDenied
 
         response = self.get_response(request)

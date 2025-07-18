@@ -8,24 +8,33 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
                     {% if not user.groups.all.0.name == 'Public' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin' %}">Admin</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'export_data' %}">Export Data</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'manage_profile' %}">Manage Profile</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'notifications' %}">Notifications</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'export_data' %}">Export Data</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'factory_map' %}">
+                            <i class="fas fa-map-marked-alt me-1"></i>Factory Map
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
+    </nav>  
     </nav>  

@@ -30,22 +30,32 @@
     <div class="container my-4">
         <!-- Control Buttons Section -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-6 col-md-2 mb-2">
                 <input type="date" id="datePicker" class="form-control" onchange="refreshCharts()" value="{{ selected_date|date:'Y-m-d' }}" />
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-2 mb-2">
+                <button id="dateRangeBtn" class="btn btn-warning w-100" onclick="openDateRangeModal();">
+                    <i class="fas fa-calendar-alt me-2"></i>Get Value
+                </button>
+            </div>
+            <div class="col-6 col-md-2 mb-2">
                 <button id="backToDashboard" class="btn btn-primary w-100" onclick="window.location.href='/dashboard';">
                     <i class="fas fa-tachometer-alt me-2"></i>العودة إلى لوحة التحكم
                 </button>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-2 mb-2">
                 <button id="downloadPDF" class="btn btn-success w-100" onclick="generatePDF();">
                     <i class="fas fa-file-pdf me-2"></i>تحميل PDF
                 </button>
             </div>
-            <div class="col-md-3">
+            <div class="col-6 col-md-2 mb-2">
                 <button id="refreshData" class="btn btn-info w-100" onclick="refreshCharts();">
                     <i class="fas fa-sync-alt me-2"></i>تحديث البيانات
+                </button>
+            </div>
+            <div class="col-6 col-md-2 mb-2">
+                <button id="calculateTotalBtn" class="btn btn-secondary w-100" onclick="calculateDateRangeTotal();">
+                    <i class="fas fa-calculator me-2"></i>Calculate Total
                 </button>
             </div>
         </div>
@@ -233,21 +243,249 @@
             </div>
             </div>
         </div>
-    <!-- Batch Details Charts Section -->
+    <!-- Production Timeline Progress Bar -->
 <div class="row mb-4 justify-content-center">
-    <!-- Production Timeline Chart -->
     <div class="col-md-10 mb-4 d-flex justify-content-center">
-        <div class="card w-100" style="max-width: 900px;">
-            <div class="card-header">
-                <h5 class="card-title mb-0 text-center">Production Timeline</h5>
+        <div class="card w-100" style="max-width: 800px;">
+            <div class="card-header bg-gradient-primary text-white">
+                <h5 class="card-title mb-0 text-center">
+                    <i class="fas fa-chart-line me-2"></i>Production Timeline
+                </h5>
             </div>
             <div class="card-body">
-                <canvas id="batchProductionTimelineChart"></canvas>
+                <div class="production-progress-container">
+                    <!-- Modern Progress Bar -->
+                    <div class="progress-wrapper mb-4">
+                        <div class="progress-container">
+                            <div class="progress-bar-modern">
+                                <div class="progress-fill" id="progressFill"></div>
+                                <div class="progress-text" id="progressText">0%</div>
+                            </div>
+                            <div class="progress-milestones">
+                                <div class="milestone" data-percent="25">
+                                    <div class="milestone-marker"></div>
+                                    <span class="milestone-label">25%</span>
+                                </div>
+                                <div class="milestone" data-percent="50">
+                                    <div class="milestone-marker"></div>
+                                    <span class="milestone-label">50%</span>
+                                </div>
+                                <div class="milestone" data-percent="75">
+                                    <div class="milestone-marker"></div>
+                                    <span class="milestone-label">75%</span>
+                                </div>
+                                <div class="milestone" data-percent="100">
+                                    <div class="milestone-marker"></div>
+                                    <span class="milestone-label">100%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <div class="batch-info">
+                            <div class="batch-goal mb-3">
+                                <i class="fas fa-bullseye me-2"></i>
+                                <span class="fw-bold fs-5">Batchdoel: {{ factory.batch_goal|default:800 }} ton flour</span>
+                            </div>
+                            <div class="batch-progress">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                <span class="text-muted">Huidige voortgang: <span id="currentFlour" class="fw-bold text-primary fs-5">0</span> ton (<span id="currentPercent" class="fw-bold text-success fs-5">0</span>%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Production Statistics Chart -->
+<!-- Modern Progress Bar CSS -->
+<style>
+.progress-wrapper { 
+    text-align: center; 
+    padding: 20px 0;
+}
+
+.progress-container { 
+    position: relative; 
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+.progress-bar-modern { 
+    position: relative; 
+    width: 100%; 
+    height: 40px; 
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    border: 2px solid #dee2e6;
+}
+
+.progress-fill { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    height: 100%; 
+    width: 0%; 
+    background: linear-gradient(90deg, 
+        #dc3545 0%, 
+        #fd7e14 20%, 
+        #ffc107 40%, 
+        #20c997 60%, 
+        #28a745 80%, 
+        #198754 100%
+    );
+    border-radius: 18px;
+    transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.progress-text { 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    font-size: 1.2em; 
+    font-weight: bold; 
+    color: #495057; 
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    z-index: 10;
+}
+
+.progress-milestones {
+    position: absolute;
+    width: 100%;
+    top: 50px;
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+
+.milestone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.milestone-marker {
+    width: 12px;
+    height: 12px;
+    background: #6c757d;
+    border-radius: 50%;
+    margin-bottom: 5px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.milestone.active .milestone-marker {
+    background: #28a745;
+    transform: scale(1.2);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.milestone-label {
+    font-size: 0.8em;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.milestone.active .milestone-label {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.batch-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.batch-goal {
+    font-size: 1.1em;
+    color: #495057;
+}
+
+.batch-progress {
+    font-size: 1em;
+}
+
+/* Animation for gauge fill */
+@keyframes gaugeFill {
+    from { clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%); }
+    to { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%); }
+}
+
+.gauge-fill.animate {
+    animation: gaugeFill 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+</style>
+
+<!-- Modern Gauge JS -->
+<script>
+// Get batch data for this factory
+const batchGoal = {{ factory.batch_goal|default:800 }}; // Batch goal in tons
+const currentFlour = {{ factory.current_flour|default:0 }}; // Current flour production in tons
+const percent = batchGoal > 0 ? Math.min((currentFlour / batchGoal) * 100, 100) : 0;
+
+// Counter conversion: 1 counter unit = 50kg = 0.05 tons
+const COUNTER_TO_TONS = 0.05;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const flour = document.getElementById('currentFlour');
+    const percentEl = document.getElementById('currentPercent');
+    
+    // Animate with delay for better visual effect
+    setTimeout(() => {
+        // Animate progress bar fill
+        progressFill.style.width = percent + '%';
+        
+        // Update milestone markers
+        const milestones = document.querySelectorAll('.milestone');
+        milestones.forEach(milestone => {
+            const milestonePercent = parseInt(milestone.dataset.percent);
+            if (percent >= milestonePercent) {
+                milestone.classList.add('active');
+            } else {
+                milestone.classList.remove('active');
+            }
+        });
+        
+        // Update values with animation
+        animateValue(progressText, 0, percent, 2000, (val) => val.toFixed(1) + '%');
+        animateValue(flour, 0, currentFlour, 2000, (val) => val.toFixed(0));
+        animateValue(percentEl, 0, percent, 2000, (val) => val.toFixed(1));
+    }, 500);
+});
+
+function animateValue(element, start, end, duration, formatter) {
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const current = start + (end - start) * progress;
+        element.textContent = formatter(current);
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
+</script>
+
+<!-- Production Statistics Chart -->
+<div class="row mb-4 justify-content-center">
     <div class="col-md-10 mb-4 d-flex justify-content-center">
         <div class="card w-100" style="max-width: 900px;">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -303,6 +541,187 @@
             display: none;
         }
     }
+    
+    /* Modern Gauge Progress Bar Styles */
+    .production-progress-container {
+        padding: 20px 0;
+    }
+    
+    .gauge-wrapper {
+        text-align: center;
+    }
+    
+    .gauge-container {
+        position: relative;
+        display: inline-block;
+        margin: 0 auto;
+    }
+    
+    .gauge {
+        position: relative;
+        width: 200px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    
+    .gauge-arc {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 100px 100px 0 0;
+        background: conic-gradient(
+            #dc3545 0deg 36deg,
+            #fd7e14 36deg 72deg,
+            #ffc107 72deg 108deg,
+            #20c997 108deg 144deg,
+            #28a745 144deg 180deg
+        );
+        transform: rotate(-90deg);
+    }
+    
+    .gauge-needle {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 4px;
+        height: 60px;
+        background: #6c757d;
+        transform-origin: bottom center;
+        transform: translateX(-50%) rotate(0deg);
+        transition: transform 1s ease-in-out;
+        border-radius: 2px;
+    }
+    
+    .gauge-needle::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #6c757d;
+    }
+    
+    .gauge-center {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        background: white;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .gauge-value {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #495057;
+        line-height: 1;
+    }
+    
+    .gauge-label {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-top: 2px;
+    }
+    
+    .gauge-stats {
+        margin-top: 30px;
+    }
+    
+    .stat-item {
+        padding: 15px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stat-value {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9em;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .milestone-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .milestone-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .milestone-card.bg-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+    
+    .milestone-card.bg-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    }
+    
+    .milestone-value {
+        font-weight: bold;
+        font-size: 0.9em;
+        margin: 2px 0;
+    }
+    
+    .milestone-status {
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+    
+    .timeline-milestones h6 {
+        color: #495057;
+        font-weight: 600;
+    }
+    
+    /* Animation for progress bar */
+    @keyframes progressGlow {
+        0% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+    }
+    
+    .progress-bar-animated {
+        animation: progressGlow 2s ease-in-out infinite;
+    }
 </style>
 
 <!-- Required JavaScript -->
@@ -327,6 +746,92 @@
     // Update time every second
     updateDateTime();
     setInterval(updateDateTime, 1000);
+    
+    // Modern Gauge Progress Bar Animation
+    function updateProductionProgress() {
+        const dailyTotal = {{ factory.daily_total|default:0 }};
+        const weeklyTotal = {{ factory.weekly_total|default:0 }};
+        const monthlyTotal = {{ factory.monthly_total|default:0 }};
+        const yearlyTotal = {{ factory.yearly_total|default:0 }};
+        
+        // Use daily total as current progress, yearly total as target
+        const currentProgress = dailyTotal;
+        const targetProgress = Math.max(yearlyTotal, 1000); // Use yearly total or 1000 as target
+        const progressPercentage = Math.min((currentProgress / targetProgress) * 100, 100);
+        
+        // Update gauge needle
+        const gaugeNeedle = document.getElementById('gaugeNeedle');
+        const gaugeValue = document.getElementById('gaugeValue');
+        
+        // Calculate needle rotation (0-180 degrees)
+        const needleRotation = (progressPercentage / 100) * 180;
+        
+        // Animate needle
+        let currentRotation = 0;
+        const targetRotation = needleRotation;
+        const animationDuration = 2000; // 2 seconds
+        const animationSteps = 60;
+        const rotationIncrement = targetRotation / animationSteps;
+        
+        const animation = setInterval(() => {
+            currentRotation += rotationIncrement;
+            if (currentRotation >= targetRotation) {
+                currentRotation = targetRotation;
+                clearInterval(animation);
+            }
+            
+            gaugeNeedle.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
+            gaugeValue.textContent = `${(currentRotation / 180 * 100).toFixed(1)}%`;
+        }, animationDuration / animationSteps);
+        
+        // Update stats
+        document.getElementById('dailyTotal').textContent = dailyTotal;
+        document.getElementById('weeklyTotal').textContent = weeklyTotal;
+        document.getElementById('monthlyTotal').textContent = monthlyTotal;
+        document.getElementById('yearlyTotal').textContent = yearlyTotal;
+    }
+    
+    function updateMilestones(targetProgress, currentProgress) {
+        const milestones = [25, 50, 75, 90, 100];
+        const currentProgressPercentage = (currentProgress / targetProgress) * 100;
+        
+        milestones.forEach(milestone => {
+            const milestoneCard = document.getElementById(`milestone-${milestone}`);
+            const milestoneValue = document.getElementById(`milestone-${milestone}-value`);
+            const milestoneStatus = document.getElementById(`milestone-${milestone}-status`);
+            
+            const milestoneAmount = (targetProgress * milestone / 100).toFixed(2);
+            milestoneValue.textContent = `${milestoneAmount} tons`;
+            
+            if (currentProgressPercentage >= milestone) {
+                milestoneCard.classList.add('bg-success', 'text-white');
+                milestoneCard.classList.remove('border');
+                milestoneStatus.textContent = 'Completed';
+                milestoneStatus.className = 'milestone-status text-success';
+            } else {
+                milestoneCard.classList.remove('bg-success', 'text-white');
+                milestoneCard.classList.add('border');
+                milestoneStatus.textContent = 'Pending';
+                milestoneStatus.className = 'milestone-status text-muted';
+            }
+        });
+        
+        // Update current milestone
+        const currentCard = document.getElementById('milestone-current');
+        const currentValue = document.getElementById('milestone-current-value');
+        const currentStatus = document.getElementById('milestone-current-status');
+        
+        currentValue.textContent = `${currentProgress.toFixed(2)} tons`;
+        currentStatus.textContent = 'Active';
+        currentStatus.className = 'milestone-status text-primary';
+        currentCard.classList.add('bg-primary', 'text-white');
+        currentCard.classList.remove('border');
+    }
+    
+    // Initialize progress bar when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        updateProductionProgress();
+    });
 
     // PDF Generation
     function generatePDF() {
@@ -738,6 +1243,187 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Date Range Modal -->
+<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeModalLabel">Select Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" required>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Info:</strong> Select a date range to calculate the total production between these dates.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="calculateDateRangeTotal()">Calculate Total</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Results Modal -->
+<div class="modal fade" id="dateRangeResultsModal" tabindex="-1" aria-labelledby="dateRangeResultsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeResultsModalLabel">Date Range Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h6>Date Range</h6>
+                                <h4 id="dateRangeDisplay">-</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h6>Total Production</h6>
+                                <h4 id="totalProductionDisplay">-</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="dateRangeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Production</th>
+                                    <th>Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dateRangeTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="exportDateRangeData()">Export Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Date Range Modal Functions
+function openDateRangeModal() {
+    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+    modal.show();
+}
+
+function calculateDateRangeTotal() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates.');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('Start date cannot be after end date.');
+        return;
+    }
+    
+    // Close the date range modal
+    const dateRangeModal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
+    dateRangeModal.hide();
+    
+    // Show loading
+    showLoading();
+    
+    // Fetch data for the date range
+    fetch(`/api/chart_data/?factory_id={{ factory.id }}&start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            displayDateRangeResults(startDate, endDate, data);
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error fetching date range data:', error);
+            alert('Error fetching data. Please try again.');
+        });
+}
+
+function displayDateRangeResults(startDate, endDate, data) {
+    // Calculate total production
+    let totalProduction = 0;
+    const dailyData = data.daily_data || [];
+    
+    dailyData.forEach(day => {
+        totalProduction += day;
+    });
+    
+    // Update display
+    document.getElementById('dateRangeDisplay').textContent = `${startDate} to ${endDate}`;
+    document.getElementById('totalProductionDisplay').textContent = `${totalProduction.toFixed(2)} tons`;
+    
+    // Populate table
+    const tableBody = document.getElementById('dateRangeTableBody');
+    tableBody.innerHTML = '';
+    
+    let cumulative = 0;
+    dailyData.forEach((production, index) => {
+        cumulative += production;
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + index);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${date.toISOString().split('T')[0]}</td>
+            <td>${production.toFixed(2)} tons</td>
+            <td>${cumulative.toFixed(2)} tons</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // Show results modal
+    const resultsModal = new bootstrap.Modal(document.getElementById('dateRangeResultsModal'));
+    resultsModal.show();
+}
+
+function showLoading() {
+    // You can implement a loading spinner here
+    document.getElementById('calculateTotalBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
+    document.getElementById('calculateTotalBtn').disabled = true;
+}
+
+function hideLoading() {
+    document.getElementById('calculateTotalBtn').innerHTML = '<i class="fas fa-calculator me-2"></i>Calculate Total';
+    document.getElementById('calculateTotalBtn').disabled = false;
+}
+
+function exportDateRangeData() {
+    // Implement export functionality
+    alert('Export functionality will be implemented here.');
+}
+</script>
 
 <!--     <script>
         document.addEventListener('DOMContentLoaded', function() {
