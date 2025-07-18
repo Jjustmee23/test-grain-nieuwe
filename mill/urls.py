@@ -4,6 +4,7 @@ from django.contrib import admin
 from .views_new import testmill
 # from mill. import profile_views
 from mill import views, apis
+from mill.views import tv_dashboard_views, factory_map_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -16,7 +17,11 @@ urlpatterns = [
     path('batches/create/', views.BatchCreateView.as_view(), name='batch-create'),
     path('batches/<int:pk>/', views.BatchDetailView.as_view(), name='batch-detail'),
     path('batches/<int:pk>/update/', views.BatchUpdateView.as_view(), name='batch-update'),
+    path('batches/<int:pk>/manage/', views.BatchManagementView.as_view(), name='batch-manage'),
+    path('batches/<int:pk>/counter/', views.BatchCounterUpdateView.as_view(), name='batch-counter'),
+    path('batches/<int:pk>/auto-update/', views.BatchAutoUpdateView.as_view(), name='batch-auto-update'),
     path('api/batch/<int:batch_id>/chart-data/', views.batch_chart_data, name='batch_chart_data'),
+    path('api/batch-notifications/', views.BatchNotificationView.as_view(), name='batch-notifications'),
     
     # Sensor URLs
     path('sensor/data/', views.sensor_data_receiver, name='sensor-data'),
@@ -54,7 +59,8 @@ urlpatterns = [
     # Views
     path('', views.index, name='index'),
     path('dashboard', views.dashboard, name='dashboard'),
-    path('batch/<int:pk>/', views.batch_detail, name='batch-detail'),
+    path('tv-dashboard/', views.tv_dashboard, name='tv-dashboard'),
+
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
@@ -102,6 +108,7 @@ urlpatterns = [
 
     path('api/chart_data/', apis.chart_data, name='chart_data'),
     path('api/batch_chart_data/', apis.batch_chart_data, name='batch_chart_data'),
+    path('api/cities/<int:city_id>/factories/', apis.get_city_factories, name='get_city_factories'),
 
     path('api/devices/',apis.get_devices,name='get-devices'),
     path('resolve-door-alert/<int:log_id>/', views.resolve_door_alert, name='resolve_door_alert'),
@@ -116,7 +123,20 @@ urlpatterns = [
     
 
 
-    path('api/devices/',apis.get_devices,name='get-devices')
+    path('api/devices/',apis.get_devices,name='get-devices'),
+
+    # TV Dashboard Settings URLs
+    path('tv-dashboard-settings/', tv_dashboard_views.tv_dashboard_settings_list, name='tv_dashboard_settings_list'),
+    path('tv-dashboard-settings/create/', tv_dashboard_views.tv_dashboard_settings_create, name='tv_dashboard_settings_create'),
+    path('tv-dashboard-settings/<int:setting_id>/edit/', tv_dashboard_views.tv_dashboard_settings_edit, name='tv_dashboard_settings_edit'),
+    path('tv-dashboard-settings/<int:setting_id>/delete/', tv_dashboard_views.tv_dashboard_settings_delete, name='tv_dashboard_settings_delete'),
+    path('tv-dashboard-settings/<int:setting_id>/activate/', tv_dashboard_views.tv_dashboard_settings_activate, name='tv_dashboard_settings_activate'),
+    path('tv-dashboard-settings/<int:setting_id>/preview/', tv_dashboard_views.tv_dashboard_settings_preview, name='tv_dashboard_settings_preview'),
+    path('tv-dashboard-settings/<int:setting_id>/duplicate/', tv_dashboard_views.tv_dashboard_settings_duplicate, name='tv_dashboard_settings_duplicate'),
+
+    # Factory Map URLs
+    path('factory-map/', factory_map_views.factory_map, name='factory_map'),
+    path('api/factory-map-data/', factory_map_views.factory_map_data, name='factory_map_data'),
 
 ]
 

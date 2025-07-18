@@ -1,0 +1,58 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Delete TV Dashboard Setting" %} - Mill Management System{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{% trans "Delete TV Dashboard Setting" %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">{% trans "Warning!" %}</h5>
+                        <p>{% trans "Are you sure you want to delete the TV dashboard setting" %} <strong>"{{ setting.name }}"</strong>?</p>
+                        <hr>
+                        <p class="mb-0">{% trans "This action cannot be undone." %}</p>
+                    </div>
+
+                    <div class="setting-details mb-4">
+                        <h6>{% trans "Setting Details:" %}</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>{% trans "Name" %}:</strong> {{ setting.name }}</li>
+                            <li><strong>{% trans "Display Mode" %}:</strong> {{ setting.get_display_mode_display }}</li>
+                            <li><strong>{% trans "Sort Criteria" %}:</strong> {{ setting.get_sort_criteria_display }}</li>
+                            <li><strong>{% trans "Status" %}:</strong> 
+                                {% if setting.is_active %}
+                                    <span class="badge bg-success">{% trans "Active" %}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>{% trans "Created" %}:</strong> {{ setting.created_at|date:"F j, Y" }}</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'tv_dashboard_settings_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>{% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>{% trans "Delete Setting" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
