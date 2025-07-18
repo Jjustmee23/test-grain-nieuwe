@@ -116,7 +116,7 @@ def monitor_required(user):
     return user.groups.filter(name='monitor').exists() or user.is_superuser
 
 def super_admin_required(user):
-    return user.groups.filter(name='Superadmin').exists() or user.is_superuser
+    return user.groups.filter(name='super_admin').exists() or user.is_superuser
 
 def admin_view(request):
     # provide request.user as context

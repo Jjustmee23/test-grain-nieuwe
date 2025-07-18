@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from mill.utils import admin_required
-from mill.utils.chart_handler_utils import calculate_chart_data, calculate_date_range_data
 
 @admin_required
 def get_production_stats(request):
@@ -182,7 +181,7 @@ def batch_detail(request, pk):
         'alerts': alerts,
         'chart_data': chart_data,  # Pass chart data to the template
     }
-    return render(request, 'batches/batch_detail.html', context)
+    return render(request, 'mill/batch_details.html', context)
 
 # @login_required
 def get_batch_details_by_factory(factory_name):
@@ -265,38 +264,3 @@ def batch_chart_data(request, batch_id):
     # You might want to check permissions here!
     chart_data = calculate_batch_chart_data(batch_id)
     return JsonResponse(chart_data)
-
-def chart_data(request):
-    """
-    API endpoint for chart data with optional date range parameters
-    """
-    factory_id = request.GET.get('factory_id')
-    date = request.GET.get('date')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    
-    if not factory_id:
-        return JsonResponse({
-            'success': False,
-            'error': 'Factory ID is required'
-        })
-    
-    try:
-        if start_date and end_date:
-            # Date range calculation
-            chart_data = calculate_date_range_data(factory_id, start_date, end_date)
-        elif date:
-            # Single date calculation
-            chart_data = calculate_chart_data(date, factory_id)
-        else:
-            # Default to today
-            today = datetime.now().strftime('%Y-%m-%d')
-            chart_data = calculate_chart_data(today, factory_id)
-        
-        return JsonResponse(chart_data)
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })

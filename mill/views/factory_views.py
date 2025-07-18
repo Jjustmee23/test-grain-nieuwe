@@ -103,10 +103,7 @@ def manage_factory(request):
             elif action == "add_factory":
                 factory_name = request.POST.get('factory_name')
                 city_id = request.POST.get('city_id')
-                group = request.POST.get('group', 'Public')  # Default to 'Public' if not provided
-                address = request.POST.get('address', '').strip()
-                latitude = request.POST.get('latitude', '').strip()
-                longitude = request.POST.get('longitude', '').strip()
+                group = request.POST.get('group', 'public')  # Default to 'public' if not provided
 
                 city = is_allowed_city(request, city_id)
                 if not city:
@@ -116,17 +113,6 @@ def manage_factory(request):
                 factory = Factory(name=factory_name)
                 factory.city = city
                 factory.group = group
-                factory.address = address if address else None
-                
-                # Set coordinates if provided
-                if latitude and longitude:
-                    try:
-                        factory.latitude = float(latitude)
-                        factory.longitude = float(longitude)
-                    except ValueError:
-                        messages.error(request, "Invalid coordinates. Please use decimal numbers (e.g., 33.2232).")
-                        return redirect("manage_factory")
-                
                 factory.save()
                 
                 # Log factory creation
@@ -143,9 +129,6 @@ def manage_factory(request):
                 print("Action: Edit factory")
                 new_factory_name = request.POST.get('factory_name')
                 new_group = request.POST.get('group')
-                new_address = request.POST.get('address', '').strip()
-                new_latitude = request.POST.get('latitude', '').strip()
-                new_longitude = request.POST.get('longitude', '').strip()
                 factory = is_allowed_factory(request, factory_id)
                 
                 if not factory:
@@ -163,23 +146,8 @@ def manage_factory(request):
                 if new_group:
                     factory.group = new_group
                 
-                # Update address fields
-                factory.address = new_address if new_address else None
-                
-                # Update coordinates if provided
-                if new_latitude and new_longitude:
-                    try:
-                        factory.latitude = float(new_latitude)
-                        factory.longitude = float(new_longitude)
-                    except ValueError:
-                        messages.error(request, "Invalid coordinates. Please use decimal numbers (e.g., 33.2232).")
-                        return redirect("manage_factory")
-                else:
-                    factory.latitude = None
-                    factory.longitude = None
-                
                 factory.save()
-                print(f"Factory updated: name='{new_factory_name}', sector='{factory.group}', address='{factory.address}'")
+                print(f"Factory updated: name='{new_factory_name}', sector='{factory.group}'.")
                 messages.success(request, f"Factory updated: '{new_factory_name}' (Sector: {factory.group})")
 
         except ObjectDoesNotExist as e:
@@ -211,9 +179,6 @@ def manage_factory(request):
             'city': factory.city,
             'status': factory.status,
             'group': factory.group,  # Add the group/sector
-            'address': factory.address,
-            'latitude': factory.latitude,
-            'longitude': factory.longitude,
             'devices': Device.objects.filter(factory=factory)
         }
         for factory in factories

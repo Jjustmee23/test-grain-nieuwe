@@ -56,13 +56,10 @@ def superadmin_required(function):
     return wrap
 
 def is_super_admin(user):
-    return user.is_superuser or user.groups.filter(name='Superadmin').exists()
+    return user.is_superuser or user.groups.filter(name='SuperAdmin').exists()
 
 def is_admin(user): 
     return user.is_superuser or user.groups.filter(name='Admin').exists()
-
-def is_public_user(user):
-    return user.groups.filter(name='Public').exists()
 
 # Access control functions
 def is_allowed_factory(request, factory_id):

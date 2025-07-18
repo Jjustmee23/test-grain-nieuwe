@@ -7,42 +7,22 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    environment:
-      - DB_HOST=45.154.238.114
-      - DB_PORT=5433
-      - DB_NAME=testdb
-      - DB_USER=testuser
-      - DB_PASSWORD=testpassword
-      - DJANGO_DISABLE_MIGRATIONS=False
-      - DJANGO_SETTINGS_MODULE=config.settings
     depends_on:
       - postgres
-    volumes:
-      - .:/app
-      - static_volume:/app/staticfiles
-    restart: unless-stopped
 
   postgres:
-    image: postgres:17
+    image: postgres:latest
     container_name: app_postgres
     environment:
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: testdb
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Host port 5433 mapped to container's 5432
     volumes:
-      - postgres_data_test:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - postgres_data_test:/var/lib/postgresql/data  # Persistent volume to store DB data
 
 volumes:
   postgres_data_test:
-  static_volume:
 
 
