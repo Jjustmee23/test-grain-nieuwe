@@ -4,6 +4,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Database configuration for existing PostgreSQL database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -14,3 +15,11 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5433'),
     }
 }
+
+# Temporarily enable migrations for schema updates
+# MIGRATION_MODULES = {
+#     'mill': None,
+# }
+
+# Additional settings to prevent database structure changes
+# DJANGO_DISABLE_MIGRATIONS = True

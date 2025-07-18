@@ -4,7 +4,9 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import PermissionDenied
+from django.contrib import messages
 from mill.forms import CustomUserCreationForm, UserCreationForm
+from mill.models import UserProfile
 
 def superadmin_required(function):
     def wrap(request, *args, **kwargs):
@@ -12,51 +14,59 @@ def superadmin_required(function):
             return function(request, *args, **kwargs)
         raise PermissionDenied
     return wrap
-from django.contrib.auth import login
-from django.contrib import messages
-from mill.models import UserProfile
 
-# Authentication Views
+def admin_required(function):
+    def wrap(request, *args, **kwargs):
+        if request.user.groups.filter(name__in=['Admin', 'Superadmin']).exists():
+            return function(request, *args, **kwargs)
+        raise PermissionDenied
+    return wrap
+
 class BasicLoginView(LoginView):
     template_name = 'mill/login.html'
-    redirect_authenticated_user = True
-    success_url = reverse_lazy('index')  # Redirect to 'index' view after successful login
+    success_url = reverse_lazy('dashboard')
 
     def get_success_url(self):
-        next_url = self.request.GET.get('next')
-        if next_url:
-            return next_url
-        else:
-            return self.success_url
+        return reverse_lazy('dashboard')
 
 class BasicLogoutView(LogoutView):
-    next_page = reverse_lazy('login')  # Redirect to 'login' after logout
+    next_page = reverse_lazy('login')
 
+@login_required
+def profile(request):
+    return render(request, 'mill/profile.html')
+
+@login_required
+def manage_profile(request):
+    if request.method == 'POST':
+        # Handle profile update logic here
+        pass
+    return render(request, 'mill/manage_profile.html')
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        # Handle password change logic here
+        pass
+    return render(request, 'mill/change_password.html')
+
+@login_required
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()  # Save the user to the database
-            login(request, user)  # Log in the user after registration
-            # Assign the 'user' group to the new user
-            user_group = Group.objects.get(name='user')
-            user.groups.add(user_group)
-            return redirect('index')
+            form.save()
+            return redirect('login')
     else:
         form = CustomUserCreationForm()
     return render(request, 'mill/register.html', {'form': form})
 
-@superadmin_required
-def profile(request):
-    return render(request, 'mill/profile.html')
 @superadmin_required
 def manage_users(request):
     # Get all users who are NOT superusers and NOT in the Superadmin group
     users = User.objects.exclude(is_superuser=True).exclude(groups__name='Superadmin').exclude(groups__name='Admin')
     return render(request, 'mill/manage_users.html', {'users': users})
 
-
-# Create new user view
 @superadmin_required
 def create_user(request):
     if request.method == 'POST':
@@ -83,27 +93,19 @@ def create_user(request):
         form = UserCreationForm()
     return render(request, 'mill/create_user.html', {'form': form})
 
-# Edit existing user view
 @superadmin_required
 def edit_user(request, user_id):
-    pass
-#     user = get_object_or_404(User, id=user_id)
-#     if request.method == 'POST':
-#         form = UserChangeForm(request.POST, instance=user)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('manage_users')
-#     else:
-#         form = UserChangeForm(instance=user)
-#     return render(request, 'mill/edit_user.html', {'form': form, 'user': user})
+    user = get_object_or_404(User, id=user_id)
+    if request.method == 'POST':
+        # Handle user edit logic here
+        pass
+    return render(request, 'mill/edit_user.html', {'user': user})
 
-# Delete user view
 @superadmin_required
 def delete_user(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == 'POST':
         user.delete()
-        
         return redirect('manage_users')
     return render(request, 'mill/delete_user.html', {'user': user})
 

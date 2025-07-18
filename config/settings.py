@@ -100,20 +100,43 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
+# Check if we're running in Docker (PostgreSQL) or locally (SQLite)
+if os.getenv('DB_HOST'):
+    # Docker environment - use PostgreSQL
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'testdb'),
+            'USER': os.getenv('DB_USER', 'testuser'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'testpassword'),
+            'HOST': os.getenv('DB_HOST', '45.154.238.114'),
+            'PORT': os.getenv('DB_PORT', '5433'),
+        },
         'mqtt_db': {
-        'ENGINE': 'django.db.backends.mysql',  # Use MySQL as the engine
-        'NAME': 'mqtt_db',
-        'USER': 'mqtt_user',
-        'PASSWORD': 'Jjustmee12773',
-        'HOST': '84.194.32.109',  # MySQL server host
-        'PORT': '3308',  # MySQL server port
-    },
-}
+            'ENGINE': 'django.db.backends.mysql',  # Use MySQL as the engine
+            'NAME': 'mqtt_db',
+            'USER': 'mqtt_user',
+            'PASSWORD': 'Jjustmee12773',
+            'HOST': '84.194.32.109',  # MySQL server host
+            'PORT': '3308',  # MySQL server port
+        },
+    }
+else:
+    # Local development - use SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        },
+        'mqtt_db': {
+            'ENGINE': 'django.db.backends.mysql',  # Use MySQL as the engine
+            'NAME': 'mqtt_db',
+            'USER': 'mqtt_user',
+            'PASSWORD': 'Jjustmee12773',
+            'HOST': '84.194.32.109',  # MySQL server host
+            'PORT': '3308',  # MySQL server port
+        },
+    }
 
 
 # Password validation
