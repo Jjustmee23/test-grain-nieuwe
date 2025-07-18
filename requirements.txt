@@ -4,3 +4,4 @@ python-dotenv
 openpyxl
 django-jazzmin==3.0.1
 reportlab
+xlsxwriter
