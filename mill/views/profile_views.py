@@ -3,7 +3,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.utils import timezone
+from django.core.paginator import Paginator
 from .profile_form import UserUpdateForm, CustomPasswordChangeForm
+from mill.models import ContactTicket
 
 @login_required
 def manage_profile(request):
@@ -31,10 +33,22 @@ def manage_profile(request):
         user_form = UserUpdateForm(instance=user)
         password_form = CustomPasswordChangeForm(user)
 
+    # Get user's tickets
+    tickets = ContactTicket.objects.filter(created_by=user).order_by('-created_at')
+    
+    # Pagination for tickets
+    paginator = Paginator(tickets, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     context = {
         'user_form': user_form,
         'password_form': password_form,
         'last_update': timezone.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'current_user': user.username
+        'current_user': user.username,
+        'tickets': page_obj,
+        'total_tickets': tickets.count(),
+        'open_tickets': tickets.filter(status__in=['NEW', 'IN_PROGRESS', 'PENDING']).count(),
+        'resolved_tickets': tickets.filter(status__in=['RESOLVED', 'CLOSED']).count(),
     }
     return render(request, 'accounts/manage_profile.html', context)

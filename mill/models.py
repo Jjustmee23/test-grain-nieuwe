@@ -122,6 +122,8 @@ class UserProfile(models.Model):
     # Only for non-super_admin users (admins and public_users)
     allowed_cities = models.ManyToManyField(City, blank=True)
     allowed_factories = models.ManyToManyField(Factory, blank=True)
+    # Support tickets permission for super admins
+    support_tickets_enabled = models.BooleanField(default=False, help_text="Enable support tickets management for this user")
 
     def __str__(self):
         return f"Profile for {self.user.username}"
@@ -730,6 +732,61 @@ class ContactTicket(models.Model):
         if self.is_closed and self.updated_at and self.created_at:
             return self.updated_at - self.created_at
         return None
+
+    def get_responses(self):
+        """Get all responses for this ticket"""
+        return self.responses.all().order_by('created_at')
+
+    def get_last_response(self):
+        """Get the last response for this ticket"""
+        return self.responses.last()
+
+    def has_unread_responses(self, user):
+        """Check if user has unread responses"""
+        return self.responses.filter(
+            created_by__isnull=False,
+            created_by__is_staff=True,
+            is_read=False
+        ).exclude(created_by=user).exists()
+
+    def mark_responses_as_read(self, user):
+        """Mark all responses as read for a user"""
+        self.responses.filter(
+            created_by__isnull=False,
+            created_by__is_staff=True,
+            is_read=False
+        ).exclude(created_by=user).update(is_read=True)
+
+
+class TicketResponse(models.Model):
+    """Responses to support tickets"""
+    ticket = models.ForeignKey(ContactTicket, on_delete=models.CASCADE, related_name='responses')
+    message = models.TextField()
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='ticket_responses'
+    )
+    is_internal = models.BooleanField(default=False, help_text="Internal note not visible to user")
+    is_read = models.BooleanField(default=False, help_text="Whether the response has been read")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Ticket Response'
+        verbose_name_plural = 'Ticket Responses'
+
+    def __str__(self):
+        return f"Response to {self.ticket.subject} - {self.created_at}"
+
+    def get_author_name(self):
+        """Get the name of the response author"""
+        if self.created_by:
+            return self.created_by.get_full_name() or self.created_by.username
+        return "System"
 
        
 @receiver(pre_save, sender=RawData)

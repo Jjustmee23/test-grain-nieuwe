@@ -143,10 +143,25 @@ urlpatterns = [
 
 
 
+    # Contact and Ticket URLs
     path('contact/', views.contact, name='contact'),
     path('contact/success/', views.contact_success, name='contact_success'),
+    
+    # User Ticket URLs
     path('tickets/', views.my_tickets, name='my_tickets'),
+    path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
     path('tickets/<int:ticket_id>/update/', views.ticket_update, name='ticket_update'),
+    
+    # Admin Ticket URLs
+    path('admin/tickets/', views.admin_tickets, name='admin_tickets'),
+    path('admin/tickets/<int:ticket_id>/', views.admin_ticket_detail, name='admin_ticket_detail'),
+    path('admin/tickets/<int:ticket_id>/status-update/', views.admin_ticket_status_update, name='admin_ticket_status_update'),
+    path('admin/tickets/search-users/', views.admin_search_users, name='admin_search_users'),
+    path('admin/tickets/create/', views.admin_create_ticket, name='admin_create_ticket'),
+    path('admin/tickets/<int:ticket_id>/quick-reply/', views.admin_quick_reply, name='admin_quick_reply'),
+    path('admin/tickets/<int:ticket_id>/assign/', views.admin_assign_ticket, name='admin_assign_ticket'),
+    path('admin/tickets/<int:ticket_id>/transfer/', views.admin_transfer_ticket, name='admin_transfer_ticket'),
+    path('admin/tickets/<int:ticket_id>/delete/', views.admin_delete_ticket, name='admin_delete_ticket'),
     
 
 

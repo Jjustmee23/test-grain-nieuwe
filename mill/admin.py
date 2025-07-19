@@ -99,8 +99,18 @@ class FactoryAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user',)
-    filter_horizontal = ('allowed_cities','allowed_factories') 
+    list_display = ('user', 'support_tickets_enabled')
+    list_filter = ('support_tickets_enabled',)
+    filter_horizontal = ('allowed_cities','allowed_factories')
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user', 'team')
+        }),
+        ('Permissions', {
+            'fields': ('allowed_cities', 'allowed_factories', 'support_tickets_enabled'),
+            'description': 'Support tickets permission is only for super admins'
+        }),
+    ) 
 
 @admin.register(NotificationCategory)
 class NotificationCategoryAdmin(admin.ModelAdmin):
@@ -132,6 +142,17 @@ class UserNotificationPreferenceInline(admin.StackedInline):
     )
     filter_horizontal = ('enabled_categories', 'mandatory_notifications')
     readonly_fields = ('created_at', 'updated_at')
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+class UserProfileInline(admin.StackedInline):
+    model = UserProfile
+    extra = 0
+    max_num = 1
+    can_delete = False
+    fields = ('team', 'allowed_cities', 'allowed_factories', 'support_tickets_enabled')
+    filter_horizontal = ('allowed_cities', 'allowed_factories')
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user')
@@ -550,12 +571,12 @@ class BatchNotificationAdmin(admin.ModelAdmin):
     )
 
 
-# Custom User Admin with Notification Preferences
+# Custom User Admin with Notification Preferences and User Profile
 class CustomUserAdmin(BaseUserAdmin):
-    inlines = [UserNotificationPreferenceInline]
+    inlines = [UserProfileInline, UserNotificationPreferenceInline]
     
     def get_inline_instances(self, request, obj=None):
-        # Only show notification preferences inline when editing existing users
+        # Only show inlines when editing existing users
         if obj is None:  # Creating new user
             return []
         return super().get_inline_instances(request, obj)
