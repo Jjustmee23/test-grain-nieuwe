@@ -1,0 +1,1517 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Batch Details - {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Batch Details: {{ batch.batch_number }}</h2>
+        <div class="btn-group">
+            {% if batch.can_be_edited %}
+            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editBatchModal">
+                <i class="fas fa-edit"></i> Edit Batch
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-secondary" disabled>
+                <i class="fas fa-lock"></i> Batch Locked
+            </button>
+            {% endif %}
+            
+            <!-- Super Admin Management Buttons -->
+            {% if user.is_superuser %}
+            <div class="btn-group ms-2">
+                <button type="button" class="btn btn-success" onclick="manageBatch('approve')" 
+                        {% if batch.status == 'approved' or not batch.can_be_managed_by_super_admin %}disabled{% endif %}>
+                    <i class="fas fa-check"></i> Approve
+                </button>
+                <button type="button" class="btn btn-primary" onclick="manageBatch('start')"
+                        {% if batch.status == 'in_process' or not batch.can_be_managed_by_super_admin %}disabled{% endif %}>
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button type="button" class="btn btn-warning" onclick="manageBatch('pause')"
+                        {% if batch.status == 'paused' or not batch.can_be_managed_by_super_admin %}disabled{% endif %}>
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button type="button" class="btn btn-danger" onclick="manageBatch('stop')"
+                        {% if batch.status == 'stopped' or batch.status == 'completed' or not batch.can_be_managed_by_super_admin %}disabled{% endif %}>
+                    <i class="fas fa-stop"></i> Stop & Finalize
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="manageBatch('reject')"
+                        {% if batch.status == 'rejected' or not batch.can_be_managed_by_super_admin %}disabled{% endif %}>
+                    <i class="fas fa-times"></i> Reject
+                </button>
+            </div>
+            
+            <!-- Counter Update Section -->
+            {% if not batch.is_finalized %}
+            <div class="btn-group ms-2">
+                <button type="button" class="btn btn-info" onclick="autoUpdateBatch()">
+                    <i class="fas fa-sync-alt"></i> Auto Update
+                </button>
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#counterModal">
+                    <i class="fas fa-tools"></i> Manual Correction
+                </button>
+            </div>
+            {% else %}
+            <div class="btn-group ms-2">
+                <button type="button" class="btn btn-secondary" disabled>
+                    <i class="fas fa-lock"></i> Counter Locked
+                </button>
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <a href="{% url 'batch-list' %}" class="btn btn-secondary ms-2">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Batch Information -->
+    <div class="row">
+        <!-- Basic Info Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Factory</dt>
+                        <dd class="col-sm-8">{{ batch.factory.name }}</dd>
+
+                        <dt class="col-sm-4">Start Date</dt>
+                        <dd class="col-sm-8">{{ batch.start_date|date:"Y-m-d H:i" }}</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{% if batch.status == 'completed' %}success{% elif batch.status == 'stopped' %}danger{% elif batch.status == 'in_process' %}primary{% elif batch.status == 'paused' %}warning{% elif batch.status == 'approved' %}info{% else %}secondary{% endif %}">
+                                {{ batch.get_status_display }}
+                            </span>
+                            {% if batch.is_finalized %}
+                            <br><small class="text-muted"><i class="fas fa-lock"></i> Batch is finalized - no changes allowed</small>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">Waste Factor</dt>
+                        <dd class="col-sm-8">{{ batch.waste_factor }}%</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Production Stats Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Production Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Wheat Input</h6>
+                                <h3>{{ batch.wheat_amount }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Expected Output</h6>
+                                <h3>{{ batch.expected_flour_output }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Actual Output</h6>
+                                <h3>{{ batch.actual_flour_output }} tons</h3>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="border rounded p-3 text-center">
+                                <h6>Yield Rate</h6>
+                                <h3>{{ yield_rate|floatformat:1 }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ProductionData Daily Overview -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Batch Production Progress (From {{ batch_start_date|date:"d/m/Y" }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="alert alert-info text-center">
+                                <strong>Today's Production:</strong><br>
+                                <span style="font-size:1.5em;">{{ today_production }}</span> units<br>
+                                <small>({{ today_production|floatformat:0 }} × 50 kg)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-success text-center">
+                                <strong>Total Production:</strong><br>
+                                <span style="font-size:1.5em;">{{ cumulative_units }}</span> units<br>
+                                <small>({{ cumulative_tons|floatformat:2 }} tons)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-warning text-center">
+                                <strong>Remaining:</strong><br>
+                                <span style="font-size:1.5em;">{{ remaining_tons|floatformat:2 }}</span> tons<br>
+                                <small>({{ progress_percentage|floatformat:1 }}% complete)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="alert alert-primary text-center">
+                                <strong>Conversion:</strong><br>
+                                <span style="font-size:1.2em;">{{ conversion_factor }} kg/unit</span><br>
+                                <small>Device: {{ batch.factory.devices.first.name|default:"No device" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ progress_percentage }}%; background: linear-gradient(90deg, #28a745, #20c997);"
+                             aria-valuenow="{{ progress_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            <span class="progress-text">{{ progress_percentage|floatformat:1 }}% Complete</span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Start Value</th>
+                                    <th>End Value</th>
+                                    <th>Daily Production</th>
+                                    <th>Cumulative Units</th>
+                                    <th>Cumulative Tons</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in daily_production_values %}
+                                <tr>
+                                    <td>{{ entry.day|date:"d/m/Y" }}</td>
+                                    <td>{{ entry.start_value }}</td>
+                                    <td>{{ entry.end_value }}</td>
+                                    <td><strong>{{ entry.production }}</strong></td>
+                                    <td>{{ entry.cumulative }}</td>
+                                    <td>{{ entry.cumulative_tons|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-center">No production data available since batch start ({{ batch_start_date|date:"d/m/Y" }}).</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Workflow Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Batch Workflow Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="workflow-timeline">
+                <div class="workflow-step {% if batch.status == 'pending' %}active{% elif batch.status in 'approved,in_process,paused,stopped,completed' %}completed{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-clock"></i>
+        </div>
+                    <div class="workflow-label">Pending</div>
+                </div>
+                <div class="workflow-arrow"></div>
+                <div class="workflow-step {% if batch.status == 'approved' %}active{% elif batch.status in 'in_process,paused,stopped,completed' %}completed{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="workflow-label">Approved</div>
+                </div>
+                <div class="workflow-arrow"></div>
+                <div class="workflow-step {% if batch.status == 'in_process' %}active{% elif batch.status in 'paused,stopped,completed' %}completed{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="workflow-label">In Process</div>
+                </div>
+                <div class="workflow-arrow"></div>
+                <div class="workflow-step {% if batch.status == 'paused' %}active{% elif batch.status in 'stopped,completed' %}completed{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-pause"></i>
+                    </div>
+                    <div class="workflow-label">Paused</div>
+                </div>
+                <div class="workflow-arrow"></div>
+                <div class="workflow-step {% if batch.status == 'stopped' %}active{% elif batch.status == 'completed' %}completed{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-stop"></i>
+                    </div>
+                    <div class="workflow-label">Stopped</div>
+                </div>
+                <div class="workflow-arrow"></div>
+                <div class="workflow-step {% if batch.status == 'completed' %}active{% endif %}">
+                    <div class="workflow-icon">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="workflow-label">Completed</div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Workflow Rules:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Pending → Approved:</strong> Super Admin approval required</li>
+                        <li><strong>Approved → In Process:</strong> Automatic start when approved</li>
+                        <li><strong>In Process ↔ Paused:</strong> Super Admin can pause/resume</li>
+                        <li><strong>In Process/Paused → Stopped:</strong> Finalizes batch, locks all values</li>
+                        <li><strong>Stopped/Completed:</strong> No further changes allowed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <!-- Production Timeline Progress Bar -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Production Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="production-progress-container">
+                        <!-- Progress Bar -->
+                        <div class="progress-wrapper mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="progress-label">Production Progress</span>
+                                <span class="progress-percentage" id="progressPercentage">0%</span>
+                            </div>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="productionProgressBar" 
+                                     role="progressbar" 
+                                     style="width: 0%; background: linear-gradient(90deg, #28a745, #20c997);"
+                                     aria-valuenow="0" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    <span class="progress-text" id="progressText">0 tons / 0 tons</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Production Stats -->
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="stat-card text-center p-3 border rounded">
+                                    <h6 class="text-muted mb-1">Expected Output</h6>
+                                    <h4 class="text-primary mb-0" id="expectedOutput">{{ batch.expected_flour_output }} tons</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card text-center p-3 border rounded">
+                                    <h6 class="text-muted mb-1">Actual Output</h6>
+                                    <h4 class="text-success mb-0" id="actualOutput">{{ batch.actual_flour_output }} tons</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card text-center p-3 border rounded">
+                                    <h6 class="text-muted mb-1">Remaining</h6>
+                                    <h4 class="text-warning mb-0" id="remainingOutput">0 tons</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card text-center p-3 border rounded">
+                                    <h6 class="text-muted mb-1">Efficiency</h6>
+                                    <h4 class="text-info mb-0" id="efficiencyRate">{{ yield_rate|floatformat:1 }}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Counter Information -->
+                        <div class="counter-info mt-4">
+                            <h6 class="mb-3">Counter Information</h6>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="stat-card text-center p-3 border rounded bg-light">
+                                        <h6 class="text-muted mb-1">Batch Start Counter</h6>
+                                        <h4 class="text-secondary mb-0">{{ batch.start_value|default:0 }}</h4>
+                                        <small class="text-muted">Always 0 for new batches</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card text-center p-3 border rounded bg-light">
+                                        <h6 class="text-muted mb-1">Batch Progress</h6>
+                                        <h4 class="text-primary mb-0" id="currentCounterDisplay">{{ batch.current_value|default:0 }}</h4>
+                                        <small class="text-muted">Counter units since batch start</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card text-center p-3 border rounded bg-light">
+                                        <h6 class="text-muted mb-1">Device Counter</h6>
+                                        <h4 class="text-info mb-0" id="deviceCounterDisplay">--</h4>
+                                        <small class="text-muted">Total device counter</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-card text-center p-3 border rounded bg-light">
+                                        <h6 class="text-muted mb-1">Conversion Rate</h6>
+                                        <h4 class="text-success mb-0">0.05</h4>
+                                        <small class="text-muted">tons per unit</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Counter Conversion:</strong> 1 counter unit = 50kg = 0.05 tons of flour
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline Milestones -->
+                        <div class="timeline-milestones mt-4">
+                            <h6 class="mb-3">Production Milestones</h6>
+                            <div class="row g-2">
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-25">
+                                        <small class="text-muted">25%</small>
+                                        <div class="milestone-value" id="milestone-25-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-25-status">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-50">
+                                        <small class="text-muted">50%</small>
+                                        <div class="milestone-value" id="milestone-50-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-50-status">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-75">
+                                        <small class="text-muted">75%</small>
+                                        <div class="milestone-value" id="milestone-75-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-75-status">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-90">
+                                        <small class="text-muted">90%</small>
+                                        <div class="milestone-value" id="milestone-90-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-90-status">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-100">
+                                        <small class="text-muted">100%</small>
+                                        <div class="milestone-value" id="milestone-100-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-100-status">Pending</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="milestone-card text-center p-2 border rounded" id="milestone-current">
+                                        <small class="text-muted">Current</small>
+                                        <div class="milestone-value" id="milestone-current-value">0 tons</div>
+                                        <div class="milestone-status" id="milestone-current-status">Active</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Comparison Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Output Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="outputComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Efficiency Metrics Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Efficiency Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="efficiencyMetricsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Statistics Chart -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Production Statistics</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">Hourly</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">Daily</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">Monthly</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="yearly">Yearly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="productionStatsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Alerts Section -->
+    {% if alerts %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Alerts</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td>{{ alert.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{{ alert.get_severity_class }}">
+                                    {{ alert.get_alert_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ alert.message }}</td>
+                            <td>
+                                {% if alert.is_acknowledged %}
+                                <span class="badge bg-success">Acknowledged</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="editBatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Batch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editBatchForm" method="POST" action="{% url 'batch-update' batch.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Wheat Amount (tons)</label>
+                            <input type="number" class="form-control" name="wheat_amount" 
+                                   value="{{ batch.wheat_amount }}" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Waste Factor (%)</label>
+                            <input type="number" class="form-control" name="waste_factor" 
+                                   value="{{ batch.waste_factor }}" min="0" max="100" step="0.1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Actual Output (tons)</label>
+                            <input type="number" class="form-control" name="actual_flour_output" 
+                                   value="{{ batch.actual_flour_output }}" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="is_completed">
+                                <option value="false" {% if not batch.is_completed %}selected{% endif %}>
+                                    In Progress
+                                </option>
+                                <option value="true" {% if batch.is_completed %}selected{% endif %}>
+                                    Completed
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Add Production Entry Section -->
+                    <div class="mt-4">
+                        <h6>Add Production Entry</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Number of Bags</label>
+                                <input type="number" class="form-control" name="bag_count" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bags Weight (tons)</label>
+                                <input type="number" class="form-control" name="bags_weight" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const editForm = document.getElementById('editBatchForm');
+    
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create and show success alert
+                const alertHTML = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Success!</strong> ${data.message || 'Batch updated successfully.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                // Insert alert at the top of the container
+                const container = document.querySelector('.container-fluid');
+                container.insertAdjacentHTML('afterbegin', alertHTML);
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editBatchModal'));
+                modal.hide();
+                
+                // Update charts with new data
+                setTimeout(() => {
+                    const batchData = {
+                        wheatAmount: data.batch_data.wheat_amount,
+                        expectedOutput: data.batch_data.expected_flour_output,
+                        actualOutput: data.batch_data.actual_flour_output,
+                        wasteFactor: data.batch_data.waste_factor,
+                    };
+                    
+                    // Update all charts with new data
+                    updateCharts(batchData);
+                    
+                    // Update the displayed values in the Production Stats card
+                    updateProductionStats(data.batch_data);
+                }, 100);
+                
+                // Auto-dismiss alert after 5 seconds
+                setTimeout(() => {
+                    const alert = document.querySelector('.alert');
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            } else {
+                // Show error alert
+                const alertHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Error!</strong> ${data.error || 'An error occurred while updating the batch.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                const container = document.querySelector('.container-fluid');
+                container.insertAdjacentHTML('afterbegin', alertHTML);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Show error alert
+            const alertHTML = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error!</strong> An unexpected error occurred while updating the batch.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            const container = document.querySelector('.container-fluid');
+            container.insertAdjacentHTML('afterbegin', alertHTML);
+        });
+    });
+
+    // Function to update charts with new data
+function updateCharts(batchData) {
+    // Calculate the efficiency using the formula
+    const efficiency = ((batchData.expectedOutput - batchData.actualOutput) / batchData.expectedOutput * 100) + batchData.wasteFactor;
+
+    // Update Production Timeline Chart
+    const timelineChart = Chart.getChart('productionTimelineChart');
+    if (timelineChart) {
+        timelineChart.data.datasets[0].data = [0, 
+            batchData.expectedOutput * 0.25,
+            batchData.expectedOutput * 0.5,
+            batchData.expectedOutput * 0.75,
+            batchData.expectedOutput
+        ];
+        timelineChart.data.datasets[1].data = [0,
+            batchData.actualOutput * 0.25,
+            batchData.actualOutput * 0.5,
+            batchData.actualOutput * 0.75,
+            batchData.actualOutput
+        ];
+        timelineChart.update();
+    }
+
+    // Update Output Comparison Chart
+    const outputChart = Chart.getChart('outputComparisonChart');
+    if (outputChart) {
+        outputChart.data.datasets[0].data = [
+            batchData.wheatAmount,
+            batchData.expectedOutput,
+            batchData.actualOutput
+        ];
+        outputChart.update();
+    }
+
+    // Update Efficiency Metrics Chart
+    const efficiencyChart = Chart.getChart('efficiencyMetricsChart');
+    if (efficiencyChart) {
+        // Use the newly calculated efficiency value
+        efficiencyChart.data.datasets[0].data = [efficiency, batchData.wasteFactor];
+        efficiencyChart.update();
+    }
+}
+    
+
+    // Function to update production stats display
+    function updateProductionStats(data) {
+        // Update wheat amount
+        const wheatElement = document.querySelector('.card-body h3:nth-of-type(1)');
+        if (wheatElement) wheatElement.textContent = `${data.wheat_amount} tons`;
+
+        // Update expected output
+        const expectedElement = document.querySelector('.card-body h3:nth-of-type(2)');
+        if (expectedElement) expectedElement.textContent = `${data.expected_flour_output} tons`;
+
+        // Update actual output
+        const actualElement = document.querySelector('.card-body h3:nth-of-type(3)');
+        if (actualElement) actualElement.textContent = `${data.actual_flour_output} tons`;
+
+        // Update yield rate
+        const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
+        const yieldElement = document.querySelector('.card-body h3:nth-of-type(4)');
+        if (yieldElement) yieldElement.textContent = `${yieldRate}%`;
+    }
+});
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the batch data from the template
+        const batchData = {
+            wheatAmount: {{ batch.wheat_amount }},
+            expectedOutput: {{ batch.expected_flour_output }},
+            actualOutput: {{ batch.actual_flour_output }},
+            wasteFactor: {{ batch.waste_factor }},
+        };
+    
+        // Production Timeline Progress Bar Animation
+        function updateProductionProgress() {
+            const expectedOutput = batchData.expectedOutput;
+            const actualOutput = batchData.actualOutput;
+            const progressPercentage = Math.min((actualOutput / expectedOutput) * 100, 100);
+            
+            // Update progress bar
+            const progressBar = document.getElementById('productionProgressBar');
+            const progressText = document.getElementById('progressText');
+            const progressPercentageEl = document.getElementById('progressPercentage');
+            
+            // Animate progress bar
+            let currentProgress = 0;
+            const targetProgress = progressPercentage;
+            const animationDuration = 2000; // 2 seconds
+            const animationSteps = 60;
+            const progressIncrement = targetProgress / animationSteps;
+            
+            const animation = setInterval(() => {
+                currentProgress += progressIncrement;
+                if (currentProgress >= targetProgress) {
+                    currentProgress = targetProgress;
+                    clearInterval(animation);
+                }
+                
+                progressBar.style.width = currentProgress + '%';
+                progressBar.setAttribute('aria-valuenow', currentProgress);
+                progressText.textContent = `${actualOutput.toFixed(2)} tons / ${expectedOutput.toFixed(2)} tons`;
+                progressPercentageEl.textContent = currentProgress.toFixed(1) + '%';
+                
+                // Update progress bar color based on completion
+                if (currentProgress >= 100) {
+                    progressBar.style.background = 'linear-gradient(90deg, #28a745, #20c997)';
+                } else if (currentProgress >= 75) {
+                    progressBar.style.background = 'linear-gradient(90deg, #17a2b8, #20c997)';
+                } else if (currentProgress >= 50) {
+                    progressBar.style.background = 'linear-gradient(90deg, #ffc107, #17a2b8)';
+                } else {
+                    progressBar.style.background = 'linear-gradient(90deg, #dc3545, #ffc107)';
+                }
+            }, animationDuration / animationSteps);
+            
+            // Update milestone cards
+            updateMilestones(expectedOutput, actualOutput);
+        }
+        
+        function updateMilestones(expectedOutput, actualOutput) {
+            const milestones = [25, 50, 75, 90, 100];
+            const currentProgress = (actualOutput / expectedOutput) * 100;
+            
+            milestones.forEach(milestone => {
+                const milestoneCard = document.getElementById(`milestone-${milestone}`);
+                const milestoneValue = document.getElementById(`milestone-${milestone}-value`);
+                const milestoneStatus = document.getElementById(`milestone-${milestone}-status`);
+                
+                const milestoneAmount = (expectedOutput * milestone / 100).toFixed(2);
+                milestoneValue.textContent = `${milestoneAmount} tons`;
+                
+                if (currentProgress >= milestone) {
+                    milestoneCard.classList.add('bg-success', 'text-white');
+                    milestoneCard.classList.remove('border');
+                    milestoneStatus.textContent = 'Completed';
+                    milestoneStatus.className = 'milestone-status text-success';
+                } else {
+                    milestoneCard.classList.remove('bg-success', 'text-white');
+                    milestoneCard.classList.add('border');
+                    milestoneStatus.textContent = 'Pending';
+                    milestoneStatus.className = 'milestone-status text-muted';
+                }
+            });
+            
+            // Update current milestone
+            const currentCard = document.getElementById('milestone-current');
+            const currentValue = document.getElementById('milestone-current-value');
+            const currentStatus = document.getElementById('milestone-current-status');
+            
+            currentValue.textContent = `${actualOutput.toFixed(2)} tons`;
+            currentStatus.textContent = 'Active';
+            currentStatus.className = 'milestone-status text-primary';
+            currentCard.classList.add('bg-primary', 'text-white');
+            currentCard.classList.remove('border');
+        }
+        
+        // Initialize progress bar
+        updateProductionProgress();
+        
+        // Update remaining output
+        const remainingOutput = Math.max(0, batchData.expectedOutput - batchData.actualOutput);
+        document.getElementById('remainingOutput').textContent = `${remainingOutput.toFixed(2)} tons`;
+    
+        // Output Comparison Chart
+        const outputCtx = document.getElementById('outputComparisonChart').getContext('2d');
+        new Chart(outputCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Wheat Input', 'Expected Output', 'Actual Output'],
+                datasets: [{
+                    data: [
+                        batchData.wheatAmount,
+                        batchData.expectedOutput,
+                        batchData.actualOutput
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Input vs Output Comparison'
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (tons)'
+                        }
+                    }
+                }
+            }
+        });
+    
+        // Efficiency Metrics Chart
+        const efficiencyCtx = document.getElementById('efficiencyMetricsChart').getContext('2d');
+        const yieldRate = (batchData.actualOutput / batchData.expectedOutput) * 100;
+        new Chart(efficiencyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Yield Rate', 'Waste Factor'],
+                datasets: [{
+                    data: [yieldRate, batchData.wasteFactor],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(255, 99, 132, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Efficiency Metrics (%)'
+                    }
+                }
+            }
+        });
+    });
+    </script>
+ <script>
+   
+document.addEventListener('DOMContentLoaded', function() {
+    let productionStatsChart = null;
+    const productionStatsCtx = document.getElementById('productionStatsChart');
+    const batchId = {{ batch.id }}; // Ensure batch.id is available in context
+
+    // Function to fetch chart data
+    function fetchChartData(batchId) {
+        return fetch(`/api/batch/${batchId}/chart-data/`)
+            .then(response => response.json());
+    }
+
+    function createProductionStatsChart(timeScale, chartData) {
+        let labels = [];
+        let data = [];
+
+        switch(timeScale) {
+            case 'hourly':
+                labels = chartData.hourly_label;
+                data = chartData.hourly_data;
+                break;
+            case 'daily':
+                labels = chartData.daily_labels;
+                data = chartData.daily_data;
+                break;
+            case 'monthly':
+                labels = chartData.monthly_labels;
+                data = chartData.monthly_data;
+                break;
+            case 'yearly':
+                // If you have yearly data in chartData, use it; else, dummy
+                labels = ['Previous Year', 'Current Year'];
+                data = [chartData.peresent_data.Expected, chartData.peresent_data.Actual]; // or adjust as needed
+                break;
+            default:
+                labels = [];
+                data = [];
+        }
+
+        if (productionStatsChart) {
+            productionStatsChart.destroy();
+        }
+
+        productionStatsChart = new Chart(productionStatsCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Production',
+                    data: data,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { 
+                        title: { 
+                            display: true, 
+                            text: 'Date',
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { 
+                            display: true, 
+                            text: 'Production (Units)',
+                            font: { weight: 'bold' }
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Fetch and initialize
+    fetchChartData(batchId).then(chartData => {
+        // Initialize with hourly data
+        createProductionStatsChart('hourly', chartData);
+
+        // Add event listeners for time scale buttons
+        document.querySelectorAll('[data-time-scale]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const timeScale = e.target.dataset.timeScale;
+                document.querySelectorAll('[data-time-scale]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                e.target.classList.add('active');
+                createProductionStatsChart(timeScale, chartData);
+            });
+        });
+    });
+});
+</script>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .production-progress-container {
+            padding: 20px 0;
+        }
+        
+        .progress-wrapper {
+            position: relative;
+        }
+        
+        .progress {
+            border-radius: 15px;
+            background: #f8f9fa;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            border-radius: 15px;
+            transition: width 0.3s ease, background 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            white-space: nowrap;
+        }
+        
+        .progress-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .progress-percentage {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.1em;
+        }
+        
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .milestone-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .milestone-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .milestone-card.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .milestone-card.bg-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        .milestone-value {
+            font-weight: bold;
+            font-size: 0.9em;
+            margin: 2px 0;
+        }
+        
+        .milestone-status {
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+        
+        .timeline-milestones h6 {
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        /* Animation for progress bar */
+        @keyframes progressGlow {
+            0% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+        }
+        
+        .progress-bar-animated {
+            animation: progressGlow 2s ease-in-out infinite;
+        }
+        
+        /* Workflow Timeline Styles */
+        .workflow-timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .workflow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .workflow-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #e9ecef;
+            border: 3px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+            color: #6c757d;
+        }
+        
+        .workflow-step.completed .workflow-icon {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .workflow-step.active .workflow-icon {
+            background: #007bff;
+            border-color: #007bff;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .workflow-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .workflow-step.completed .workflow-label {
+            color: #28a745;
+        }
+        
+        .workflow-step.active .workflow-label {
+            color: #007bff;
+        }
+        
+        .workflow-arrow {
+            width: 30px;
+            height: 2px;
+            background: #dee2e6;
+            position: relative;
+            margin: 0 10px;
+        }
+        
+        .workflow-arrow::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: -3px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid #dee2e6;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+        
+        .workflow-step.completed + .workflow-arrow {
+            background: #28a745;
+        }
+        
+        .workflow-step.completed + .workflow-arrow::after {
+            border-left-color: #28a745;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+    
+    <!-- Counter Update Modal -->
+    {% if user.is_superuser %}
+    <div class="modal fade" id="counterModal" tabindex="-1" aria-labelledby="counterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="counterModalLabel">
+                        <i class="fas fa-tools"></i> Manual Counter Correction
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Super Admin Only:</strong> Use this to manually correct batch counter values when device readings are incorrect.
+                    </div>
+                    <form id="counterForm">
+                        <div class="mb-3">
+                            <label for="correctionValue" class="form-label">Correction Value (units)</label>
+                            <input type="number" class="form-control" id="correctionValue" name="correction_value" 
+                                   value="0" placeholder="Enter + or - value to correct" required>
+                            <div class="form-text">
+                                <i class="fas fa-plus-circle text-success"></i> Positive: Add units to batch<br>
+                                <i class="fas fa-minus-circle text-danger"></i> Negative: Subtract units from batch
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Current Batch Status</label>
+                            <div class="row">
+                                <div class="col-4">
+                                    <small class="text-muted">Start Value:</small>
+                                    <div class="fw-bold">{{ batch.start_value }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Current Value:</small>
+                                    <div class="fw-bold" id="currentValueDisplay">{{ batch.current_value }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">Flour Output:</small>
+                                    <div class="fw-bold text-success" id="currentFlourOutput">{{ batch.actual_flour_output|floatformat:2 }} tons</div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12">
+                                    <small class="text-muted">Conversion: 1 counter unit = 50kg = 0.05 tons</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">After Correction Preview</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">New Current Value:</small>
+                                    <div class="fw-bold text-primary" id="newCurrentValueDisplay">{{ batch.current_value }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">New Flour Output:</small>
+                                    <div class="fw-bold text-success" id="newFlourOutputDisplay">{{ batch.actual_flour_output|floatformat:2 }} tons</div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="updateCounter()">
+                        <i class="fas fa-tools"></i> Apply Correction
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Batch Management JavaScript -->
+    <script>
+        function manageBatch(action) {
+            let confirmMessage = '';
+            switch(action) {
+                case 'approve':
+                    confirmMessage = 'Are you sure you want to approve this batch? This will automatically start production.';
+                    break;
+                case 'start':
+                    confirmMessage = 'Are you sure you want to start this batch?';
+                    break;
+                case 'pause':
+                    confirmMessage = 'Are you sure you want to pause this batch?';
+                    break;
+                case 'stop':
+                    confirmMessage = 'Are you sure you want to stop and finalize this batch? This will lock all values permanently.';
+                    break;
+                case 'reject':
+                    confirmMessage = 'Are you sure you want to reject this batch?';
+                    break;
+                default:
+                    confirmMessage = `Are you sure you want to ${action} this batch?`;
+            }
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            fetch(`/batches/{{ batch.id }}/manage/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `action=${action}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    alert(data.message);
+                    // Reload page to reflect changes
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while managing the batch');
+            });
+        }
+        
+        function autoUpdateBatch() {
+            if (!confirm('Are you sure you want to auto-update this batch with current device data?')) {
+                return;
+            }
+            
+            fetch(`/batches/{{ batch.id }}/auto-update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update display values
+                    document.getElementById('currentValueDisplay').textContent = data.data.current_value;
+                    document.getElementById('actualOutput').textContent = data.data.actual_flour_output + ' tons';
+                    document.getElementById('progressPercentage').textContent = data.data.progress_percentage.toFixed(1) + '%';
+                    
+                    // Update counter displays
+                    document.getElementById('currentCounterDisplay').textContent = data.data.current_value;
+                    document.getElementById('deviceCounterDisplay').textContent = data.data.device_counter || '--';
+                    
+                    // Update progress bar
+                    const progressBar = document.getElementById('productionProgressBar');
+                    progressBar.style.width = data.data.progress_percentage + '%';
+                    progressBar.setAttribute('aria-valuenow', data.data.progress_percentage);
+                    
+                    // Show success message
+                    alert('Batch auto-updated successfully!');
+                    
+                    // Reload page to show all updates
+                    location.reload();
+                } else {
+                    if (data.error.includes('No device data available')) {
+                        alert('Info: ' + data.error + '\n\nThis is normal if the device has not started sending data yet.');
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while auto-updating the batch');
+            });
+        }
+        
+        function updateCounter() {
+            const correctionValue = document.getElementById('correctionValue').value;
+            
+            if (!correctionValue || correctionValue == 0) {
+                alert('Please enter a non-zero correction value');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to apply a correction of ${correctionValue} units to this batch?`)) {
+                return;
+            }
+            
+            fetch(`/batches/{{ batch.id }}/counter/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `correction_value=${correctionValue}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update display values
+                    document.getElementById('currentValueDisplay').textContent = data.data.current_value;
+                    document.getElementById('actualOutput').textContent = data.data.actual_flour_output + ' tons';
+                    document.getElementById('progressPercentage').textContent = data.data.progress_percentage.toFixed(1) + '%';
+                    
+                    // Update counter displays
+                    document.getElementById('currentCounterDisplay').textContent = data.data.current_value;
+                    document.getElementById('deviceCounterDisplay').textContent = data.data.device_counter || '--';
+                    
+                    // Update progress bar
+                    const progressBar = document.getElementById('productionProgressBar');
+                    progressBar.style.width = data.data.progress_percentage + '%';
+                    progressBar.setAttribute('aria-valuenow', data.data.progress_percentage);
+                    
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('counterModal')).hide();
+                    
+                    // Show success message
+                    alert('Counter updated successfully!');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the counter');
+            });
+        }
+        
+        // Initialize flour calculation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentValue = {{ batch.current_value|default:0 }};
+            const startValue = {{ batch.start_value|default:0 }};
+            const flourTons = currentValue * 0.05; // 1 counter unit = 50kg = 0.05 tons
+            
+            document.getElementById('flourCalculationValue').textContent = flourTons.toFixed(2);
+            
+            // Update counter displays
+            document.getElementById('currentCounterDisplay').textContent = currentValue;
+            
+            // Load device counter information
+            loadDeviceCounterInfo();
+        });
+        
+        // Function to load device counter information
+        function loadDeviceCounterInfo() {
+            fetch(`/batches/{{ batch.id }}/counter/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'update_info_only=true'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('deviceCounterDisplay').textContent = data.data.device_counter || '--';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading device counter info:', error);
+            });
+        }
+        
+        // Update preview when correction value changes
+        document.getElementById('correctionValue')?.addEventListener('input', function() {
+            const correctionValue = parseInt(this.value) || 0;
+            const currentValue = {{ batch.current_value|default:0 }};
+            const newCurrentValue = currentValue + correctionValue;
+            const newFlourTons = newCurrentValue * 0.05; // 1 counter unit = 50kg = 0.05 tons
+            
+            document.getElementById('newCurrentValueDisplay').textContent = newCurrentValue;
+            document.getElementById('newFlourOutputDisplay').textContent = newFlourTons.toFixed(2) + ' tons';
+            
+            // Update color based on correction type
+            const newValueElement = document.getElementById('newCurrentValueDisplay');
+            if (correctionValue > 0) {
+                newValueElement.className = 'fw-bold text-success';
+            } else if (correctionValue < 0) {
+                newValueElement.className = 'fw-bold text-danger';
+            } else {
+                newValueElement.className = 'fw-bold text-primary';
+            }
+        });
+    </script>
+    {% endblock %}

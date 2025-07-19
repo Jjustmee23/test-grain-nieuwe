@@ -1,0 +1,993 @@
+# Arabic translations for PROJECT.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-07-30 21:42+0200\n"
+"PO-Revision-Date: 2024-07-30 21:42+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ar\n"
+"Language-Team: ar <LL@li.org>\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : "
+"n%100>=3 && n%100<=10 ? 3 : n%100>=0 && n%100<=2 ? 4 : 5);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.15.0\n"
+
+#: routes.py:38
+msgid "Invalid credentials"
+msgstr "بيانات اعتماد غير صالحة"
+
+#: routes.py:89
+msgid "City with this name already exists"
+msgstr "المدينة بهذا الاسم موجودة بالفعل"
+
+#: routes.py:94
+msgid "City added successfully"
+msgstr "تمت إضافة المدينة بنجاح"
+
+#: routes.py:102
+msgid "City updated successfully"
+msgstr "تم تحديث المدينة بنجاح"
+
+#: routes.py:116
+msgid "Selected factories have been reassigned"
+msgstr "تم إعادة تعيين المصانع المحددة"
+
+#: routes.py:118
+msgid "Selected city to reassign factories does not exist"
+msgstr "المدينة المحددة لإعادة تعيين المصانع غير موجودة"
+
+#: routes.py:124
+msgid "City deleted successfully"
+msgstr "تم حذف المدينة بنجاح"
+
+#: routes.py:126
+msgid "City not found"
+msgstr "المدينة غير موجودة"
+
+#: routes.py:158
+msgid "Factory added successfully"
+msgstr "تمت إضافة المصنع بنجاح"
+
+#: routes.py:166
+msgid "Factory updated successfully"
+msgstr "تم تحديث المصنع بنجاح"
+
+#: routes.py:173
+msgid "Factory removed successfully"
+msgstr "تمت إزالة المصنع بنجاح"
+
+#: routes.py:181
+msgid "Device added to factory successfully"
+msgstr "تمت إضافة الجهاز إلى المصنع بنجاح"
+
+#: routes.py:189
+msgid "Device removed from factory successfully"
+msgstr "تمت إزالة الجهاز من المصنع بنجاح"
+
+#: routes.py:202 routes.py:239
+msgid "City ID is required"
+msgstr "معرف المدينة مطلوب"
+
+#: routes.py:204
+msgid "Date is required"
+msgstr "التاريخ مطلوب"
+
+#: routes.py:219
+msgid "An error occurred while fetching data"
+msgstr "حدث خطأ أثناء جلب البيانات"
+
+#: routes.py:226
+msgid "device_id and date are required"
+msgstr "معرف الجهاز والتاريخ مطلوبان"
+
+#: routes.py:233
+msgid "An error occurred while fetching device data"
+msgstr "حدث خطأ أثناء جلب بيانات الجهاز"
+
+#: routes.py:247
+msgid "An error occurred while fetching factories"
+msgstr "حدث خطأ أثناء جلب المصانع"
+
+#: routes.py:257
+msgid "Device successfully assigned to factory"
+msgstr "تم تعيين الجهاز إلى المصنع بنجاح"
+
+#: routes.py:259
+msgid "Failed to assign device"
+msgstr "فشل في تعيين الجهاز"
+
+#: routes.py:275
+msgid "Device successfully updated"
+msgstr "تم تحديث الجهاز بنجاح"
+
+#: routes.py:277 routes.py:298
+msgid "Device not found"
+msgstr "الجهاز غير موجود"
+
+#: routes.py:291
+#, python-format
+msgid "Device is linked to factory %(factory_name)s in city %(city_name)s. Do you want to deactivate it?"
+msgstr "الجهاز مرتبط بالمصنع %(factory_name)s في المدينة %(city_name)s. هل تريد تعطيله؟"
+
+#: routes.py:296
+#, python-format
+msgid "Device status updated to %(status)s"
+msgstr "تم تحديث حالة الجهاز إلى %(status)s"
+
+#: routes.py:310
+msgid "Device successfully linked to factory"
+msgstr "تم ربط الجهاز بالمصنع بنجاح"
+
+#: routes.py:312
+msgid "Failed to link device to factory"
+msgstr "فشل في ربط الجهاز بالمصنع"
+
+#: routes.py:339
+msgid "User rights updated successfully"
+msgstr "تم تحديث حقوق المستخدم بنجاح"
+
+#: routes.py:341
+msgid "User not found"
+msgstr "المستخدم غير موجود"
+
+#: routes.py:351
+msgid "Factory not found"
+msgstr "المصنع غير موجود"
+
+#: routes.py:367
+msgid "An error occurred while fetching factory statistics"
+msgstr "حدث خطأ أثناء جلب إحصاءات المصنع"
+
+#: routes.py:382
+msgid "An error occurred while fetching best statistics"
+msgstr "حدث خطأ أثناء جلب أفضل الإحصاءات"
+
+#: templates/404.html:5 templates/404.html:9
+msgid "Page Not Found"
+msgstr "الصفحة غير موجودة"
+
+#: templates/404.html:10
+msgid "Sorry, the page you are looking for does not exist."
+msgstr "عذراً، الصفحة التي تبحث عنها غير موجودة."
+
+#: templates/404.html:11
+msgid "Go to Home Page"
+msgstr "الذهاب إلى الصفحة الرئيسية"
+
+#: templates/admin.html:5 templates/admin.html:70 templates/index.html:31
+msgid "Admin Dashboard"
+msgstr "لوحة تحكم الإدارة"
+
+#: templates/admin.html:87
+msgid "New devices detected!"
+msgstr "تم اكتشاف أجهزة جديدة!"
+
+#: templates/admin.html:92
+msgid "Link to Factory"
+msgstr "ربط بالمصنع"
+
+#: templates/admin.html:100
+msgid "Go to Dashboard"
+msgstr "الذهاب إلى لوحة التحكم"
+
+#: templates/admin.html:104 templates/manage_city.html:5
+#: templates/manage_city.html:71
+msgid "Manage Cities"
+msgstr "إدارة المدن"
+
+#: templates/admin.html:105 templates/manage_factory.html:5
+#: templates/manage_factory.html:70
+msgid "Manage Factories"
+msgstr "إدارة المصانع"
+
+#: templates/admin.html:108 templates/manage_devices.html:5
+#: templates/manage_devices.html:70
+msgid "Manage Devices"
+msgstr "إدارة الأجهزة"
+
+#: templates/admin.html:110 templates/super_admin.html:5
+#: templates/super_admin.html:71
+msgid "Super Admin Dashboard"
+msgstr "لوحة تحكم المشرف الأعلى"
+
+#: templates/admin.html:121
+msgid "Link Device to Factory"
+msgstr "ربط الجهاز بالمصنع"
+
+#: templates/admin.html:128 templates/manage_factory.html:92
+msgid "Select City:"
+msgstr "اختر المدينة:"
+
+#: templates/admin.html:136
+msgid "Select Factory:"
+msgstr "اختر المصنع:"
+
+#: templates/admin.html:142
+msgid "Or enter Serial Number:"
+msgstr "أو أدخل الرقم التسلسلي:"
+
+#: templates/admin.html:147
+msgid "Link Device"
+msgstr "ربط الجهاز"
+
+#: templates/admin.html:148 templates/index.html:48
+msgid "Close"
+msgstr "إغلاق"
+
+#: templates/admin.html:183
+msgid "Select a Factory"
+msgstr "اختر مصنعاً"
+
+#: templates/admin_confirm_delete.html:5
+msgid "Admin Confirm Delete"
+msgstr "تأكيد حذف الإدارة"
+
+#: templates/admin_confirm_delete.html:11
+msgid "Confirm Delete"
+msgstr "تأكيد الحذف"
+
+#: templates/admin_confirm_delete.html:30 templates/manage_city.html:161
+msgid "Reassign factories to another city:"
+msgstr "إعادة تعيين المصانع إلى مدينة أخرى:"
+
+#: templates/admin_confirm_delete.html:41 templates/manage_city.html:168
+msgid "Select factories to reassign:"
+msgstr "اختر المصانع لإعادة تعيينها:"
+
+#: templates/admin_confirm_delete.html:52 templates/manage_city.html:152
+msgid "Delete City"
+msgstr "حذف المدينة"
+
+#: templates/admin_confirm_delete.html:53
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: templates/index.html:5
+msgid "Dashboard"
+msgstr "لوحة التحكم"
+
+#: templates/index.html:13
+msgid "Select a date:"
+msgstr "اختر تاريخاً:"
+
+#: templates/index.html:18
+msgid "Select a city:"
+msgstr "اختر مدينة:"
+
+#: templates/index.html:28
+msgid "Welcome"
+msgstr "أهلاً وسهلاً"
+
+#: templates/index.html:29
+msgid "Logout"
+msgstr "تسجيل الخروج"
+
+#: templates/index.html:41 templates/index.html:44
+msgid "Total today:"
+msgstr "الإجمالي اليوم:"
+
+#: templates/index.html:42
+msgid "More Info"
+msgstr "مزيد من المعلومات"
+
+#: templates/index.html:45
+msgid "Total month:"
+msgstr "الإجمالي الشهر:"
+
+#: templates/index.html:46
+msgid "Total year:"
+msgstr "الإجمالي السنة:"
+
+#: templates/index.html:47
+msgid "Status:"
+msgstr "الحالة:"
+
+#: templates/index.html:47
+msgid "online"
+msgstr "متصل"
+
+#: templates/index.html:47
+msgid "offline"
+msgstr "غير متصل"
+
+#: templates/index.html:49
+msgid "Show Statistics"
+msgstr "عرض الإحصاءات"
+
+#: templates/index.html:50
+msgid "Export Report"
+msgstr "تصدير التقرير"
+
+#: templates/index.html:58
+msgid "Daily total of all factories in this city:"
+msgstr "الإجمالي اليومي لجميع المصانع في هذه المدينة:"
+
+#: templates/index.html:59
+msgid "Monthly total of all factories in this city:"
+msgstr "الإجمالي الشهري لجميع المصانع في هذه المدينة:"
+
+#: templates/index.html:60
+msgid "Yearly total of all factories in this city (2023):"
+msgstr "الإجمالي السنوي لجميع المصانع في هذه المدينة (2023):"
+
+#: templates/index.html:61
+msgid "Yearly total of all factories in this city (2022):"
+msgstr "الإجمالي السنوي لجميع المصانع في هذه المدينة (2022):"
+
+#: templates/index.html:67
+msgid "PDF Preview"
+msgstr "معاينة PDF"
+
+#: templates/index.html:69
+msgid "Download PDF"
+msgstr "تحميل PDF"
+
+#: templates/login.html:5 templates/login.html:14
+msgid "Login"
+msgstr "تسجيل الدخول"
+
+#: templates/login.html:10 templates/register.html:12
+msgid "Username:"
+msgstr "اسم المستخدم:"
+
+#: templates/login.html:12 templates/register.html:14
+msgid "Password:"
+msgstr "كلمة المرور:"
+
+#: templates/login.html:16
+msgid "No account?"
+msgstr "لا يوجد حساب؟"
+
+#: templates/login.html:16
+msgid "Register here"
+msgstr "سجل هنا"
+
+#: templates/manage_city.html:86
+msgid "Add/Edit City"
+msgstr "إضافة/تعديل المدينة"
+
+#: templates/manage_city.html:90
+msgid "City Name:"
+msgstr "اسم المدينة:"
+
+#: templates/manage_city.html:93
+msgid "Add City"
+msgstr "إضافة مدينة"
+
+#: templates/manage_city.html:97
+msgid "Filter Cities"
+msgstr "تصفية المدن"
+
+#: templates/manage_city.html:100
+msgid "Filter by Status:"
+msgstr "تصفية حسب الحالة:"
+
+#: templates/manage_city.html:102
+msgid "All Statuses"
+msgstr "جميع الحالات"
+
+#: templates/manage_city.html:103 templates/manage_city.html:124
+#: templates/manage_devices.html:118
+msgid "Active"
+msgstr "نشط"
+
+#: templates/manage_city.html:104 templates/manage_city.html:124
+#: templates/manage_devices.html:118
+msgid "Inactive"
+msgstr "غير نشط"
+
+#: templates/manage_city.html:107
+msgid "Filter"
+msgstr "تصفية"
+
+#: templates/manage_city.html:110
+msgid "Existing Cities"
+msgstr "المدن الموجودة"
+
+#: templates/manage_city.html:114
+msgid "City Name"
+msgstr "اسم المدينة"
+
+#: templates/manage_city.html:115 templates/manage_devices.html:110
+msgid "Status"
+msgstr "الحالة"
+
+#: templates/manage_city.html:116 templates/manage_factory.html:117
+msgid "Linked Devices"
+msgstr "الأجهزة المرتبطة"
+
+#: templates/manage_city.html:117 templates/manage_devices.html:111
+#: templates/manage_factory.html:118
+msgid "Actions"
+msgstr "الإجراءات"
+
+#: templates/manage_city.html:127 templates.manage_factory.html:128
+msgid "Yes"
+msgstr "نعم"
+
+#: templates.manage_city.html:129 templates.manage_factory.html:130
+msgid "No"
+msgstr "لا"
+
+#: templates/manage_city.html:137 templates/manage_factory.html:138
+msgid "Edit"
+msgstr "تعديل"
+
+#: templates/manage_city.html:139 templates/manage_factory.html:140
+msgid "Remove"
+msgstr "إزالة"
+
+#: templates/manage_city.html:163
+msgid "Select a city"
+msgstr "اختر مدينة"
+
+#: templates/manage_city.html:171 templates.manage_factory.html:161
+msgid "Delete"
+msgstr "حذف"
+
+#: templates/manage_city.html:182
+msgid "City \"{cityName}\" has {factoriesCount} factories. Deleting this city will also delete the factories. Do you want to reassign the factories to another city or proceed with deletion?"
+msgstr "المدينة \"{cityName}\" لديها {factoriesCount} مصانع. حذف هذه المدينة سيحذف المصانع أيضًا. هل تريد إعادة تعيين المصانع إلى مدينة أخرى أو متابعة الحذف؟"
+
+#: templates/manage_city.html:183
+msgid "Are you sure you want to delete city \"{cityName}\"?"
+msgstr "هل أنت متأكد أنك تريد حذف المدينة \"{cityName}\"؟"
+
+#: templates/manage_devices.html:84
+msgid "Add/Edit Device"
+msgstr "إضافة/تعديل الجهاز"
+
+#: templates/manage_devices.html:87
+msgid "Select Device:"
+msgstr "اختر جهاز:"
+
+#: templates/manage_devices.html:95
+msgid "Device Name:"
+msgstr "اسم الجهاز:"
+
+#: templates/manage_devices.html:99
+msgid "Active Status:"
+msgstr "الحالة النشطة:"
+
+#: templates/manage_devices.html:102
+msgid "Update Device"
+msgstr "تحديث الجهاز"
+
+#: templates/manage_devices.html:105
+msgid "Existing Devices"
+msgstr "الأجهزة الموجودة"
+
+#: templates/manage_devices.html:109
+msgid "Device Name"
+msgstr "اسم الجهاز"
+
+#: templates/manage_devices.html:122
+msgid "Toggle Status"
+msgstr "تبديل الحالة"
+
+#: templates/manage_factory.html:84
+msgid "Add/Edit Factory"
+msgstr "إضافة/تعديل المصنع"
+
+#: templates/manage_factory.html:88
+msgid "Factory Name:"
+msgstr "اسم المصنع:"
+
+#: templates/manage_factory.html:100
+msgid "Select Device (Optional):"
+msgstr "اختر جهاز (اختياري):"
+
+#: templates/manage_factory.html:102
+msgid "Select a device"
+msgstr "اختر جهاز"
+
+#: templates/manage_factory.html:108
+msgid "Add Factory"
+msgstr "إضافة مصنع"
+
+#: templates/manage_factory.html:111
+msgid "Existing Factories"
+msgstr "المصانع الموجودة"
+
+#: templates/manage_factory.html:115
+msgid "Factory Name"
+msgstr "اسم المصنع"
+
+#: templates/manage_factory.html:116
+msgid "City"
+msgstr "المدينة"
+
+#: templates/manage_factory.html:153
+msgid "Delete Factory"
+msgstr "حذف المصنع"
+
+#: templates/manage_factory.html:171
+msgid "Are you sure you want to delete factory \"{factoryName}\"?"
+msgstr "هل أنت متأكد أنك تريد حذف المصنع \"{factoryName}\"؟"
+
+#: templates/register.html:5 templates/register.html:10
+#: templates/register.html:18
+msgid "Register"
+msgstr "تسجيل"
+
+#: templates/register.html:16
+msgid "Email:"
+msgstr "البريد الإلكتروني:"
+
+#: templates/register.html:20
+msgid "Already have an account?"
+msgstr "هل لديك حساب؟"
+
+#: templates/register.html:20
+msgid "Login here"
+msgstr "تسجيل الدخول هنا"
+
+#: templates/super_admin.html:85
+msgid "Add/Remove Database"
+msgstr "إضافة/إزالة قاعدة البيانات"
+
+#: templates/super_admin.html:89 templates/super_admin.html:97
+msgid "Database Name:"
+msgstr "اسم قاعدة البيانات:"
+
+#: templates/super_admin.html:92
+msgid "Add Database"
+msgstr "إضافة قاعدة بيانات"
+
+#: templates/super_admin.html:100
+msgid "Remove Database"
+msgstr "إزالة قاعدة بيانات"
+
+#: templates/super_admin.html:103 templates/super_admin.html:130
+msgid "Update User Rights"
+msgstr "تحديث حقوق المستخدم"
+
+#: templates/super_admin.html:107
+msgid "Select User:"
+msgstr "اختر مستخدم:"
+
+#: templates/super_admin.html:116
+msgid "Can Manage Devices"
+msgstr "يمكن إدارة الأجهزة"
+
+#: templates/super_admin.html:120
+msgid "Can Create City"
+msgstr "يمكن إنشاء مدينة"
+
+#: templates/super_admin.html:124
+msgid "Can Manage Users"
+msgstr "يمكن إدارة المستخدمين"
+
+#: templates/super_admin.html:128
+msgid "Can Manage Databases"
+msgstr "يمكن إدارة قواعد البيانات"
+
+
+
+#: venv/lib/python3.11/site-packages/click/_termui_impl.py:518
+#: venv/lib/site-packages/click/_termui_impl.py:518
+#: venv/lib64/python3.11/site-packages/click/_termui_impl.py:518
+msgid "{editor}: Editing failed"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/_termui_impl.py:522
+#: venv/lib/site-packages/click/_termui_impl.py:522
+#: venv/lib64/python3.11/site-packages/click/_termui_impl.py:522
+msgid "{editor}: Editing failed: {e}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1120
+#: venv/lib/site-packages/click/core.py:1120
+#: venv/lib64/python3.11/site-packages/click/core.py:1120
+msgid "Aborted!"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1309
+#: venv/lib/python3.11/site-packages/click/decorators.py:559
+#: venv/lib/site-packages/click/core.py:1309
+#: venv/lib/site-packages/click/decorators.py:559
+#: venv/lib64/python3.11/site-packages/click/core.py:1309
+#: venv/lib64/python3.11/site-packages/click/decorators.py:559
+msgid "Show this message and exit."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1340
+#: venv/lib/python3.11/site-packages/click/core.py:1370
+#: venv/lib/site-packages/click/core.py:1340
+#: venv/lib/site-packages/click/core.py:1370
+#: venv/lib64/python3.11/site-packages/click/core.py:1340
+#: venv/lib64/python3.11/site-packages/click/core.py:1370
+msgid "(Deprecated) {text}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1387
+#: venv/lib/site-packages/click/core.py:1387
+#: venv/lib64/python3.11/site-packages/click/core.py:1387
+msgid "Options"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1415
+#: venv/lib/site-packages/click/core.py:1415
+#: venv/lib64/python3.11/site-packages/click/core.py:1415
+msgid "Got unexpected extra argument ({args})"
+msgid_plural "Got unexpected extra arguments ({args})"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1428
+#: venv/lib/site-packages/click/core.py:1428
+#: venv/lib64/python3.11/site-packages/click/core.py:1428
+msgid "DeprecationWarning: The command {name!r} is deprecated."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1636
+#: venv/lib/site-packages/click/core.py:1636
+#: venv/lib64/python3.11/site-packages/click/core.py:1636
+msgid "Commands"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1668
+#: venv/lib/site-packages/click/core.py:1668
+#: venv/lib64/python3.11/site-packages/click/core.py:1668
+msgid "Missing command."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:1746
+#: venv/lib/site-packages/click/core.py:1746
+#: venv/lib64/python3.11/site-packages/click/core.py:1746
+msgid "No such command {name!r}."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2310
+#: venv/lib/site-packages/click/core.py:2310
+#: venv/lib64/python3.11/site-packages/click/core.py:2310
+msgid "Value must be an iterable."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2333
+#: venv/lib/site-packages/click/core.py:2333
+#: venv/lib64/python3.11/site-packages/click/core.py:2333
+msgid "Takes {nargs} values but 1 was given."
+msgid_plural "Takes {nargs} values but {len} were given."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2778
+#: venv/lib/site-packages/click/core.py:2778
+#: venv/lib64/python3.11/site-packages/click/core.py:2778
+msgid "env var: {var}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2808
+#: venv/lib/site-packages/click/core.py:2808
+#: venv/lib64/python3.11/site-packages/click/core.py:2808
+msgid "(dynamic)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2821
+#: venv/lib/site-packages/click/core.py:2821
+#: venv/lib64/python3.11/site-packages/click/core.py:2821
+msgid "default: {default}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/core.py:2834
+#: venv/lib/site-packages/click/core.py:2834
+#: venv/lib64/python3.11/site-packages/click/core.py:2834
+msgid "required"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/decorators.py:465
+#: venv/lib/site-packages/click/decorators.py:465
+#: venv/lib64/python3.11/site-packages/click/decorators.py:465
+#, python-format
+msgid "%(prog)s, version %(version)s"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/decorators.py:528
+#: venv/lib/site-packages/click/decorators.py:528
+#: venv/lib64/python3.11/site-packages/click/decorators.py:528
+msgid "Show the version and exit."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:44
+#: venv/lib/python3.11/site-packages/click/exceptions.py:80
+#: venv/lib/site-packages/click/exceptions.py:44
+#: venv/lib/site-packages/click/exceptions.py:80
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:44
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:80
+msgid "Error: {message}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:72
+#: venv/lib/site-packages/click/exceptions.py:72
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:72
+msgid "Try '{command} {option}' for help."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:121
+#: venv/lib/site-packages/click/exceptions.py:121
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:121
+msgid "Invalid value: {message}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:123
+#: venv/lib/site-packages/click/exceptions.py:123
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:123
+msgid "Invalid value for {param_hint}: {message}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:179
+#: venv/lib/site-packages/click/exceptions.py:179
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:179
+msgid "Missing argument"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:181
+#: venv/lib/site-packages/click/exceptions.py:181
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:181
+msgid "Missing option"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:183
+#: venv/lib/site-packages/click/exceptions.py:183
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:183
+msgid "Missing parameter"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:185
+#: venv/lib/site-packages/click/exceptions.py:185
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:185
+msgid "Missing {param_type}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:192
+#: venv/lib/site-packages/click/exceptions.py:192
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:192
+msgid "Missing parameter: {param_name}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:212
+#: venv/lib/site-packages/click/exceptions.py:212
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:212
+msgid "No such option: {name}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:226
+#: venv/lib/site-packages/click/exceptions.py:226
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:226
+msgid "Did you mean {possibility}?"
+msgid_plural "(Possible options: {possibilities})"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:262
+#: venv/lib/site-packages/click/exceptions.py:262
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:262
+msgid "unknown error"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/exceptions.py:269
+#: venv/lib/site-packages/click/exceptions.py:269
+#: venv/lib64/python3.11/site-packages/click/exceptions.py:269
+msgid "Could not open file {filename!r}: {message}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/formatting.py:156
+#: venv/lib/site-packages/click/formatting.py:156
+#: venv/lib64/python3.11/site-packages/click/formatting.py:156
+msgid "Usage:"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/parser.py:231
+#: venv/lib/site-packages/click/parser.py:231
+#: venv/lib64/python3.11/site-packages/click/parser.py:231
+msgid "Argument {name!r} takes {nargs} values."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/parser.py:413
+#: venv/lib/site-packages/click/parser.py:413
+#: venv/lib64/python3.11/site-packages/click/parser.py:413
+msgid "Option {name!r} does not take a value."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/parser.py:473
+#: venv/lib/site-packages/click/parser.py:473
+#: venv/lib64/python3.11/site-packages/click/parser.py:473
+msgid "Option {name!r} requires an argument."
+msgid_plural "Option {name!r} requires {nargs} arguments."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/shell_completion.py:318
+#: venv/lib/site-packages/click/shell_completion.py:318
+#: venv/lib64/python3.11/site-packages/click/shell_completion.py:318
+msgid "Shell completion is not supported for Bash versions older than 4.4."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/shell_completion.py:326
+#: venv/lib/site-packages/click/shell_completion.py:326
+#: venv/lib64/python3.11/site-packages/click/shell_completion.py:326
+msgid "Couldn't detect Bash version, shell completion is not supported."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:158
+#: venv/lib/site-packages/click/termui.py:158
+#: venv/lib64/python3.11/site-packages/click/termui.py:158
+msgid "Repeat for confirmation"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:174
+#: venv/lib/site-packages/click/termui.py:174
+#: venv/lib64/python3.11/site-packages/click/termui.py:174
+msgid "Error: The value you entered was invalid."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:176
+#: venv/lib/site-packages/click/termui.py:176
+#: venv/lib64/python3.11/site-packages/click/termui.py:176
+msgid "Error: {e.message}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:187
+#: venv/lib/site-packages/click/termui.py:187
+#: venv/lib64/python3.11/site-packages/click/termui.py:187
+msgid "Error: The two entered values do not match."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:243
+#: venv/lib/site-packages/click/termui.py:243
+#: venv/lib64/python3.11/site-packages/click/termui.py:243
+msgid "Error: invalid input"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/termui.py:773
+#: venv/lib/site-packages/click/termui.py:773
+#: venv/lib64/python3.11/site-packages/click/termui.py:773
+msgid "Press any key to continue..."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:266
+#: venv/lib/site-packages/click/types.py:266
+#: venv/lib64/python3.11/site-packages/click/types.py:266
+msgid ""
+"Choose from:\n"
+"\t{choices}"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:300
+#: venv/lib/site-packages/click/types.py:300
+#: venv/lib64/python3.11/site-packages/click/types.py:300
+msgid "{value!r} is not {choice}."
+msgid_plural "{value!r} is not one of {choices}."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:394
+#: venv/lib/site-packages/click/types.py:394
+#: venv/lib64/python3.11/site-packages/click/types.py:394
+msgid "{value!r} does not match the format {format}."
+msgid_plural "{value!r} does not match the formats {formats}."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:414
+#: venv/lib/site-packages/click/types.py:414
+#: venv/lib64/python3.11/site-packages/click/types.py:414
+msgid "{value!r} is not a valid {number_type}."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:470
+#: venv/lib/site-packages/click/types.py:470
+#: venv/lib64/python3.11/site-packages/click/types.py:470
+msgid "{value} is not in the range {range}."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:611
+#: venv/lib/site-packages/click/types.py:611
+#: venv/lib64/python3.11/site-packages/click/types.py:611
+msgid "{value!r} is not a valid boolean."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:635
+#: venv/lib/site-packages/click/types.py:635
+#: venv/lib64/python3.11/site-packages/click/types.py:635
+msgid "{value!r} is not a valid UUID."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:822
+#: venv/lib/site-packages/click/types.py:822
+#: venv/lib64/python3.11/site-packages/click/types.py:822
+msgid "file"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:824
+#: venv/lib/site-packages/click/types.py:824
+#: venv/lib64/python3.11/site-packages/click/types.py:824
+msgid "directory"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:826
+#: venv/lib/site-packages/click/types.py:826
+#: venv/lib64/python3.11/site-packages/click/types.py:826
+msgid "path"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:877
+#: venv/lib/site-packages/click/types.py:877
+#: venv/lib64/python3.11/site-packages/click/types.py:877
+msgid "{name} {filename!r} does not exist."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:886
+#: venv/lib/site-packages/click/types.py:886
+#: venv/lib64/python3.11/site-packages/click/types.py:886
+msgid "{name} {filename!r} is a file."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:894
+#: venv/lib/site-packages/click/types.py:894
+#: venv/lib64/python3.11/site-packages/click/types.py:894
+msgid "{name} '{filename}' is a directory."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:903
+#: venv/lib/site-packages/click/types.py:903
+#: venv/lib64/python3.11/site-packages/click/types.py:903
+msgid "{name} {filename!r} is not readable."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:912
+#: venv/lib/site-packages/click/types.py:912
+#: venv/lib64/python3.11/site-packages/click/types.py:912
+msgid "{name} {filename!r} is not writable."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:921
+#: venv/lib/site-packages/click/types.py:921
+#: venv/lib64/python3.11/site-packages/click/types.py:921
+msgid "{name} {filename!r} is not executable."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/click/types.py:987
+#: venv/lib/site-packages/click/types.py:987
+#: venv/lib64/python3.11/site-packages/click/types.py:987
+msgid "{len_type} values are required, but {len_value} was given."
+msgid_plural "{len_type} values are required, but {len_value} were given."
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+

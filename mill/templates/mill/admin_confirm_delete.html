@@ -1,0 +1,66 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}" dir="{{ 'rtl' if get_locale() == 'ar' else 'ltr' }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ _('Admin Confirm Delete' %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div style="position: absolute; top: 10px; left: 10px;">
+    <a href="?lang=en" style="margin-right: 10px;">English</a>
+    <a href="?lang=ar">العربية</a>
+</div>
+
+    <div class="admin-container">
+        <h2>{% trans '{{ _('Confirm Delete' %}' %}</h2>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="hidden" name="action" value="remove_city">
+            <input type="hidden" name="city_id" value="{{ city.id }}">
+
+            <div class="mb-3">
+                <label for="reassign_city_id" class="form-label">{{ _('Reassign factories to another city:' %}</label>
+                <select id="reassign_city_id" name="reassign_city_id" class="form-control" required>
+                    {% for other_city in cities %}
+                        {% if other_city.id != city.id %}
+                            <option value="{{ other_city.id }}">{{ other_city.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ _('Select factories to reassign:' %}</label>
+                {% for factory in city.factories %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="factories_to_reassign" value="{{ factory.id }}" id="factory{{ factory.id }}">
+                        <label class="form-check-label" for="factory{{ factory.id }}">
+                            {{ factory.name }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-danger">{{ _('Delete City' %}</button>
+            <a href="{% url 'manage_city' %}" class="btn btn-secondary">{{ _('Cancel' %}</a>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

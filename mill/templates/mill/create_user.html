@@ -1,0 +1,15 @@
+{% extends 'mill/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Create New User</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-success">Create User</button>
+    </form>
+
+    <a href="{% url 'manage_users' %}" class="btn btn-secondary">Back to User Management</a>
+</div>
+{% endblock %}

@@ -1,0 +1,335 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Microsoft 365 Email Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .settings-body {
+        padding: 30px;
+    }
+    
+    .form-section {
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+    
+    .test-connection-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+    }
+    
+    .help-text {
+        font-size: 0.875em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fab fa-microsoft"></i> Microsoft 365 Email Settings</h1>
+                <div>
+                    <a href="{% url 'notification_management' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-bell"></i> Notification Management
+                    </a>
+                    <a href="{% url 'admin' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Admin
+                    </a>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-header">
+                    <h3><i class="fas fa-cog"></i> OAuth2 Configuration</h3>
+                    <p class="mb-0">Configure Microsoft 365 OAuth2 settings for email notifications</p>
+                </div>
+                
+                <div class="settings-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- OAuth2 Settings -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-key"></i> OAuth2 Application Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="client_id" class="form-label">Client ID</label>
+                                        <input type="text" name="client_id" id="client_id" 
+                                               class="form-control" 
+                                               value="{{ settings.client_id|default:'' }}" required>
+                                        <div class="help-text">
+                                            Azure AD Application Client ID
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="client_secret" class="form-label">Client Secret</label>
+                                        <input type="password" name="client_secret" id="client_secret" 
+                                               class="form-control" 
+                                               value="{{ settings.client_secret|default:'' }}" required>
+                                        <div class="help-text">
+                                            Azure AD Application Client Secret
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="tenant_id" class="form-label">Tenant ID</label>
+                                        <input type="text" name="tenant_id" id="tenant_id" 
+                                               class="form-control" 
+                                               value="{{ settings.tenant_id|default:'' }}" required>
+                                        <div class="help-text">
+                                            Azure AD Tenant ID (Directory ID)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="redirect_uri" class="form-label">Redirect URI</label>
+                                        <input type="url" name="redirect_uri" id="redirect_uri" 
+                                               class="form-control" 
+                                               value="{{ settings.redirect_uri|default:'' }}" required>
+                                        <div class="help-text">
+                                            OAuth2 redirect URI (e.g., https://yourdomain.com/auth/callback)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Settings -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-user"></i> Authentication Settings</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="auth_user" class="form-label">Authentication User</label>
+                                        <input type="email" name="auth_user" id="auth_user" 
+                                               class="form-control" 
+                                               value="{{ settings.auth_user|default:'' }}" required>
+                                        <div class="help-text">
+                                            Email address of the user account to use for authentication (e.g., admin@company.com)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Settings -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-envelope"></i> Email Configuration</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="from_email" class="form-label">From Email Address</label>
+                                        <input type="email" name="from_email" id="from_email" 
+                                               class="form-control" 
+                                               value="{{ settings.from_email|default:'' }}" required>
+                                        <div class="help-text">
+                                            Email address that will appear as sender (can be shared mailbox like shared@company.com)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="from_name" class="form-label">From Name</label>
+                                        <input type="text" name="from_name" id="from_name" 
+                                               class="form-control" 
+                                               value="{{ settings.from_name|default:'Mill Application' }}" required>
+                                        <div class="help-text">
+                                            Display name for the sender
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SMTP Settings -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-server"></i> SMTP Configuration</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="smtp_server" class="form-label">SMTP Server</label>
+                                        <input type="text" name="smtp_server" id="smtp_server" 
+                                               class="form-control" 
+                                               value="{{ settings.smtp_server|default:'smtp.office365.com' }}" required>
+                                        <div class="help-text">
+                                            Microsoft 365 SMTP server
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="smtp_port" class="form-label">SMTP Port</label>
+                                        <input type="number" name="smtp_port" id="smtp_port" 
+                                               class="form-control" 
+                                               value="{{ settings.smtp_port|default:587 }}" required>
+                                        <div class="help-text">
+                                            SMTP port (587 for TLS, 465 for SSL)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <div class="form-check mt-4">
+                                            <input type="checkbox" name="use_tls" id="use_tls" 
+                                                   class="form-check-input" 
+                                                   {% if settings.use_tls %}checked{% endif %}>
+                                            <label class="form-check-label" for="use_tls">
+                                                Use TLS Encryption
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activation -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-toggle-on"></i> Activation</h5>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" name="is_active" id="is_active" 
+                                           class="form-check-input" 
+                                           {% if settings.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Enable Microsoft 365 Email Integration
+                                    </label>
+                                </div>
+                                <div class="help-text">
+                                    When enabled, notifications will be sent via Microsoft 365 OAuth2
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </div>
+                            <div>
+                                <form method="post" action="{% url 'test_email_connection' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn test-connection-btn">
+                                        <i class="fas fa-plug"></i> Test Connection
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'test_email_send' %}" style="display: inline; margin-left: 10px;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-paper-plane"></i> Send Test Email
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Setup Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Setup Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>
+                            <strong>Create Azure AD Application:</strong>
+                            <ul>
+                                <li>Go to Azure Portal → Azure Active Directory → App registrations</li>
+                                <li>Click "New registration"</li>
+                                <li>Enter application name (e.g., "Mill Application")</li>
+                                <li>Set redirect URI to your domain + "/auth/callback"</li>
+                                <li>Note down the Application (client) ID and Directory (tenant) ID</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Configure API Permissions:</strong>
+                            <ul>
+                                <li>Go to "API permissions" in your app registration</li>
+                                <li>Click "Add a permission"</li>
+                                <li>Select "Microsoft Graph"</li>
+                                <li>Choose "Application permissions"</li>
+                                <li>Add "Mail.Send" permission</li>
+                                <li>Click "Grant admin consent"</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Create Client Secret:</strong>
+                            <ul>
+                                <li>Go to "Certificates & secrets"</li>
+                                <li>Click "New client secret"</li>
+                                <li>Add description and set expiration</li>
+                                <li>Copy the secret value immediately (it won't be shown again)</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>Configure Settings:</strong>
+                            <ul>
+                                <li>Enter the Client ID, Client Secret, and Tenant ID above</li>
+                                <li>Set the From Email to a valid email address in your tenant</li>
+                                <li>Enable the integration and test the connection</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Show/hide password toggle
+    $('#client_secret').after('<button type="button" class="btn btn-outline-secondary" id="toggle_secret"><i class="fas fa-eye"></i></button>');
+    
+    $('#toggle_secret').click(function() {
+        var input = $('#client_secret');
+        var icon = $(this).find('i');
+        
+        if (input.attr('type') === 'password') {
+            input.attr('type', 'text');
+            icon.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            input.attr('type', 'password');
+            icon.removeClass('fa-eye-slash').addClass('fa-eye');
+        }
+    });
+});
+</script>
+{% endblock %} 

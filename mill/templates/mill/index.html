@@ -1,0 +1,35 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Choose Your Sector{% endblock %}
+{% block extra_head %} <link rel="stylesheet" href="{% static 'css/sector-page.css' %}"> {% endblock %}
+{% block header %}  {% endblock %}
+{% block content %}
+    <div class="container-sector">
+        <!-- Government Option -->
+        <div class="option" id="government">
+            <div class="content">
+                <h2>Government</h2>
+                <a href="{% url 'dashboard' %}" class="btn">Explore</a>
+            </div>
+        </div>
+
+        <!-- Private Option -->
+        <div class="option" id="private">
+            <div class="content">
+                <h2>Private</h2>
+                <a href="{% url 'dashboard' %}" class="btn">Explore</a>
+            </div>
+        </div>
+
+        <!-- Commercial Option -->
+        <div class="option" id="commercial">
+            <div class="content">
+                <h2>Commercial</h2>
+                <a href="{% url 'dashboard' %}" class="btn">Explore</a>
+            </div>
+        </div>
+    </div>
+{% block footer %}      
+    {% endblock %}
+{% endblock %}

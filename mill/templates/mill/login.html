@@ -1,0 +1,156 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html dir="rtl" lang={{LANGUAGE_CODE}}>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans 'Login Page' %}</title>
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #f0f0f0, #d0d0d0);
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: linear-gradient(to bottom, #e0e0e0, #f5f5f5);
+            border-radius: 12px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+            text-align: center;
+        }
+        .header {
+            background: linear-gradient(90deg, #88C0B8, #D8E2DC);
+            padding: 60px 40px;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header img.logo-left {
+            position: absolute;
+            height: 175px;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 20px;
+        }
+        .header img.logo-right {
+            position: absolute;
+            height: 175px;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
+        }
+        .header h1, .header h2 {
+            margin: 0;
+            font-size: 36px;
+            color: #FFD700;
+            font-weight: bold;
+            text-shadow: 4px 4px 6px rgba(0, 0, 0, 0.3), 8px 8px 12px rgba(0, 0, 0, 0.2);
+        }
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .header h2 {
+            font-size: 36px;
+            padding: 10px 0;
+            margin-top: 10px;
+        }
+        .login-container {
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            text-align: center;
+        }
+        .login-container input[type="text"],
+        .login-container input[type="password"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .login-container button {
+            background: linear-gradient(90deg, #88C0B8, #D8E2DC);
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+        .login-container button:hover {
+            background: linear-gradient(90deg, #79A69E, #C5B9B9);
+        }
+        .login-container label {
+            font-size: 14px;
+            color: #333;
+            display: block;
+            text-align: right;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+{% comment %} <div style="position: absolute; top: 10px; left: 10px;">
+    <a href="?lang=en" style="margin-right: 10px;">English</a>
+    <a href="?lang=ar">العربية</a>
+</div> {% endcomment %}
+
+    <div class="container">
+        <div class="header">
+            <img src="{% static 'pictures/logo-left.png' %}" alt="Left Logo" class="logo-left">
+            <div>
+                <h1>{% trans 'الشركة العامة لتصنيع الحبوب' %}</h1>
+                <h2>{% trans 'نظام مراقبة عمل المطاحن' %}</h2>
+            </div>
+            <img src="{% static 'pictures/logo-right.png' %}" alt="Right Logo" class="logo-right">
+        </div>
+
+        <div class="login-container">
+            <form  method="POST" role="form">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                  <div class="text-danger mb-3">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+                {% comment %} <label for="username">{% trans 'اسم المستخدم:' %}</label>
+                <input type="text" id="username" name="username" required>
+                
+                <label for="password">{% trans 'كلمة المرور:' %}</label>
+                <input type="password" id="password" name="password" required> {% endcomment %}
+                
+                {% for field in form %}
+                <div class="mb-3">
+                  {{ field }}
+                </div>
+                {% endfor %}
+                
+                <button type="submit">{% trans 'تسجيل الدخول' %}</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

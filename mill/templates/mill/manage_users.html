@@ -1,0 +1,78 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Manage Uses{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>{% trans 'Manage Users' %}</h2>
+
+    <!-- Back to Admin Dashboard Button -->
+    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans 'Back to Admin Dashboard' %}</a>
+
+    <!-- Flash Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+	<h3>{% trans 'Create User' %} </h3>
+    <form method="POST" action="{% url 'create_user' %}" >
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="username" class="form-label">{% trans 'Username' %}:</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">{% trans 'Email' %}:</label>
+            <input type="text" class="form-control" id="email" name="email" required>
+        </div>
+		<div class="mb-3">
+            <label for="password" class="form-label">{% trans 'Password' %}:</label>
+            <input type="password" class="form-control" id="password" name="password1" required>
+        </div>
+		<div class="mb-3">
+            <label for="password" class="form-label">{% trans 'Confirm Password' %}:</label>
+            <input type="password" class="form-control" id="password" name="password2" required>
+        </div>
+        <button type="submit" name="action" value="add_user" class="btn btn-primary">{% trans 'Add User' %}</button>
+    </form>
+
+    <table class="table table-striped">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Username</th>
+				<th>Email</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for user in users %}
+			<tr>
+				<td>{{ user.id }}</td>
+				<td>{{ user.username }}</td>
+				<td>{{ user.email }}</td>
+				<td>
+					<a href="{% url 'edit_user' user.id %}" class="btn btn-primary btn-sm">Edit</a>
+					<a href="{% url 'delete_user' user.id %}" class="btn btn-danger btn-sm">Delete</a>
+				</td>
+			</tr>
+			{% empty %}
+			<tr>
+				<td colspan="4">No users found.</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+</div>
+{% endblock %}

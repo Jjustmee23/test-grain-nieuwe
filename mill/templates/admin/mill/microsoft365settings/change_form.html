@@ -1,0 +1,215 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .oauth2-section {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .oauth2-section h3 {
+        margin-top: 0;
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+    
+    .oauth2-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .oauth2-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .oauth2-btn.primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .oauth2-btn.success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .oauth2-btn.warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .oauth2-btn:hover {
+        opacity: 0.9;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-indicator.success {
+        background: #28a745;
+    }
+    
+    .status-indicator.warning {
+        background: #ffc107;
+    }
+    
+    .status-indicator.danger {
+        background: #dc3545;
+    }
+    
+    .config-status {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .config-status h4 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    
+    .config-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .config-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+{{ block.super }}
+
+<div class="oauth2-section">
+    <h3>🔐 OAuth2 Authentication Setup</h3>
+    
+    <div class="config-status">
+        <h4>Configuration Status</h4>
+        
+        <div class="config-item">
+            <span>Azure AD Configuration:</span>
+            <span>
+                {% if original.client_id and original.client_secret and original.tenant_id %}
+                    <span class="status-indicator success"></span>Complete
+                {% else %}
+                    <span class="status-indicator danger"></span>Incomplete
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="config-item">
+            <span>Email Configuration:</span>
+            <span>
+                {% if original.auth_user and original.from_email %}
+                    <span class="status-indicator success"></span>Complete
+                {% else %}
+                    <span class="status-indicator danger"></span>Incomplete
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="config-item">
+            <span>OAuth2 Authorization:</span>
+            <span>
+                {% if original.refresh_token %}
+                    <span class="status-indicator success"></span>Authorized
+                {% else %}
+                    <span class="status-indicator warning"></span>Not Authorized
+                {% endif %}
+            </span>
+        </div>
+        
+        {% if original.token_expires_at %}
+        <div class="config-item">
+            <span>Token Expires:</span>
+            <span>{{ original.token_expires_at|date:"Y-m-d H:i:s" }}</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="oauth2-buttons">
+        {% if original.client_id and original.client_secret and original.tenant_id %}
+            {% if not original.refresh_token %}
+                <a href="{% url 'admin:mill_microsoft365settings_oauth2_setup' original.pk %}" class="oauth2-btn primary">
+                    🔑 Start OAuth2 Authorization
+                </a>
+            {% else %}
+                <a href="{% url 'admin:mill_microsoft365settings_test_connection' original.pk %}" class="oauth2-btn success">
+                    🔌 Test Connection
+                </a>
+            {% endif %}
+        {% else %}
+            <span style="color: #6c757d; font-style: italic;">
+                Please complete Azure AD configuration first
+            </span>
+        {% endif %}
+    </div>
+    
+    {% if original.refresh_token %}
+    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">
+        <h4>📧 Test Email</h4>
+        <form method="post" action="{% url 'admin:mill_microsoft365settings_test_email' original.pk %}" style="margin-top: 10px;">
+            {% csrf_token %}
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="email" name="test_email" placeholder="Enter email address to test" 
+                       style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+                       value="{{ request.user.email|default:'' }}">
+                <button type="submit" class="oauth2-btn warning" style="margin: 0;">
+                    📧 Send Test Email
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    {% if not original.refresh_token and original.client_id %}
+    <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 4px;">
+        <h4>📋 OAuth2 Setup Instructions:</h4>
+        <ol>
+            <li>Click "Start OAuth2 Authorization" above</li>
+            <li>Complete authorization in your browser</li>
+            <li>Copy the authorization code from the redirect URL</li>
+            <li>Paste the code and complete setup</li>
+            <li>Test connection and send test email</li>
+        </ol>
+    </div>
+    {% endif %}
+    
+    {% if original.refresh_token %}
+    <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 4px;">
+        <h4>✅ OAuth2 Ready!</h4>
+        <p>Your OAuth2 authentication is configured. You can now:</p>
+        <ul>
+            <li>Test the connection</li>
+            <li>Send test emails</li>
+            <li>Use the email service in your application</li>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,13 @@
+<!-- Add this to your base template -->
+<div class="notifications">
+    {% for notification in request.user.notification_set.unread %}
+    <div class="alert alert-info">
+        {{ notification.message }}
+        <a href="{{ notification.link }}">View</a>
+        <form method="post" action="{% url 'mark_as_read' notification.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-light">×</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>

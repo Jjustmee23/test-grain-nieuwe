@@ -1,0 +1,63 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Ticket Submitted" %} - Mill Management System{% endblock %}
+
+{% block extra_head %}
+<style>
+    .success-container {
+        max-width: 700px;
+        margin: 3rem auto;
+        padding: 2.5rem;
+        background: var(--bg-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-md);
+        text-align: center;
+    }
+    
+    .success-icon {
+        font-size: 5rem;
+        color: var(--success-color);
+        margin-bottom: 1.5rem;
+    }
+    
+    .action-buttons {
+        margin-top: 2rem;
+    }
+    
+    .action-buttons .btn {
+        margin: 0 0.5rem;
+        padding: 0.75rem 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="success-container">
+        <div class="success-icon">
+            <i class="bi bi-check-circle"></i>
+        </div>
+        
+        <h2>{% trans "Ticket Submitted Successfully!" %}</h2>
+        <p class="lead">{% trans "Thank you for contacting us. We've received your ticket and will respond as soon as possible." %}</p>
+        
+        <div class="mt-4">
+            <p>{% trans "A confirmation has been sent to your email address." %}</p>
+            <p>{% trans "Your ticket will be processed within 24 hours by our support team." %}</p>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="{% url 'mill:contact' %}" class="btn btn-outline-primary">{% trans "Submit Another Ticket" %}</a>
+            <a href="{% url 'mill:index' %}" class="btn btn-primary">{% trans "Return to Home" %}</a>
+        </div>
+        
+        {% if user.is_authenticated %}
+        <div class="mt-4">
+            <p>{% trans "You can view the status of your tickets in" %} <a href="{% url 'mill:my_tickets' %}">{% trans "My Tickets" %}</a>.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

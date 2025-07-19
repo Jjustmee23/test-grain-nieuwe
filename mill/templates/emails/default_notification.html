@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ notification.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .notification-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .notification-message {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .notification-meta {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .priority-low { background-color: #28a745; color: white; }
+        .priority-medium { background-color: #ffc107; color: #212529; }
+        .priority-high { background-color: #fd7e14; color: white; }
+        .priority-urgent { background-color: #dc3545; color: white; }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">🏭 Mill Application</div>
+            <div>Notification Center</div>
+        </div>
+
+        <div class="notification-title">
+            {{ notification.title }}
+        </div>
+
+        <div class="notification-meta">
+            <strong>Category:</strong> {{ notification.category.name }}<br>
+            <strong>Priority:</strong> 
+            <span class="priority-badge priority-{{ notification.priority }}">
+                {{ notification.priority }}
+            </span><br>
+            <strong>Time:</strong> {{ notification.created_at|date:"F j, Y, g:i a" }}<br>
+            <strong>Recipient:</strong> {{ user.username }}
+        </div>
+
+        <div class="notification-message">
+            {{ notification.message|linebreaks }}
+        </div>
+
+        {% if notification.link %}
+        <div style="text-align: center;">
+            <a href="{{ notification.link }}" class="action-button">
+                View Details
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>This is an automated notification from the Mill Application system.</p>
+            <p>If you have any questions, please contact your system administrator.</p>
+            <p>© {% now "Y" %} Mill Application. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,74 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Suoer Admin{% endblock %}
+
+{% block header %}
+
+{% endblock %}
+
+    <!-- Language Toggle -->
+    {% comment %} <div style="position: absolute; top: 10px; left: 10px;">
+        <a href="?lang=en" style="margin-right: 10px;">English</a>
+        <a href="?lang=ar">العربية</a>
+    </div> {% endcomment %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>{% trans "Super Admin Dashboard" %}</h2>
+
+    <!-- Back to Admin Dashboard -->
+    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
+
+    <!-- Section: Manage Users -->
+    <a href="{% url 'manage_users' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
+
+    <!-- Section: Manage Databases -->
+    <a href="{% url 'manage_databases' %}" class="btn btn-primary mb-3">{% trans "Manage Databases" %}</a>
+
+    <!-- Section: TV Dashboard Settings -->
+    <a href="{% url 'tv_dashboard_settings_list' %}" class="btn btn-success mb-3">
+        <i class="bi bi-tv me-2"></i>{% trans "TV Dashboard Settings" %}
+    </a>
+
+    <!-- Section: Manage Factories, Cities, and Devices -->
+    {% comment %} <div class="mb-4">
+        <h3>{% trans "Manage Factories, Cities, and Devices" %}</h3>
+
+        <!-- Download and Upload Factories -->
+        <form method="POST" action="{% url 'download_factories' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-info mb-2">{% trans "Download Factories" %}</button>
+        </form>
+        <form method="POST" action="{% url 'upload_factories' %}" enctype="multipart/form-data" class="d-inline">
+            {% csrf_token %}
+            <input type="file" name="excel_file" accept=".xlsx" required>
+            <button type="submit" class="btn btn-primary mb-2">{% trans "Upload Factories" %}</button>
+        </form>
+
+        <!-- Download and Upload Cities -->
+        <br>
+        <form method="POST" action="{% url 'download_cities' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-info mb-2">{% trans "Download Cities" %}</button>
+        </form>
+        <form method="POST" action="{% url 'upload_cities' %}" enctype="multipart/form-data" class="d-inline">
+            {% csrf_token %}
+            <input type="file" name="excel_file" accept=".xlsx" required>
+            <button type="submit" class="btn btn-primary mb-2">{% trans "Upload Cities" %}</button>
+        </form>
+
+        <!-- Download and Upload Devices -->
+        <br>
+        <form method="POST" action="{% url 'download_devices' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-info mb-2">{% trans "Download Devices" %}</button>
+        </form>
+        <form method="POST" action="{% url 'upload_devices' %}" enctype="multipart/form-data" class="d-inline">
+            {% csrf_token %}
+            <input type="file" name="excel_file" accept=".xlsx" required>
+            <button type="submit" class="btn btn-primary mb-2">{% trans "Upload Devices" %}</button>
+        </form>
+    </div> {% endcomment %}
+</div>
+{% endblock %}

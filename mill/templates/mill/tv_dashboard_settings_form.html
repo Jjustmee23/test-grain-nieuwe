@@ -1,0 +1,384 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}
+    {% if setting %}{% trans "Edit TV Dashboard Setting" %}{% else %}{% trans "Create TV Dashboard Setting" %}{% endif %} - Mill Management System
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .select2-container {
+        width: 100% !important;
+    }
+    
+    .preview-section {
+        background: #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .setting-preview {
+        background: white;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 10px;
+    }
+</style>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'super-admin' %}">{% trans "Super Admin" %}</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'tv_dashboard_settings_list' %}">{% trans "TV Dashboard Settings" %}</a>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        {% if setting %}{% trans "Edit Setting" %}{% else %}{% trans "Create Setting" %}{% endif %}
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="bi bi-tv me-2"></i>
+                        {% if setting %}{% trans "Edit TV Dashboard Setting" %}{% else %}{% trans "Create New TV Dashboard Setting" %}{% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="tvSettingsForm">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Settings -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-gear me-2"></i>{% trans "Basic Settings" %}</h5>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">{% trans "Setting Name" %} *</label>
+                                        <input type="text" class="form-control" id="name" name="name" 
+                                               value="{{ setting.name|default:'' }}" required>
+                                        <div class="form-text">{% trans "Give this configuration a descriptive name" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                                                   {% if setting.is_active %}checked{% endif %}>
+                                            <label class="form-check-label" for="is_active">
+                                                {% trans "Set as Active Configuration" %}
+                                            </label>
+                                        </div>
+                                        <div class="form-text">{% trans "Only one configuration can be active at a time" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Display Settings -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-display me-2"></i>{% trans "Display Settings" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="display_mode" class="form-label">{% trans "Display Mode" %}</label>
+                                        <select class="form-select" id="display_mode" name="display_mode">
+                                            {% for value, label in display_modes %}
+                                            <option value="{{ value }}" {% if setting.display_mode == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">{% trans "How to organize factories on the display" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sort_criteria" class="form-label">{% trans "Sort Criteria" %}</label>
+                                        <select class="form-select" id="sort_criteria" name="sort_criteria">
+                                            {% for value, label in sort_criteria %}
+                                            <option value="{{ value }}" {% if setting.sort_criteria == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">{% trans "Primary sorting criteria for factories" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sort_direction" class="form-label">{% trans "Sort Direction" %}</label>
+                                        <select class="form-select" id="sort_direction" name="sort_direction">
+                                            <option value="asc" {% if setting.sort_direction == 'asc' %}selected{% endif %}>{% trans "Ascending" %}</option>
+                                            <option value="desc" {% if setting.sort_direction == 'desc' %}selected{% endif %}>{% trans "Descending" %}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="cards_per_row" class="form-label">{% trans "Cards per Row" %}</label>
+                                        <select class="form-select" id="cards_per_row" name="cards_per_row">
+                                            {% for i in "123456" %}
+                                            <option value="{{ i }}" {% if setting.cards_per_row == i|add:"0" %}selected{% endif %}>
+                                                {{ i }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">{% trans "Number of factory cards per row" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Settings -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-funnel me-2"></i>{% trans "Filter Settings" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="selected_cities" class="form-label">{% trans "Selected Cities" %}</label>
+                                        <select class="form-select" id="selected_cities" name="selected_cities" multiple>
+                                            {% for city in cities %}
+                                            <option value="{{ city.id }}" 
+                                                    {% if city.id in selected_city_ids %}selected{% endif %}>
+                                                {{ city.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">{% trans "Leave empty to include all cities" %}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="selected_factories" class="form-label">{% trans "Selected Factories" %}</label>
+                                        <select class="form-select" id="selected_factories" name="selected_factories" multiple>
+                                            {% for factory in factories %}
+                                            <option value="{{ factory.id }}" 
+                                                    {% if factory.id in selected_factory_ids %}selected{% endif %}>
+                                                {{ factory.name }} ({{ factory.city.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">{% trans "Leave empty to include all factories" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show_only_active" name="show_only_active"
+                                               {% if setting.show_only_active %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_only_active">
+                                            {% trans "Show Only Active Factories" %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visual Settings -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-eye me-2"></i>{% trans "Visual Settings" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="show_summary_stats" name="show_summary_stats"
+                                               {% if setting.show_summary_stats %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_summary_stats">
+                                            {% trans "Show Summary Statistics" %}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="show_factory_status" name="show_factory_status"
+                                               {% if setting.show_factory_status %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_factory_status">
+                                            {% trans "Show Factory Status Indicators" %}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="show_time_info" name="show_time_info"
+                                               {% if setting.show_time_info %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_time_info">
+                                            {% trans "Show Time Information" %}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="show_city_headers" name="show_city_headers"
+                                               {% if setting.show_city_headers %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_city_headers">
+                                            {% trans "Show City Headers" %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto-refresh and Animation -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-arrow-clockwise me-2"></i>{% trans "Auto-refresh and Animation" %}</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="refresh_interval" class="form-label">{% trans "Refresh Interval" %}</label>
+                                        <select class="form-select" id="refresh_interval" name="refresh_interval">
+                                            {% for value, label in refresh_intervals %}
+                                            <option value="{{ value }}" {% if setting.refresh_interval == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="auto_scroll" class="form-label">{% trans "Auto-scroll" %}</label>
+                                        <select class="form-select" id="auto_scroll" name="auto_scroll">
+                                            {% for value, label in auto_scroll_options %}
+                                            <option value="{{ value }}" {% if setting.auto_scroll == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="scroll_speed" class="form-label">{% trans "Scroll Speed (seconds)" %}</label>
+                                        <input type="number" class="form-control" id="scroll_speed" name="scroll_speed" 
+                                               value="{{ setting.scroll_speed|default:120 }}" min="30" max="600">
+                                        <div class="form-text">{% trans "Time for full scroll cycle" %}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="preview-section">
+                            <h6><i class="bi bi-eye me-2"></i>{% trans "Configuration Preview" %}</h6>
+                            <div class="setting-preview" id="settingPreview">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>{% trans "Display Mode" %}:</strong> <span id="previewDisplayMode">-</span><br>
+                                        <strong>{% trans "Sort By" %}:</strong> <span id="previewSortCriteria">-</span><br>
+                                        <strong>{% trans "Refresh" %}:</strong> <span id="previewRefreshInterval">-</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>{% trans "Auto-scroll" %}:</strong> <span id="previewAutoScroll">-</span><br>
+                                        <strong>{% trans "Cards per row" %}:</strong> <span id="previewCardsPerRow">-</span><br>
+                                        <strong>{% trans "Show summary stats" %}:</strong> <span id="previewShowSummary">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'tv_dashboard_settings_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>{% trans "Back to List" %}
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    {% if setting %}{% trans "Update Setting" %}{% else %}{% trans "Create Setting" %}{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2 for multiple select dropdowns
+    $('#selected_cities').select2({
+        placeholder: '{% trans "Select cities (optional)" %}',
+        allowClear: true
+    });
+    
+    $('#selected_factories').select2({
+        placeholder: '{% trans "Select factories (optional)" %}',
+        allowClear: true
+    });
+
+    // Update preview when form fields change
+    function updatePreview() {
+        const displayMode = document.getElementById('display_mode');
+        const sortCriteria = document.getElementById('sort_criteria');
+        const refreshInterval = document.getElementById('refresh_interval');
+        const autoScroll = document.getElementById('auto_scroll');
+        const cardsPerRow = document.getElementById('cards_per_row');
+        const showSummary = document.getElementById('show_summary_stats');
+
+        document.getElementById('previewDisplayMode').textContent = displayMode.options[displayMode.selectedIndex].text;
+        document.getElementById('previewSortCriteria').textContent = sortCriteria.options[sortCriteria.selectedIndex].text;
+        document.getElementById('previewRefreshInterval').textContent = refreshInterval.options[refreshInterval.selectedIndex].text;
+        document.getElementById('previewAutoScroll').textContent = autoScroll.options[autoScroll.selectedIndex].text;
+        document.getElementById('previewCardsPerRow').textContent = cardsPerRow.value;
+        document.getElementById('previewShowSummary').textContent = showSummary.checked ? '{% trans "Yes" %}' : '{% trans "No" %}';
+    }
+
+    // Add event listeners for preview updates
+    document.getElementById('display_mode').addEventListener('change', updatePreview);
+    document.getElementById('sort_criteria').addEventListener('change', updatePreview);
+    document.getElementById('refresh_interval').addEventListener('change', updatePreview);
+    document.getElementById('auto_scroll').addEventListener('change', updatePreview);
+    document.getElementById('cards_per_row').addEventListener('change', updatePreview);
+    document.getElementById('show_summary_stats').addEventListener('change', updatePreview);
+
+    // Initialize preview
+    updatePreview();
+
+    // Form validation
+    document.getElementById('tvSettingsForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+            e.preventDefault();
+            alert('{% trans "Please enter a name for this setting." %}');
+            document.getElementById('name').focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

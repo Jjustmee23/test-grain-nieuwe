@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mill TV Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        {% if tv_settings %}
+        :root {
+            /* Dynamic CSS variables from TV settings */
+            --primary-color: {{ tv_settings.primary_color }};
+            --secondary-color: {{ tv_settings.secondary_color }};
+            --accent-color: {{ tv_settings.accent_color }};
+            --success-color: {{ tv_settings.success_color }};
+            --warning-color: {{ tv_settings.warning_color }};
+            --danger-color: {{ tv_settings.danger_color }};
+            --font-family: {{ tv_settings.font_family }};
+            --font-size-base: {{ tv_settings.font_size_base }}px;
+            --font-size-large: {{ tv_settings.font_size_large }}px;
+            --font-size-xlarge: {{ tv_settings.font_size_xlarge }}px;
+            --font-weight: {{ tv_settings.font_weight }};
+            --card-border-radius: {{ tv_settings.card_border_radius }}px;
+            --card-transparency: {% widthratio tv_settings.card_transparency 100 1 %};
+            --card-border-width: {{ tv_settings.card_border_width }}px;
+            --card-spacing: {{ tv_settings.card_spacing }}px;
+            --section-padding: {{ tv_settings.section_padding }}px;
+            
+            /* Shadow styles */
+            {% if tv_settings.card_shadow == 'light' %}
+            --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            {% elif tv_settings.card_shadow == 'medium' %}
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            {% elif tv_settings.card_shadow == 'heavy' %}
+            --card-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            {% else %}
+            --card-shadow: none;
+            {% endif %}
+            
+            /* Animation duration */
+            {% if tv_settings.animation_speed == 'slow' %}
+            --animation-duration: 0.5s;
+            {% elif tv_settings.animation_speed == 'fast' %}
+            --animation-duration: 0.15s;
+            {% elif tv_settings.animation_speed == 'none' %}
+            --animation-duration: 0s;
+            {% else %}
+            --animation-duration: 0.3s;
+            {% endif %}
+        }
+        {% else %}
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --success-dark: #146c43;
+            --danger-dark: #b02a37;
+            --text-light: #6c757d;
+            --bg-light: #f8f9fa;
+            --border-radius: 0.375rem;
+            --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+            --font-family: Arial;
+            --font-size-base: 16px;
+            --font-size-large: 20px;
+            --font-size-xlarge: 24px;
+            --font-weight: normal;
+            --card-border-radius: 15px;
+            --card-transparency: 0.1;
+            --card-border-width: 1px;
+            --card-spacing: 25px;
+            --section-padding: 20px;
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            --animation-duration: 0.3s;
+        }
+        {% endif %}
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family), sans-serif;
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight);
+            {% if tv_settings %}
+                {% if tv_settings.background_style == 'gradient' %}
+                background: linear-gradient(135deg, {{ tv_settings.background_color }} 0%, {{ tv_settings.secondary_color }} 100%);
+                {% elif tv_settings.background_style == 'solid' %}
+                background: {{ tv_settings.background_color }};
+                {% elif tv_settings.background_style == 'pattern' %}
+                background: {{ tv_settings.background_color }};
+                background-image: 
+                    radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%);
+                {% elif tv_settings.background_style == 'image' and tv_settings.background_image_url %}
+                background: url('{{ tv_settings.background_image_url }}') no-repeat center center fixed;
+                background-size: cover;
+                {% elif tv_settings.background_style == 'animated' %}
+                background: linear-gradient(-45deg, {{ tv_settings.background_color }}, {{ tv_settings.secondary_color }}, {{ tv_settings.primary_color }}, {{ tv_settings.accent_color }});
+                background-size: 400% 400%;
+                animation: gradientShift 15s ease infinite;
+                {% else %}
+                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                {% endif %}
+            {% else %}
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            {% endif %}
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        {% if tv_settings and tv_settings.background_style == 'animated' %}
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        {% endif %}
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: var(--accent-color) !important;
+            font-size: var(--font-size-large);
+            font-weight: bold;
+        }
+
+        .navbar-nav .nav-link {
+            color: white !important;
+            font-size: var(--font-size-base);
+            margin: 0 10px;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--accent-color) !important;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 0 var(--section-padding);
+        }
+
+        .dashboard-title {
+            background: rgba(255, 255, 255, var(--card-transparency));
+            padding: var(--section-padding) calc(var(--section-padding) * 1.5);
+            margin: var(--section-padding) 0;
+            border-radius: var(--card-border-radius);
+            backdrop-filter: blur(10px);
+            border: var(--card-border-width) solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dashboard-title h1 {
+            font-size: var(--font-size-xlarge);
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .dashboard-title p {
+            font-size: var(--font-size-large);
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .date-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, var(--card-transparency));
+            padding: 15px 20px;
+            border-radius: var(--card-border-radius);
+            backdrop-filter: blur(5px);
+        }
+
+        .date-container label {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: var(--font-size-large);
+            margin: 0;
+        }
+
+        .date-container input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: var(--font-size-base);
+        }
+
+        .date-container input:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, var(--card-transparency)) !important;
+            border: var(--card-border-width) solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: var(--card-border-radius) !important;
+            backdrop-filter: blur(10px);
+            {% if tv_settings and tv_settings.transition_effects %}
+            transition: all var(--animation-duration) ease;
+            {% endif %}
+            min-height: 150px;
+            box-shadow: var(--card-shadow);
+        }
+
+        {% if tv_settings and tv_settings.hover_effects %}
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        {% endif %}
+
+        .stat-card.primary { border-left: 4px solid var(--primary-color); }
+        .stat-card.warning { border-left: 4px solid var(--warning-color); }
+        .stat-card.danger { border-left: 4px solid var(--danger-color); }
+        .stat-card.success { border-left: 4px solid var(--success-color); }
+
+        .stat-value {
+            font-size: var(--font-size-xlarge);
+            font-weight: 700;
+            color: var(--success-color);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stat-card h5 {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: var(--font-size-large);
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            color: var(--accent-color);
+        }
+
+        .factories-section h3 {
+            color: var(--accent-color);
+            font-size: var(--font-size-xlarge);
+            margin: calc(var(--section-padding) * 1.5) 0 var(--section-padding) 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .factory-card {
+            background: rgba(255, 255, 255, var(--card-transparency)) !important;
+            border: var(--card-border-width) solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: var(--card-border-radius) !important;
+            backdrop-filter: blur(10px);
+            {% if tv_settings and tv_settings.transition_effects %}
+            transition: all var(--animation-duration) ease;
+            {% endif %}
+            min-height: 350px;
+            box-shadow: var(--card-shadow);
+        }
+
+        {% if tv_settings and tv_settings.hover_effects %}
+        .factory-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        {% endif %}
+
+        .factory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .factory-header h5 {
+            color: var(--accent-color);
+            font-size: var(--font-size-large);
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: var(--font-size-base);
+            font-weight: 600;
+        }
+
+        .status-active {
+            background-color: rgba(72, 187, 120, 0.3);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .status-inactive {
+            background-color: rgba(160, 174, 192, 0.3);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .factory-status-indicators {
+            margin-top: 15px;
+        }
+
+        .factory-status-indicators span {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-right: 10px;
+            font-size: var(--font-size-base);
+        }
+
+        .factory-status-indicators i {
+            margin-right: 5px;
+        }
+
+        .factory-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .factory-stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .factory-stat-label {
+            font-size: var(--font-size-base);
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+
+        .factory-stat-value {
+            font-size: var(--font-size-large);
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        /* Additional Visual Elements */
+        .efficiency-info, .sensor-data, .energy-info, .batch-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .efficiency-info h6, .sensor-data h6, .energy-info h6, .batch-info h6 {
+            color: var(--accent-color);
+            font-size: var(--font-size-base);
+            margin-bottom: 10px;
+        }
+
+        .efficiency-value, .sensor-value, .energy-value, .batch-value {
+            font-size: var(--font-size-large);
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        .efficiency-info small, .sensor-data small, .energy-info small, .batch-info small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Badge styles */
+        .badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .bg-success {
+            background-color: var(--success-color) !important;
+        }
+
+        .bg-warning {
+            background-color: var(--warning-color) !important;
+        }
+
+        .bg-danger {
+            background-color: var(--danger-color) !important;
+        }
+
+        .bg-primary {
+            background-color: var(--primary-color) !important;
+        }
+
+        .bg-info {
+            background-color: var(--secondary-color) !important;
+        }
+
+        /* Info card styles */
+        .stat-card.info {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-card.secondary {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        /* Progress Bar Styles */
+        {% if tv_settings and tv_settings.show_progress_bars %}
+        .progress-container {
+            margin: 15px 0;
+        }
+
+        {% if tv_settings.progress_style == 'linear' %}
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--accent-color));
+            {% if tv_settings.progress_animation %}
+            animation: progressAnimation 2s ease-in-out;
+            {% endif %}
+        }
+
+        @keyframes progressAnimation {
+            from { width: 0%; }
+            to { width: var(--progress-width); }
+        }
+
+        {% elif tv_settings.progress_style == 'circular' %}
+        .circular-progress {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(var(--success-color) var(--progress-angle), rgba(255,255,255,0.2) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .circular-progress::before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .circular-progress .progress-text {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        {% elif tv_settings.progress_style == 'steps' %}
+        .step-progress {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+
+        .step {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .step.active {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .step.completed {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        {% elif tv_settings.progress_style == 'dots' %}
+        .dot-progress {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            {% if tv_settings.progress_animation %}
+            animation: dotPulse 1.5s ease-in-out infinite;
+            {% endif %}
+        }
+
+        .dot.active {
+            background: var(--success-color);
+        }
+
+        .dot.completed {
+            background: var(--accent-color);
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+        {% endif %}
+        {% endif %}
+
+        .time-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .time-info small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: var(--font-size-base);
+        }
+
+        .time-info div {
+            color: white;
+            font-size: var(--font-size-large);
+            font-weight: 600;
+        }
+
+        .card-footer {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+            padding: 15px !important;
+        }
+
+        .btn-primary {
+            background: var(--primary-color) !important;
+            border: none !important;
+            padding: 10px 20px !important;
+            font-size: var(--font-size-base) !important;
+            border-radius: 8px !important;
+        }
+
+        .btn-outline-secondary {
+            background: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            color: white !important;
+            padding: 10px 20px !important;
+            font-size: var(--font-size-base) !important;
+            border-radius: 8px !important;
+        }
+
+        .btn-outline-secondary:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: var(--accent-color) !important;
+        }
+
+        /* Grid layout for more cards per row */
+        .factories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--card-spacing);
+            padding: var(--section-padding) 0;
+        }
+
+        /* Auto-scroll animation */
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100vh); }
+        }
+
+        @keyframes scrollDown {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(0); }
+        }
+
+        .auto-scroll {
+            animation: scrollUp var(--scroll-duration, 120s) linear infinite;
+        }
+
+        .auto-scroll.reverse {
+            animation: scrollDown var(--scroll-duration, 120s) linear infinite;
+        }
+
+        /* Alert Styles */
+        {% if tv_settings and tv_settings.show_alerts %}
+        .alert-container {
+            position: fixed;
+            z-index: 1001;
+            {% if tv_settings.alert_position == 'top-right' %}
+            top: 20px;
+            right: 20px;
+            {% elif tv_settings.alert_position == 'top-left' %}
+            top: 20px;
+            left: 20px;
+            {% elif tv_settings.alert_position == 'bottom-right' %}
+            bottom: 20px;
+            right: 20px;
+            {% elif tv_settings.alert_position == 'bottom-left' %}
+            bottom: 20px;
+            left: 20px;
+            {% elif tv_settings.alert_position == 'center' %}
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            {% endif %}
+        }
+
+        .alert {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: var(--card-border-radius);
+            margin-bottom: 10px;
+            {% if tv_settings.transition_effects %}
+            transition: all var(--animation-duration) ease;
+            {% endif %}
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .alert.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .alert.danger {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .alert.info {
+            border-left: 4px solid var(--primary-color);
+        }
+        {% endif %}
+
+        /* Responsive design */
+        @media (max-width: 1400px) {
+            .factories-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .factories-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .factories-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-title h1 {
+                font-size: calc(var(--font-size-xlarge) * 0.8);
+            }
+            
+            .stat-value {
+                font-size: calc(var(--font-size-xlarge) * 0.8);
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <span class="navbar-brand">Mill TV Dashboard</span>
+            
+            <div class="navbar-nav ms-auto">
+                {% if not tv_settings or tv_settings.show_clock_display %}
+                <span class="nav-link" id="currentTime"></span>
+                {% endif %}
+                <span class="nav-link" id="refreshIndicator">Auto-refresh: 30s</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Summary Stats -->
+        {% if not tv_settings or tv_settings.show_summary_stats %}
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card primary">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-day"></i>
+                        </div>
+                        <h5>Daily Total</h5>
+                        <div class="stat-value" id="city-daily-total">{{ city_data.daily_total }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card warning">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-week"></i>
+                        </div>
+                        <h5>Weekly Total</h5>
+                        <div class="stat-value" id="city-weekly-total">{{ city_data.weekly_total }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card danger">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-month"></i>
+                        </div>
+                        <h5>Monthly Total</h5>
+                        <div class="stat-value" id="city-month-total">{{ city_data.monthly_total }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card stat-card success">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-fill"></i>
+                        </div>
+                        <h5>Yearly Total</h5>
+                        <div class="stat-value" id="city-year-total">{{ city_data.yearly_total }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Performance Metrics -->
+        {% if tv_settings and tv_settings.show_performance_metrics %}
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card info">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h5>Efficiency Rate</h5>
+                        <div class="stat-value">85%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card secondary">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h5>Uptime</h5>
+                        <div class="stat-value">98.5%</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card stat-card warning">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="bi bi-target"></i>
+                        </div>
+                        <h5>Target Achievement</h5>
+                        <div class="stat-value">92%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- System Status -->
+        {% if tv_settings and tv_settings.show_system_status %}
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-cpu me-2"></i>System Health</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Overall Status:</span>
+                            <span class="badge bg-success">Healthy</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span>Active Devices:</span>
+                            <span class="badge bg-primary">{{ factories|length }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span>Network Status:</span>
+                            <span class="badge bg-success">Connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-shield-check me-2"></i>Safety Status</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Safety Level:</span>
+                            <span class="badge bg-success">Normal</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span>Active Alerts:</span>
+                            <span class="badge bg-warning">2</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span>Maintenance Due:</span>
+                            <span class="badge bg-info">3 days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Weather Information -->
+        {% if tv_settings and tv_settings.show_weather_info %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-cloud-sun me-2"></i>Weather Information</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <i class="bi bi-thermometer-half" style="font-size: 2rem; color: var(--warning-color);"></i>
+                                    <div>Temperature</div>
+                                    <div class="stat-value">24°C</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <i class="bi bi-droplet" style="font-size: 2rem; color: var(--primary-color);"></i>
+                                    <div>Humidity</div>
+                                    <div class="stat-value">65%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <i class="bi bi-wind" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                                    <div>Wind Speed</div>
+                                    <div class="stat-value">12 km/h</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <i class="bi bi-eye" style="font-size: 2rem; color: var(--accent-color);"></i>
+                                    <div>Visibility</div>
+                                    <div class="stat-value">10 km</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Factories Section -->
+        <div class="factories-section">
+            <h3>Factories</h3>
+            
+            {% for city_name, city_factories in grouped_factories.items %}
+                {% if tv_settings and tv_settings.display_mode == 'by_city' and tv_settings.show_city_headers %}
+                <div class="city-header mb-4">
+                    <h4 style="color: var(--accent-color); font-size: var(--font-size-xlarge); text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                        <i class="bi bi-geo-alt me-2"></i>{{ city_name }}
+                    </h4>
+                </div>
+                {% endif %}
+                
+                <div class="factories-grid" style="grid-template-columns: repeat({{ tv_settings.cards_per_row|default:3 }}, 1fr);">
+                    {% for factory in city_factories %}
+                        {% if not factory.error %}
+                        <div class="factory-card">
+                            <div class="card-header p-3">
+                                <div class="factory-header">
+                                    <h5>{{ factory.name }}</h5>
+                                    <span class="status-badge {% if factory.status %}status-active{% else %}status-inactive{% endif %}">
+                                        {% if factory.status %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </div>
+                                <!-- Factory status indicators -->
+                                {% if tv_settings.show_factory_status %}
+                                <div class="factory-status-indicators">
+                                    <div class="d-flex justify-content-end">
+                                        <span title="Power Status">
+                                            <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
+                                            <small class="text-white fw-bold">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
+                                        </span>
+                                        {% if tv_settings.show_door_status %}
+                                        <span title="Door Status">
+                                            <i class="bi {% if factory.status_info.door_status %}bi-door-open text-warning{% else %}bi-door-closed text-success{% endif %}"></i>
+                                            <small class="text-white fw-bold">Door: {% if factory.status_info.door_status %}Open{% else %}Closed{% endif %}</small>
+                                        </span>
+                                        {% endif %}
+                                        {% if tv_settings.show_network_status %}
+                                        <span title="Network Status">
+                                            <i class="bi bi-wifi text-success"></i>
+                                            <small class="text-white fw-bold">Network: Connected</small>
+                                        </span>
+                                        {% endif %}
+                                        {% if tv_settings.show_device_health %}
+                                        <span title="Device Health">
+                                            <i class="bi bi-heart-fill text-success"></i>
+                                            <small class="text-white fw-bold">Health: Good</small>
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <div class="factory-stats">
+                                    <div class="factory-stat">
+                                        <div class="factory-stat-label">Daily</div>
+                                        <div class="factory-stat-value">{{ factory.daily_total }}</div>
+                                    </div>
+                                    <div class="factory-stat">
+                                        <div class="factory-stat-label">Weekly</div>
+                                        <div class="factory-stat-value">{{ factory.weekly_total }}</div>
+                                    </div>
+                                    <div class="factory-stat">
+                                        <div class="factory-stat-label">Monthly</div>
+                                        <div class="factory-stat-value">{{ factory.monthly_total }}</div>
+                                    </div>
+                                    <div class="factory-stat">
+                                        <div class="factory-stat-label">Yearly</div>
+                                        <div class="factory-stat-value">{{ factory.yearly_total }}</div>
+                                    </div>
+                                </div>
+
+                                {% if tv_settings.show_progress_bars %}
+                                <!-- Progress Indicators -->
+                                <div class="progress-container">
+                                    {% if tv_settings.progress_style == 'linear' %}
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="--progress-width: {{ factory.progress_percentage|default:0 }}%"></div>
+                                    </div>
+                                    {% elif tv_settings.progress_style == 'circular' %}
+                                    <div class="circular-progress" style="--progress-angle: {{ factory.progress_percentage|default:0 }}deg">
+                                        <div class="progress-text">{{ factory.progress_percentage|default:0 }}%</div>
+                                    </div>
+                                    {% elif tv_settings.progress_style == 'steps' %}
+                                    <div class="step-progress">
+                                        {% for i in "12345" %}
+                                        <div class="step {% if forloop.counter <= factory.progress_steps %}completed{% elif forloop.counter == factory.progress_steps|add:1 %}active{% endif %}"></div>
+                                        {% endfor %}
+                                    </div>
+                                    {% elif tv_settings.progress_style == 'dots' %}
+                                    <div class="dot-progress">
+                                        {% for i in "12345678910" %}
+                                        <div class="dot {% if forloop.counter <= factory.progress_dots %}completed{% elif forloop.counter == factory.progress_dots|add:1 %}active{% endif %}"></div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <!-- Efficiency Ratios -->
+                                {% if tv_settings.show_efficiency_ratios %}
+                                <div class="efficiency-info">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>Efficiency</small>
+                                            <div class="efficiency-value">85%</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Quality Score</small>
+                                            <div class="efficiency-value">92%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Sensor Data -->
+                                {% if tv_settings.show_temperature_readings or tv_settings.show_humidity_levels or tv_settings.show_pressure_readings %}
+                                <div class="sensor-data">
+                                    <h6><i class="bi bi-thermometer-half me-2"></i>Sensor Readings</h6>
+                                    <div class="row">
+                                        {% if tv_settings.show_temperature_readings %}
+                                        <div class="col-4">
+                                            <small>Temperature</small>
+                                            <div class="sensor-value">24°C</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if tv_settings.show_humidity_levels %}
+                                        <div class="col-4">
+                                            <small>Humidity</small>
+                                            <div class="sensor-value">65%</div>
+                                        </div>
+                                        {% endif %}
+                                        {% if tv_settings.show_pressure_readings %}
+                                        <div class="col-4">
+                                            <small>Pressure</small>
+                                            <div class="sensor-value">1013 hPa</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Energy Consumption -->
+                                {% if tv_settings.show_energy_consumption %}
+                                <div class="energy-info">
+                                    <h6><i class="bi bi-lightning-charge me-2"></i>Energy Usage</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>Current Power</small>
+                                            <div class="energy-value">45 kW</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Daily Usage</small>
+                                            <div class="energy-value">1,080 kWh</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Batch Information -->
+                                {% if tv_settings.show_batch_information %}
+                                <div class="batch-info">
+                                    <h6><i class="bi bi-box me-2"></i>Current Batch</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>Batch #</small>
+                                            <div class="batch-value">B-2024-001</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Progress</small>
+                                            <div class="batch-value">75%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if tv_settings.show_time_info %}
+                                <div class="time-info">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>Start Time</small>
+                                            <div>{{ factory.start_time|default:"--" }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Stop Time</small>
+                                            <div>{{ factory.stop_time|default:"--" }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white;">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                No factories available
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white;">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        No factories available
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    {% if tv_settings and tv_settings.show_alerts %}
+    <div class="alert-container" id="alertContainer"></div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const dateString = now.toLocaleDateString();
+            document.getElementById('currentTime').textContent = `${dateString} ${timeString}`;
+        }
+
+        // Update time every second
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Auto-refresh functionality
+        {% if tv_settings %}
+        let refreshCountdown = {{ tv_settings.refresh_interval }}; // Use TV settings refresh interval
+        {% else %}
+        let refreshCountdown = 30; // Default 30 seconds
+        {% endif %}
+        
+        function updateRefreshIndicator() {
+            const minutes = Math.floor(refreshCountdown / 60);
+            const seconds = refreshCountdown % 60;
+            document.getElementById('refreshIndicator').textContent = `Auto-refresh: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            refreshCountdown--;
+            
+            if (refreshCountdown < 0) {
+                {% if tv_settings %}
+                refreshCountdown = {{ tv_settings.refresh_interval }}; // Reset to TV settings interval
+                {% else %}
+                refreshCountdown = 30; // Default 30 seconds
+                {% endif %}
+                location.reload();
+            }
+        }
+
+        setInterval(updateRefreshIndicator, 1000);
+
+        // Auto-scroll functionality
+        {% if tv_settings %}
+        let isScrolling = {% if tv_settings.auto_scroll != 'none' %}true{% else %}false{% endif %};
+        let scrollDirection = '{{ tv_settings.auto_scroll }}';
+        let scrollPaused = false;
+        let scrollSpeed = {{ tv_settings.scroll_speed }} * 1000; // Convert to milliseconds
+        {% else %}
+        let isScrolling = false;
+        let scrollDirection = 'none';
+        let scrollPaused = false;
+        let scrollSpeed = 120000; // Default 2 minutes
+        {% endif %}
+
+        function toggleScroll() {
+            isScrolling = !isScrolling;
+            if (isScrolling) {
+                startAutoScroll();
+            } else {
+                stopAutoScroll();
+            }
+        }
+
+        function startAutoScroll() {
+            if (!scrollPaused && scrollDirection !== 'none') {
+                document.body.classList.add('auto-scroll');
+                if (scrollDirection === 'down') {
+                    document.body.classList.add('reverse');
+                }
+                // Set custom animation duration
+                document.body.style.setProperty('--scroll-duration', scrollSpeed + 'ms');
+            }
+        }
+
+        function stopAutoScroll() {
+            document.body.classList.remove('auto-scroll', 'reverse');
+        }
+
+        function reverseScroll() {
+            if (scrollDirection === 'up') {
+                scrollDirection = 'down';
+            } else if (scrollDirection === 'down') {
+                scrollDirection = 'up';
+            }
+            if (isScrolling && !scrollPaused) {
+                stopAutoScroll();
+                startAutoScroll();
+            }
+        }
+
+        // Initialize auto-scroll based on settings
+        {% if tv_settings and tv_settings.auto_scroll != 'none' %}
+        startAutoScroll();
+        {% endif %}
+
+        // Alert System
+        {% if tv_settings and tv_settings.show_alerts %}
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert ${type}`;
+            alert.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'danger' ? 'x-circle' : 'info-circle'}-fill me-2"></i>
+                ${message}
+            `;
+            
+            alertContainer.appendChild(alert);
+            
+            // Remove alert after duration
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alertContainer.removeChild(alert);
+                }, 300);
+            }, {{ tv_settings.alert_duration }});
+        }
+
+        // Example alerts (can be triggered by events)
+        // showAlert('Factory status updated', 'success');
+        // showAlert('Production target reached', 'warning');
+        // showAlert('System maintenance required', 'danger');
+        {% endif %}
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            switch(e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    toggleScroll();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    scrollDirection = 'up';
+                    if (isScrolling && !scrollPaused) {
+                        stopAutoScroll();
+                        startAutoScroll();
+                    }
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    scrollDirection = 'down';
+                    if (isScrolling && !scrollPaused) {
+                        stopAutoScroll();
+                        startAutoScroll();
+                    }
+                    break;
+                case 'KeyR':
+                    e.preventDefault();
+                    location.reload();
+                    break;
+            }
+        });
+
+        // Mouse/touch controls
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartY = e.changedTouches[0].screenY;
+        });
+
+        document.addEventListener('touchend', function(e) {
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartY - touchEndY;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe up
+                    scrollDirection = 'up';
+                } else {
+                    // Swipe down
+                    scrollDirection = 'down';
+                }
+                
+                if (isScrolling && !scrollPaused) {
+                    stopAutoScroll();
+                    startAutoScroll();
+                }
+            }
+        }
+
+        // Pause on hover
+        document.addEventListener('mouseenter', function() {
+            scrollPaused = true;
+            stopAutoScroll();
+        });
+
+        document.addEventListener('mouseleave', function() {
+            scrollPaused = false;
+            if (isScrolling) {
+                startAutoScroll();
+            }
+        });
+
+        // Start auto-scroll after 5 seconds
+        setTimeout(function() {
+            if (isScrolling) {
+                startAutoScroll();
+            }
+        }, 5000);
+
+        // Dashboard update function
+        function updateDashboard() {
+            const datePicker = document.getElementById('dashboardDatePicker');
+            let url = '/tv-dashboard/';
+
+            if (datePicker && datePicker.value) {
+                url += '?date=' + datePicker.value;
+            }
+
+            window.location.href = url;
+        }
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show controls info
+            console.log('TV Dashboard Controls:');
+            console.log('- Spacebar: Toggle auto-scroll');
+            console.log('- Arrow Up/Down: Change scroll direction');
+            console.log('- R: Refresh page');
+            console.log('- Mouse hover: Pause auto-scroll');
+            console.log('- Touch swipe: Change scroll direction');
+            
+            {% if tv_settings and tv_settings.show_alerts %}
+            // Show welcome alert
+            setTimeout(() => {
+                showAlert('TV Dashboard loaded successfully', 'success');
+            }, 1000);
+            {% endif %}
+        });
+    </script>
+</body>
+</html> 

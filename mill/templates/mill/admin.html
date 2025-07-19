@@ -1,0 +1,136 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-container">
+    <h2>{% trans "Admin Dashboard" %}</h2>
+
+    <!-- New Devices Alert -->
+    {% if new_devices %}
+        <div class="alert alert-info" role="alert">
+            {% trans "New devices detected!" %}
+            <ul>
+                {% for device in new_devices %}
+                    <li>
+                        {{ device.name|default:device.serial_number }}
+                        <button class="btn btn-link" data-bs-toggle="modal" data-bs-target="#linkDeviceModal{{ device.id }}">{% trans "Link to Factory" %}</button>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- Go to Dashboard Button -->
+    <a href="{% url 'index' %}" class="btn btn-secondary mb-3">{% trans "Go to Dashboard" %}</a>
+
+    <div class="row">
+        <div class="col-md-6">
+            {% if user.groups.all.0.name == 'Admin' %}
+            <a href="{% url 'manage_users' %}" class="btn btn-primary mb-3">{% trans "Manage Users" %}</a>
+            {% endif %}
+            {% if user.groups.all.0.name == 'Superadmin' %}
+            <a href="{% url 'manage_city' %}" class="btn btn-primary mb-3">{% trans "Manage Cities" %}</a>
+            {% endif %}
+            <a href="{% url 'manage_factory' %}" class="btn btn-primary mb-3">{% trans "Manage Factories" %}</a>
+            <!-- New Batch Management Button -->
+            <a href="{% url 'batch-list' %}" class="btn btn-primary mb-3">{% trans "Manage Batches" %}</a>
+            <a href="{% url 'feedback_list' %}" class="btn btn-primary mb-3">{% trans "Feedback" %}</a>
+
+        </div>
+        {% if user.groups.all.0.name == 'Superadmin' %}
+        <div class="col-md-6">
+            <a href="{% url 'manage_devices' %}" class="btn btn-primary mb-3">{% trans "Manage Devices" %}</a>
+                <a href="/super-admin/" class="btn btn-danger mb-3">{% trans "Super Admin Dashboard" %}</a>
+            </div>
+            {% endif %}
+    </div>
+
+    <!-- Nieuwe box met afbeelding -->
+    <div class="new-box mt-4">
+        <img src="{% static "pictures/flouband.gif" %}" alt="Beschrijving van de afbeelding" class="img-fluid">
+    </div>
+    <!-- Modals for New Devices -->
+    {% for device in new_devices %}
+    <div class="modal fade" id="linkDeviceModal{{ device.id }}" tabindex="-1" aria-labelledby="linkDeviceModalLabel{{ device.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="linkDeviceModalLabel{{ device.id }}">{% trans "Link Device to Factory" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{% url 'link_device' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <input type="hidden" name="device_id" value="{{ device.id }}">
+                        <div class="mb-3">
+                            <label for="link_city_id_{{ device.id }}" class="form-label">{% trans "Select City:" %}</label>
+                            <select id="link_city_id_{{ device.id }}" name="city_id" class="form-control" required>
+                                {% for city in cities %}
+                                    <option value="{{ city.id }}">{{ city.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="link_factory_id_{{ device.id }}" class="form-label">{% trans "Select Factory:" %}</label>
+                            <select id="link_factory_id_{{ device.id }}" name="factory_id" class="form-control" required>
+                                <!-- Factories will be loaded dynamically via JavaScript -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="serial_number_{{ device.id }}" class="form-label">{% trans "Or enter Serial Number:" %}</label>
+                            <input type="text" id="serial_number_{{ device.id }}" name="serial_number" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">{% trans "Link Device" %}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const citySelects = document.querySelectorAll('[id^="link_city_id_"]');
+
+            citySelects.forEach(citySelect => {
+                citySelect.addEventListener('change', function() {
+                    const cityId = citySelect.value;
+                    const factorySelectId = citySelect.id.replace('link_city_id_', 'link_factory_id_');
+                    const factorySelect = document.getElementById(factorySelectId);
+
+                    if (factorySelect) {
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                        fetch(`/get_factories_by_city?city_id=${cityId}`, {
+                            headers: {
+                                'X-CSRFToken': csrfToken
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                factorySelect.innerHTML = `<option value="">{% trans "Select a Factory" %}</option>`;
+                                data.factories.forEach(factory => {
+                                    const option = document.createElement('option');
+                                    option.value = factory.id;
+                                    option.textContent = factory.name;
+                                    factorySelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => console.error('Error fetching factories:', error));
+                    }
+                });
+            });
+        });
+    </script>
+
+</div>
+{% endblock %}
