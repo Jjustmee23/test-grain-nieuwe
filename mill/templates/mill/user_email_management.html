@@ -1,0 +1,595 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Email Management - {{ user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .email-management-container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .user-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+    }
+    
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin: 0 auto 15px;
+    }
+    
+    .user-name {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .user-email {
+        font-size: 16px;
+        opacity: 0.9;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        padding: 30px;
+        background: #f8f9fa;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .nav-tabs {
+        border-bottom: 2px solid #e9ecef;
+        padding: 0 30px;
+        background: white;
+    }
+    
+    .nav-tab {
+        display: inline-block;
+        padding: 15px 25px;
+        text-decoration: none;
+        color: #6c757d;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-tab.active {
+        color: #667eea;
+        border-bottom-color: #667eea;
+    }
+    
+    .nav-tab:hover {
+        color: #667eea;
+    }
+    
+    .tab-content {
+        padding: 30px;
+    }
+    
+    .tab-pane {
+        display: none;
+    }
+    
+    .tab-pane.active {
+        display: block;
+    }
+    
+    .email-history-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .email-history-table th,
+    .email-history-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .email-history-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-sent { background: #d4edda; color: #155724; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    
+    .send-email-form {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .form-section {
+        margin-bottom: 25px;
+    }
+    
+    .form-section h4 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .email-type-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .email-type-card {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .email-type-card:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+    }
+    
+    .email-type-card.selected {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+    
+    .email-type-icon {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .email-type-name {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .email-type-desc {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .template-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-send {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-send:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    
+    .preview-section {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .preview-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 10px;
+    }
+    
+    .preview-content {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 15px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .email-type-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .nav-tabs {
+            padding: 0 15px;
+        }
+        
+        .tab-content {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'admin' %}">Admin</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'manage_users' %}">User Management</a></li>
+                    <li class="breadcrumb-item active">Email Management - {{ user.username }}</li>
+                </ol>
+            </nav>
+
+            <!-- User Header -->
+            <div class="email-management-container">
+                <div class="user-header">
+                    <div class="user-avatar">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="user-email">{{ user.email }}</div>
+                </div>
+
+                <!-- Email Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ email_stats.total }}</div>
+                        <div class="stat-label">Total Emails</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ email_stats.sent }}</div>
+                        <div class="stat-label">Sent</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ email_stats.failed }}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ email_stats.pending }}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div class="nav-tabs">
+                    <a href="#history" class="nav-tab active" data-tab="history">📧 Email History</a>
+                    <a href="#send" class="nav-tab" data-tab="send">✉️ Send Email</a>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    <!-- Email History Tab -->
+                    <div id="history" class="tab-pane active">
+                        <h3>Email History</h3>
+                        {% if email_history %}
+                        <div class="table-responsive">
+                            <table class="email-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Sent By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for email in email_history %}
+                                    <tr>
+                                        <td>{{ email.sent_at|date:"M j, Y g:i a" }}</td>
+                                        <td>{{ email.subject }}</td>
+                                        <td>{{ email.get_email_type_display }}</td>
+                                        <td>
+                                            <span class="status-badge status-{{ email.status }}">
+                                                {{ email.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ email.sent_by.username|default:"System" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No emails sent to this user yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Send Email Tab -->
+                    <div id="send" class="tab-pane">
+                        <h3>Send Email to {{ user.username }}</h3>
+                        
+                        <form method="post" id="sendEmailForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="send_email">
+                            
+                            <!-- Email Type Selection -->
+                            <div class="form-section">
+                                <h4>📝 Choose Email Type</h4>
+                                <div class="email-type-grid">
+                                    {% for email in predefined_emails %}
+                                    <div class="email-type-card" data-email-type="{{ email.id }}">
+                                        <div class="email-type-icon">
+                                            {% if email.id == 'welcome' %}👋
+                                            {% elif email.id == 'password_reset' %}🔐
+                                            {% elif email.id == 'account_activation' %}✅
+                                            {% elif email.id == 'maintenance_notice' %}🔧
+                                            {% elif email.id == 'system_update' %}🔄
+                                            {% else %}📧{% endif %}
+                                        </div>
+                                        <div class="email-type-name">{{ email.name }}</div>
+                                        <div class="email-type-desc">{{ email.subject }}</div>
+                                    </div>
+                                    {% endfor %}
+                                    
+                                    <div class="email-type-card" data-email-type="custom">
+                                        <div class="email-type-icon">✏️</div>
+                                        <div class="email-type-name">Custom Message</div>
+                                        <div class="email-type-desc">Write your own message</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Template Selection -->
+                            <div class="form-section" id="templateSection" style="display: none;">
+                                <h4>📋 Choose Template</h4>
+                                <select name="template_id" class="template-select" id="templateSelect">
+                                    <option value="">Select a template...</option>
+                                    {% for template in email_templates %}
+                                    <option value="{{ template.id }}">{{ template.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Email Content -->
+                            <div class="form-section">
+                                <h4>📄 Email Content</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="subject">Subject:</label>
+                                        <input type="text" name="subject" id="subject" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="email_type">Email Type:</label>
+                                        <select name="email_type" id="email_type" class="form-control">
+                                            {% for value, label in email_types %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <label for="message">Message:</label>
+                                    <textarea name="message" id="message" class="form-control" rows="10" required></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preview Section -->
+                            <div class="preview-section" id="previewSection" style="display: none;">
+                                <div class="preview-title">📋 Preview</div>
+                                <div class="preview-content" id="previewContent"></div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="form-section">
+                                <button type="submit" class="btn-send">📤 Send Email</button>
+                                <button type="button" class="btn-secondary" id="previewBtn">👁️ Preview</button>
+                                <button type="button" class="btn-secondary" id="clearBtn">🗑️ Clear</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const tabs = document.querySelectorAll('.nav-tab');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all tabs and panes
+            tabs.forEach(t => t.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Show corresponding pane
+            const targetId = this.getAttribute('data-tab');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+    
+    // Email type selection
+    const emailTypeCards = document.querySelectorAll('.email-type-card');
+    const templateSection = document.getElementById('templateSection');
+    const templateSelect = document.getElementById('templateSelect');
+    
+    emailTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove selected class from all cards
+            emailTypeCards.forEach(c => c.classList.remove('selected'));
+            
+            // Add selected class to clicked card
+            this.classList.add('selected');
+            
+            const emailType = this.getAttribute('data-email-type');
+            
+            if (emailType === 'custom') {
+                templateSection.style.display = 'block';
+                loadPredefinedEmail(emailType);
+            } else {
+                templateSection.style.display = 'none';
+                loadPredefinedEmail(emailType);
+            }
+        });
+    });
+    
+    // Template selection
+    templateSelect.addEventListener('change', function() {
+        if (this.value) {
+            loadTemplate(this.value);
+        }
+    });
+    
+    // Preview button
+    document.getElementById('previewBtn').addEventListener('click', function() {
+        const subject = document.getElementById('subject').value;
+        const message = document.getElementById('message').value;
+        
+        if (subject && message) {
+            const previewSection = document.getElementById('previewSection');
+            const previewContent = document.getElementById('previewContent');
+            
+            previewContent.innerHTML = `
+                <strong>Subject:</strong> ${subject}<br><br>
+                <strong>Message:</strong><br>
+                ${message}
+            `;
+            previewSection.style.display = 'block';
+        }
+    });
+    
+    // Clear button
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        document.getElementById('sendEmailForm').reset();
+        document.getElementById('previewSection').style.display = 'none';
+        emailTypeCards.forEach(c => c.classList.remove('selected'));
+        templateSection.style.display = 'none';
+    });
+    
+    function loadPredefinedEmail(emailType) {
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `action=load_predefined&predefined_id=${emailType}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('subject').value = data.subject;
+                document.getElementById('message').value = data.message;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    function loadTemplate(templateId) {
+        fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `action=load_template&template_id=${templateId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('subject').value = data.subject;
+                document.getElementById('message').value = data.message;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+});
+</script>
+{% endblock %} 

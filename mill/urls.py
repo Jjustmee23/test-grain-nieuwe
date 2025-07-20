@@ -53,6 +53,7 @@ urlpatterns = [
     # Email management URLs
     path('email-history/', views.email_history, name='email_history'),
     path('user-email-history/<int:user_id>/', views.user_email_history, name='user_email_history'),
+    path('user-email-management/<int:user_id>/', views.user_email_management, name='user_email_management'),
     path('send-direct-email/<int:user_id>/', views.send_direct_email, name='send_direct_email'),
     path('mass-messaging/', views.mass_messaging, name='mass_messaging'),
     path('email-templates/', views.email_templates, name='email_templates'),

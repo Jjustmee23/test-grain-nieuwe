@@ -580,6 +580,70 @@ class CustomUserAdmin(BaseUserAdmin):
         if obj is None:  # Creating new user
             return []
         return super().get_inline_instances(request, obj)
+    
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:user_id>/email-management/',
+                self.admin_site.admin_view(self.email_management_view),
+                name='user-email-management',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def email_management_view(self, request, user_id):
+        from django.shortcuts import render, get_object_or_404
+        from django.contrib.auth.models import User
+        from mill.models import EmailHistory, EmailTemplate
+        from mill.services.simple_email_service import SimpleEmailService
+        
+        user = get_object_or_404(User, id=user_id)
+        email_service = SimpleEmailService()
+        
+        # Get email history for this user
+        email_history = EmailHistory.objects.filter(user=user).order_by('-sent_at')
+        
+        # Get available email templates
+        email_templates = EmailTemplate.objects.filter(is_active=True)
+        
+        # Handle email sending
+        if request.method == 'POST':
+            email_type = request.POST.get('email_type')
+            subject = request.POST.get('subject')
+            message = request.POST.get('message')
+            template_id = request.POST.get('template_id')
+            
+            if template_id:
+                template = EmailTemplate.objects.get(id=template_id)
+                subject = template.subject
+                message = template.content
+            
+            # Send email
+            success, response = email_service.send_email(
+                user.email,
+                subject,
+                message,
+                email_type=email_type
+            )
+            
+            if success:
+                messages.success(request, f'Email successfully sent to {user.email}')
+            else:
+                messages.error(request, f'Failed to send email: {response}')
+            
+            return HttpResponseRedirect(request.path)
+        
+        context = {
+            'user': user,
+            'email_history': email_history,
+            'email_templates': email_templates,
+            'title': f'Email Management - {user.username}',
+            'opts': self.model._meta,
+        }
+        
+        return render(request, 'admin/mill/user/email_management.html', context)
 
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)

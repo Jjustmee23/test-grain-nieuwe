@@ -11,6 +11,7 @@ from mill.models import UserNotificationPreference, NotificationCategory, Notifi
 from django.core.paginator import Paginator
 import time
 from django.utils import timezone
+from django.http import JsonResponse
 
 User = get_user_model()
 
@@ -909,4 +910,173 @@ def send_password_reset_email(request, user_id):
     except Exception as e:
         messages.error(request, f'Error sending password reset email: {str(e)}')
         return redirect('email_history')
+
+@superadmin_required
+def user_email_management(request, user_id):
+    """User email management interface with history and send functionality"""
+    try:
+        user = get_object_or_404(User, id=user_id)
+        
+        # Get email history for this user
+        email_history = EmailHistory.objects.filter(user=user).order_by('-sent_at')
+        
+        # Get email templates
+        from mill.models import EmailTemplate
+        email_templates = EmailTemplate.objects.filter(is_active=True)
+        
+        # Get predefined email types
+        predefined_emails = [
+            {
+                'id': 'welcome',
+                'name': 'Welcome Email',
+                'subject': f'Welcome to Mill Application, {user.username}!',
+                'template': 'welcome'
+            },
+            {
+                'id': 'password_reset',
+                'name': 'Password Reset',
+                'subject': 'Password Reset Request - Mill Application',
+                'template': 'password_reset'
+            },
+            {
+                'id': 'account_activation',
+                'name': 'Account Activation',
+                'subject': 'Activate Your Account - Mill Application',
+                'template': 'account_activation'
+            },
+            {
+                'id': 'maintenance_notice',
+                'name': 'Maintenance Notice',
+                'subject': 'Scheduled Maintenance - Mill Application',
+                'template': 'maintenance'
+            },
+            {
+                'id': 'system_update',
+                'name': 'System Update',
+                'subject': 'System Update Notification - Mill Application',
+                'template': 'system_update'
+            }
+        ]
+        
+        if request.method == 'POST':
+            action = request.POST.get('action')
+            
+            if action == 'send_email':
+                # Handle email sending
+                email_type = request.POST.get('email_type')
+                template_id = request.POST.get('template_id')
+                subject = request.POST.get('subject')
+                message = request.POST.get('message')
+                
+                if not all([subject, message]):
+                    messages.error(request, 'Subject and message are required')
+                else:
+                    # Create email history record
+                    email_history_record = EmailHistory.objects.create(
+                        user=user,
+                        subject=subject,
+                        message=message,
+                        email_type=email_type or 'custom',
+                        sent_by=request.user,
+                        status='pending'
+                    )
+                    
+                    # Send email
+                    from mill.services.notification_service import NotificationService
+                    notification_service = NotificationService()
+                    
+                    success = notification_service._send_direct_email(
+                        to_email=user.email,
+                        subject=subject,
+                        message=message,
+                        email_history=email_history_record
+                    )
+                    
+                    if success:
+                        email_history_record.status = 'sent'
+                        email_history_record.save()
+                        messages.success(request, f'Email sent successfully to {user.username}')
+                    else:
+                        email_history_record.status = 'failed'
+                        email_history_record.save()
+                        messages.error(request, f'Failed to send email to {user.username}')
+            
+            elif action == 'load_template':
+                # Handle template loading via AJAX
+                template_id = request.POST.get('template_id')
+                if template_id:
+                    try:
+                        template = EmailTemplate.objects.get(id=template_id)
+                        return JsonResponse({
+                            'success': True,
+                            'subject': template.subject,
+                            'message': template.html_content
+                        })
+                    except EmailTemplate.DoesNotExist:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'Template not found'
+                        })
+            
+            elif action == 'load_predefined':
+                # Handle predefined email loading via AJAX
+                predefined_id = request.POST.get('predefined_id')
+                predefined = next((email for email in predefined_emails if email['id'] == predefined_id), None)
+                
+                if predefined:
+                    # Try to get template content
+                    try:
+                        template = EmailTemplate.objects.filter(
+                            template_type=predefined['template'],
+                            is_active=True
+                        ).first()
+                        
+                        if template:
+                            message = template.html_content.replace('{{ username }}', user.username)
+                        else:
+                            # Fallback message
+                            message = f"""
+                            <h2>Hello {user.username},</h2>
+                            <p>This is a {predefined['name'].lower()} from the Mill Application system.</p>
+                            <p>Best regards,<br>Mill Application Team</p>
+                            """
+                        
+                        return JsonResponse({
+                            'success': True,
+                            'subject': predefined['subject'],
+                            'message': message
+                        })
+                    except Exception as e:
+                        return JsonResponse({
+                            'success': False,
+                            'error': str(e)
+                        })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Predefined email not found'
+                    })
+        
+        # Email statistics
+        email_stats = {
+            'total': email_history.count(),
+            'sent': email_history.filter(status='sent').count(),
+            'failed': email_history.filter(status='failed').count(),
+            'pending': email_history.filter(status='pending').count(),
+        }
+        
+        context = {
+            'user': user,
+            'email_history': email_history[:20],  # Show last 20 emails
+            'email_stats': email_stats,
+            'email_templates': email_templates,
+            'predefined_emails': predefined_emails,
+            'email_types': EmailHistory.email_type.field.choices,
+        }
+        
+        return render(request, 'mill/user_email_management.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error in user email management: {str(e)}')
+        return redirect('admin')
 
