@@ -5,3 +5,7 @@ openpyxl
 django-jazzmin==3.0.1
 reportlab
 xlsxwriter
+requests
+django-cors-headers
+msal
+cryptography

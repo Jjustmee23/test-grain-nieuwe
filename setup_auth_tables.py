@@ -42,7 +42,7 @@ def main():
         
         print("✅ Django auth tables created successfully!")
         print("📝 Note: Mill tables were not affected")
-        
+             
     except Exception as e:
         print(f"❌ Error setting up auth tables: {e}")
         sys.exit(1)

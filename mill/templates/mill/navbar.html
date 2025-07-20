@@ -1,3 +1,4 @@
+{% load i18n %}
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
@@ -25,6 +26,14 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'notifications' %}">Notifications</a>
                     </li>
+
+                    {% if user.is_superuser and user.userprofile.support_tickets_enabled %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_tickets' %}">
+                            <i class="fas fa-headset me-1"></i>Support Tickets
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'export_data' %}">Export Data</a>
                     </li>

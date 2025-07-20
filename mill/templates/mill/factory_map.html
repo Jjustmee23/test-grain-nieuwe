@@ -27,7 +27,16 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div id="map" style="height: 600px; width: 100%;"></div>
+                    <div id="map" style="height: 600px; width: 100%;">
+                        <div id="map-loading" style="display: flex; justify-content: center; align-items: center; height: 100%; background-color: #f8f9fa;">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading map...</span>
+                                </div>
+                                <p class="mt-2">Loading map...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,46 +51,12 @@
                 </div>
                 <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                     <div id="factory-list">
-                        {% for factory in factories %}
-                        <div class="factory-item mb-3 p-3 border rounded" 
-                             data-factory-id="{{ factory.id }}"
-                             data-lat="{{ factory.latitude }}"
-                             data-lng="{{ factory.longitude }}">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ factory.name }}</h6>
-                                    <small class="text-muted">{{ factory.city }}</small>
-                                    <div class="mt-2">
-                                        <span class="badge {% if factory.status %}bg-success{% else %}bg-danger{% endif %} me-2">
-                                            {% if factory.status %}Active{% else %}Inactive{% endif %}
-                                        </span>
-                                        <span class="badge bg-info">
-                                            {{ factory.active_devices }}/{{ factory.total_devices }} Devices
-                                        </span>
-                                    </div>
-                                    <div class="mt-2">
-                                        <strong>Daily Production:</strong> {{ factory.daily_production|floatformat:0 }} units
-                                    </div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary" 
-                                        onclick="centerOnFactory({{ factory.latitude }}, {{ factory.longitude }})">
-                                    <i class="fas fa-crosshairs"></i>
-                                </button>
-                            </div>
-                            <div class="mt-2">
-                                <a href="{% url 'view_statistics' %}?factory={{ factory.id }}" 
-                                   class="btn btn-sm btn-primary w-100">
-                                    <i class="fas fa-chart-bar me-1"></i>View Statistics
-                                </a>
-                            </div>
-                        </div>
-                        {% empty %}
                         <div class="text-center text-muted">
-                            <i class="fas fa-map-marker-alt fa-3x mb-3"></i>
-                            <p>No factories with coordinates found.</p>
-                            <p class="small">Add coordinates to factories in the admin panel.</p>
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading factories...</span>
+                            </div>
+                            <p class="mt-2">Loading factories...</p>
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -173,10 +148,16 @@
 <script>
 let map;
 let markers = [];
-let factoryData = {{ factories|safe }};
+let factoryData = JSON.parse('{{ factories|safe }}');
 
 // Initialize map
 function initMap() {
+    // Hide loading indicator
+    const loadingDiv = document.getElementById('map-loading');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'none';
+    }
+    
     // Default center (Iraq)
     const defaultCenter = [33.2232, 43.6793];
     
@@ -353,7 +334,19 @@ function updateFactoryList() {
 
 // Initialize map when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    initMap();
+    console.log('DOM loaded, initializing map...');
+    console.log('Factory data:', factoryData);
+    console.log('Leaflet available:', typeof L !== 'undefined');
+    
+    try {
+        initMap();
+        console.log('Map initialized successfully');
+        
+        // Update factory list after map is initialized
+        updateFactoryList();
+    } catch (error) {
+        console.error('Error initializing map:', error);
+    }
     
     // Add click handlers to factory list items
     document.addEventListener('click', function(e) {

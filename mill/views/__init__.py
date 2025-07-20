@@ -4,12 +4,18 @@ from .device_views import *
 from .factory_views import manage_factory
 from .batch_views import *
 from .notification_views import *
+from .notification_api_views import *
 # from .batch_views import BatchListView, BatchCreateView, BatchDetailView
 from .alert_views import *
 from .analytics_views import *
 from .sensor_views import *
 # from .admin_views import manage_admin_view
-from .admin_views import change_password
+from .admin_views import (
+    change_password, notification_management, send_notification,
+    update_user_notification_preferences, microsoft365_settings, test_email_connection, test_email_send,
+    email_history, user_email_history, send_direct_email, mass_messaging,
+    email_templates, send_welcome_email, send_password_reset_email
+)
 from .profile_views import manage_profile
 from .contact_views import *
 from .notification_views import *
@@ -30,7 +36,7 @@ from django.core.files.storage import FileSystemStorage
 import csv, openpyxl  
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from mill.models import City, Factory, Device, ProductionData 
+from mill.models import City, Factory, Device, ProductionData, Microsoft365Settings
 import logging
 from datetime import datetime, time  # Import time class
 from django.utils import timezone
@@ -38,6 +44,7 @@ from django.db.models import Sum  # Add this import
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -265,6 +272,75 @@ def get_factory_status(request):
     
 
 def custom_404_view(request, exception):
-    return render(request, '404.html', status=404)
+    return render(request, 'mill/404.html', status=404)
+
+def auth_callback(request):
+    """Handle OAuth2 callback from Microsoft"""
+    auth_code = request.GET.get('code')
+    error = request.GET.get('error')
+    
+    if error:
+        error_description = request.GET.get('error_description', 'Unknown error')
+        messages.error(request, f'❌ OAuth2 Error: {error} - {error_description}')
+        return redirect('/super-admin/mill/microsoft365settings/')
+    
+    if not auth_code:
+        messages.error(request, '❌ No authorization code received from Microsoft')
+        return redirect('/super-admin/mill/microsoft365settings/')
+    
+    # Get the first Microsoft365Settings object (assuming there's only one)
+    try:
+        settings_obj = Microsoft365Settings.objects.first()
+        if not settings_obj:
+            messages.error(request, '❌ No Microsoft 365 Settings found')
+            return redirect('/super-admin/mill/microsoft365settings/')
+        
+        # Exchange authorization code for tokens
+        success = _exchange_auth_code(settings_obj, auth_code)
+        if success:
+            messages.success(request, '✅ OAuth2 authorization completed successfully!')
+        else:
+            messages.error(request, '❌ Failed to exchange authorization code')
+            
+    except Exception as e:
+        messages.error(request, f'❌ Error during OAuth2 setup: {str(e)}')
+    
+    return redirect('/super-admin/mill/microsoft365settings/')
+
+def _exchange_auth_code(settings_obj, auth_code):
+    """Exchange authorization code for tokens"""
+    try:
+        token_url = f"https://login.microsoftonline.com/{settings_obj.tenant_id}/oauth2/v2.0/token"
+        
+        data = {
+            'client_id': settings_obj.client_id,
+            'client_secret': settings_obj.client_secret,
+            'code': auth_code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': 'http://localhost:8000/auth/callback',
+            'scope': 'https://graph.microsoft.com/.default'
+        }
+        
+        response = requests.post(token_url, data=data, timeout=30)
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            
+            # Save tokens
+            settings_obj.access_token = token_data['access_token']
+            settings_obj.refresh_token = token_data.get('refresh_token', '')
+            
+            # Calculate expiration
+            expires_in = token_data.get('expires_in', 3600)
+            from datetime import timedelta
+            settings_obj.token_expires_at = timezone.now() + timedelta(seconds=expires_in - 300)
+            
+            settings_obj.save()
+            return True
+        else:
+            return False
+            
+    except Exception as e:
+        return False
 
 

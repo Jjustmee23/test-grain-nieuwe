@@ -5,6 +5,7 @@ from mill.models import Factory, ProductionData, Device
 from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import datetime, timedelta
+import json
 
 
 @login_required
@@ -43,24 +44,33 @@ def factory_map(request):
             except:
                 continue
         
-        factory_data.append({
-            'id': factory.id,
-            'name': factory.name,
-            'city': factory.city.name if factory.city else 'Unknown',
-            'address': factory.address or 'No address provided',
-            'latitude': float(factory.latitude),
-            'longitude': float(factory.longitude),
-            'status': factory.status,
-            'daily_production': total_daily,
-            'active_devices': active_devices,
-            'total_devices': devices.count(),
-        })
+        try:
+            factory_data.append({
+                'id': factory.id,
+                'name': factory.name,
+                'city': factory.city.name if factory.city else 'Unknown',
+                'address': factory.address or 'No address provided',
+                'latitude': float(factory.latitude),
+                'longitude': float(factory.longitude),
+                'status': bool(factory.status),  # Convert to boolean
+                'daily_production': total_daily,
+                'active_devices': active_devices,
+                'total_devices': devices.count(),
+            })
+        except Exception as e:
+            print(f"Error processing factory {factory.id}: {e}")
+            continue
     
     context = {
-        'factories': factory_data,
+        'factories': json.dumps(factory_data),  # Convert to JSON string
         'total_factories': len(factory_data),
         'active_factories': len([f for f in factory_data if f['status']]),
     }
+    
+    # Debug: print factory data to console
+    print(f"Factory map data: {len(factory_data)} factories loaded")
+    for factory in factory_data[:3]:  # Print first 3 factories
+        print(f"Factory: {factory['name']}, Lat: {factory['latitude']}, Lng: {factory['longitude']}")
     
     return render(request, 'mill/factory_map.html', context)
 
@@ -97,19 +107,23 @@ def factory_map_data(request):
             except:
                 continue
         
-        factory_data.append({
-            'id': factory.id,
-            'name': factory.name,
-            'city': factory.city.name if factory.city else 'Unknown',
-            'address': factory.address or 'No address provided',
-            'latitude': float(factory.latitude),
-            'longitude': float(factory.longitude),
-            'status': factory.status,
-            'daily_production': total_daily,
-            'active_devices': active_devices,
-            'total_devices': devices.count(),
-            'status_color': 'green' if factory.status else 'red',
-        })
+        try:
+            factory_data.append({
+                'id': factory.id,
+                'name': factory.name,
+                'city': factory.city.name if factory.city else 'Unknown',
+                'address': factory.address or 'No address provided',
+                'latitude': float(factory.latitude),
+                'longitude': float(factory.longitude),
+                'status': bool(factory.status),  # Convert to boolean
+                'daily_production': total_daily,
+                'active_devices': active_devices,
+                'total_devices': devices.count(),
+                'status_color': 'green' if factory.status else 'red',
+            })
+        except Exception as e:
+            print(f"Error processing factory {factory.id}: {e}")
+            continue
     
     return JsonResponse({
         'factories': factory_data,

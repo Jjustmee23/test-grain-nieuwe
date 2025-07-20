@@ -1,7 +1,22 @@
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+from django.utils.html import format_html
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.utils import timezone
+from django.db.models import Q
 # Register your models here.
-from .models import Device, Notification, NotificationCategory, ProductionData, City, Factory, UserProfile, Batch, FlourBagCount, Alert, BatchNotification, TVDashboardSettings
+from .models import (
+    Device, Notification, NotificationCategory, ProductionData, City, Factory, 
+    UserProfile, Batch, FlourBagCount, Alert, BatchNotification, TVDashboardSettings,
+    UserNotificationPreference, EmailTemplate, Microsoft365Settings, NotificationLog,
+    EmailHistory, MassMessage
+)
+import requests
 
 admin.site.site_header = 'Mill Admin'
 admin.site.site_title = 'Mill Admin'
@@ -84,27 +99,415 @@ class FactoryAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user',)
-    filter_horizontal = ('allowed_cities','allowed_factories') 
-
-@admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'category', 'message', 'read', 'timestamp')
-    list_filter = ('category', 'read', 'timestamp')
-    search_fields = ('user', 'message')
-    date_hierarchy = 'timestamp'
-    ordering = ('-timestamp',)
+    list_display = ('user', 'support_tickets_enabled')
+    list_filter = ('support_tickets_enabled',)
+    filter_horizontal = ('allowed_cities','allowed_factories')
     fieldsets = (
-        (None, {
-            'fields': ('user', 'category', 'message', 'read', 'timestamp')
+        ('User Information', {
+            'fields': ('user', 'team')
         }),
-    )
-    readonly_fields = ('timestamp',)
+        ('Permissions', {
+            'fields': ('allowed_cities', 'allowed_factories', 'support_tickets_enabled'),
+            'description': 'Support tickets permission is only for super admins'
+        }),
+    ) 
 
 @admin.register(NotificationCategory)
 class NotificationCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name','description')
-    search_fields = ('name','description')
+    list_display = ('name', 'notification_type', 'requires_admin', 'requires_super_admin', 'is_active')
+    list_filter = ('notification_type', 'requires_admin', 'requires_super_admin', 'is_active')
+    search_fields = ('name', 'description')
+    ordering = ('name',)
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+class UserNotificationPreferenceInline(admin.StackedInline):
+    model = UserNotificationPreference
+    extra = 0
+    max_num = 1
+    can_delete = False
+    fields = (
+        'receive_in_app', 'receive_email', 'email_address', 'can_modify_preferences',
+        'enabled_categories', 'mandatory_notifications'
+    )
+    filter_horizontal = ('enabled_categories', 'mandatory_notifications')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+class UserProfileInline(admin.StackedInline):
+    model = UserProfile
+    extra = 0
+    max_num = 1
+    can_delete = False
+    fields = ('team', 'allowed_cities', 'allowed_factories', 'support_tickets_enabled')
+    filter_horizontal = ('allowed_cities', 'allowed_factories')
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+@admin.register(UserNotificationPreference)
+class UserNotificationPreferenceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'receive_in_app', 'receive_email', 'email_address', 'can_modify_preferences', 'is_admin', 'is_super_admin')
+    list_filter = ('receive_in_app', 'receive_email', 'can_modify_preferences', 'is_admin', 'is_super_admin')
+    search_fields = ('user__username', 'user__email', 'email_address')
+    filter_horizontal = ('enabled_categories', 'mandatory_notifications')
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'category', 'title', 'priority', 'status', 'read', 'created_at')
+    list_filter = ('category', 'priority', 'status', 'read', 'created_at')
+    search_fields = ('user__username', 'title', 'message')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'read_at', 'email_sent_at')
+
+@admin.register(EmailTemplate)
+class EmailTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'is_active', 'created_at')
+    list_filter = ('category', 'is_active', 'created_at')
+    search_fields = ('name', 'subject')
+    ordering = ('name',)
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+@admin.register(Microsoft365Settings)
+class Microsoft365SettingsAdmin(admin.ModelAdmin):
+    list_display = ['auth_user', 'from_email', 'from_name', 'is_active', 'has_refresh_token', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['auth_user', 'from_email', 'from_name']
+    readonly_fields = ['created_at', 'updated_at', 'has_refresh_token']
+    
+    fieldsets = (
+        ('Azure AD Configuration', {
+            'fields': ('client_id', 'client_secret', 'tenant_id')
+        }),
+        ('Email Configuration', {
+            'fields': ('auth_user', 'from_email', 'from_name')
+        }),
+        ('OAuth2 Status', {
+            'fields': ('has_refresh_token', 'token_expires_at', 'is_active'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_refresh_token(self, obj):
+        return bool(obj.refresh_token)
+    has_refresh_token.boolean = True
+    has_refresh_token.short_description = 'Has Refresh Token'
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:object_id>/oauth2-setup/',
+                self.admin_site.admin_view(self.oauth2_setup_view),
+                name='mill_microsoft365settings_oauth2_setup',
+            ),
+            path(
+                '<int:object_id>/test-connection/',
+                self.admin_site.admin_view(self.test_connection_view),
+                name='mill_microsoft365settings_test_connection',
+            ),
+            path(
+                '<int:object_id>/test-email-form/',
+                self.admin_site.admin_view(self.test_email_form_view),
+                name='mill_microsoft365settings_test_email_form',
+            ),
+            path(
+                '<int:object_id>/test-email/',
+                self.admin_site.admin_view(self.test_email_view),
+                name='mill_microsoft365settings_test_email',
+            ),
+            path(
+                'auth/callback/',
+                self.admin_site.admin_view(self.auth_callback_view),
+                name='mill_microsoft365settings_auth_callback',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def auth_callback_view(self, request):
+        """Handle OAuth2 callback from Microsoft"""
+        auth_code = request.GET.get('code')
+        error = request.GET.get('error')
+        
+        if error:
+            error_description = request.GET.get('error_description', 'Unknown error')
+            messages.error(request, f'❌ OAuth2 Error: {error} - {error_description}')
+            return HttpResponseRedirect('/super-admin/mill/microsoft365settings/')
+        
+        if not auth_code:
+            messages.error(request, '❌ No authorization code received from Microsoft')
+            return HttpResponseRedirect('/super-admin/mill/microsoft365settings/')
+        
+        # Get the first Microsoft365Settings object (assuming there's only one)
+        try:
+            settings_obj = Microsoft365Settings.objects.first()
+            if not settings_obj:
+                messages.error(request, '❌ No Microsoft 365 Settings found')
+                return HttpResponseRedirect('/super-admin/mill/microsoft365settings/')
+            
+            # Exchange authorization code for tokens
+            success = self._exchange_auth_code(settings_obj, auth_code)
+            if success:
+                messages.success(request, '✅ OAuth2 authorization completed successfully!')
+            else:
+                messages.error(request, '❌ Failed to exchange authorization code')
+                
+        except Exception as e:
+            messages.error(request, f'❌ Error during OAuth2 setup: {str(e)}')
+        
+        return HttpResponseRedirect('/super-admin/mill/microsoft365settings/')
+    
+    def oauth2_setup_view(self, request, object_id):
+        """OAuth2 setup view"""
+        try:
+            settings_obj = Microsoft365Settings.objects.get(id=object_id)
+            
+            # Check if we have an authorization code from the redirect
+            auth_code = request.GET.get('code')
+            if auth_code:
+                # Exchange authorization code for tokens
+                success = self._exchange_auth_code(settings_obj, auth_code)
+                if success:
+                    messages.success(request, '✅ OAuth2 authorization completed successfully!')
+                else:
+                    messages.error(request, '❌ Failed to exchange authorization code')
+                return HttpResponseRedirect('../')
+            
+            # Check for errors
+            error = request.GET.get('error')
+            if error:
+                error_description = request.GET.get('error_description', 'Unknown error')
+                messages.error(request, f'❌ OAuth2 Error: {error} - {error_description}')
+                return HttpResponseRedirect('../')
+            
+            # Generate and redirect to authorization URL
+            auth_url = self._generate_auth_url(settings_obj)
+            return HttpResponseRedirect(auth_url)
+            
+        except Microsoft365Settings.DoesNotExist:
+            messages.error(request, 'Microsoft 365 Settings not found.')
+            return HttpResponseRedirect('../')
+    
+    def test_email_form_view(self, request, object_id):
+        """Show test email form"""
+        try:
+            settings_obj = Microsoft365Settings.objects.get(id=object_id)
+            
+            if request.method == 'POST':
+                test_email = request.POST.get('test_email')
+                if test_email:
+                    # Redirect to test email view with the email
+                    return HttpResponseRedirect(f'../test-email/')
+                else:
+                    messages.error(request, 'Please enter an email address.')
+            
+            # Show the form
+            context = {
+                'title': 'Send Test Email',
+                'settings': settings_obj,
+                'opts': self.model._meta,
+                'original': settings_obj,
+            }
+            
+            return self.response_change(request, settings_obj)
+            
+        except Microsoft365Settings.DoesNotExist:
+            messages.error(request, 'Microsoft 365 Settings not found.')
+            return HttpResponseRedirect('../')
+    
+    def test_connection_view(self, request, object_id):
+        """Test OAuth2 connection"""
+        try:
+            settings_obj = Microsoft365Settings.objects.get(id=object_id)
+            
+            from mill.services.simple_email_service import SimpleEmailService
+            email_service = SimpleEmailService()
+            
+            success, message = email_service.test_connection()
+            
+            if success:
+                messages.success(request, f'✅ {message}')
+            else:
+                messages.error(request, f'❌ {message}')
+                
+        except Microsoft365Settings.DoesNotExist:
+            messages.error(request, 'Microsoft 365 Settings not found.')
+        
+        return HttpResponseRedirect('../')
+    
+    def test_email_view(self, request, object_id):
+        """Send test email"""
+        try:
+            settings_obj = Microsoft365Settings.objects.get(id=object_id)
+            
+            from mill.services.simple_email_service import SimpleEmailService
+            email_service = SimpleEmailService()
+            
+            # Get email from POST data or use current user's email as fallback
+            test_email = request.POST.get('test_email') or request.user.email
+            if not test_email:
+                messages.error(request, 'No email address provided. Please enter an email address.')
+                return HttpResponseRedirect('../')
+            
+            success, message = email_service.test_email_send(test_email)
+            
+            if success:
+                messages.success(request, f'✅ Test email sent successfully to {test_email}!')
+            else:
+                messages.error(request, f'❌ Failed to send test email: {message}')
+                
+        except Microsoft365Settings.DoesNotExist:
+            messages.error(request, 'Microsoft 365 Settings not found.')
+        
+        return HttpResponseRedirect('../')
+    
+    def _generate_auth_url(self, settings_obj):
+        """Generate OAuth2 authorization URL"""
+        base_url = f"https://login.microsoftonline.com/{settings_obj.tenant_id}/oauth2/v2.0/authorize"
+        
+        params = {
+            'client_id': settings_obj.client_id,
+            'response_type': 'code',
+            'redirect_uri': 'http://localhost:8000/auth/callback',
+            'scope': 'https://graph.microsoft.com/Mail.Send offline_access',
+            'response_mode': 'query',
+            'state': 'oauth2_setup'
+        }
+        
+        param_string = '&'.join([f"{k}={v}" for k, v in params.items()])
+        return f"{base_url}?{param_string}"
+    
+    def _exchange_auth_code(self, settings_obj, auth_code):
+        """Exchange authorization code for tokens"""
+        try:
+            token_url = f"https://login.microsoftonline.com/{settings_obj.tenant_id}/oauth2/v2.0/token"
+            
+            data = {
+                'client_id': settings_obj.client_id,
+                'client_secret': settings_obj.client_secret,
+                'code': auth_code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': 'http://localhost:8000/auth/callback',
+                'scope': 'https://graph.microsoft.com/Mail.Send offline_access'
+            }
+            
+            response = requests.post(token_url, data=data, timeout=30)
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                
+                # Save tokens
+                settings_obj.access_token = token_data['access_token']
+                settings_obj.refresh_token = token_data.get('refresh_token', '')
+                
+                # Calculate expiration
+                expires_in = token_data.get('expires_in', 3600)
+                from django.utils import timezone
+                from datetime import timedelta
+                settings_obj.token_expires_at = timezone.now() + timedelta(seconds=expires_in - 300)
+                
+                settings_obj.save()
+                return True
+            else:
+                return False
+                
+        except Exception as e:
+            return False
+
+@admin.register(NotificationLog)
+class NotificationLogAdmin(admin.ModelAdmin):
+    list_display = ('notification', 'delivery_method', 'status', 'sent_at')
+    list_filter = ('delivery_method', 'status', 'sent_at')
+    search_fields = ('notification__title', 'notification__user__username')
+    ordering = ('-sent_at',)
+    readonly_fields = ('sent_at',)
+
+@admin.register(EmailHistory)
+class EmailHistoryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'email_type', 'subject', 'status', 'sent_at', 'sent_by')
+    list_filter = ('email_type', 'status', 'sent_at', 'sent_by')
+    search_fields = ('user__username', 'user__email', 'subject', 'message')
+    ordering = ('-sent_at',)
+    readonly_fields = ('sent_at', 'opened_at', 'clicked_at')
+    date_hierarchy = 'sent_at'
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+@admin.register(MassMessage)
+class MassMessageAdmin(admin.ModelAdmin):
+    list_display = ('title', 'sent_by', 'status', 'total_recipients', 'sent_count', 'failed_count', 'sent_at')
+    list_filter = ('status', 'sent_at', 'sent_by')
+    search_fields = ('title', 'message', 'subject')
+    ordering = ('-sent_at',)
+    readonly_fields = ('sent_at', 'total_recipients', 'sent_count', 'failed_count')
+    filter_horizontal = ('target_users',)
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
 
 @admin.register(Batch)
 class BatchAdmin(admin.ModelAdmin):
@@ -167,6 +570,20 @@ class BatchNotificationAdmin(admin.ModelAdmin):
         }),
     )
 
+
+# Custom User Admin with Notification Preferences and User Profile
+class CustomUserAdmin(BaseUserAdmin):
+    inlines = [UserProfileInline, UserNotificationPreferenceInline]
+    
+    def get_inline_instances(self, request, obj=None):
+        # Only show inlines when editing existing users
+        if obj is None:  # Creating new user
+            return []
+        return super().get_inline_instances(request, obj)
+
+# Unregister the default User admin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
 
 @admin.register(TVDashboardSettings)
 class TVDashboardSettingsAdmin(admin.ModelAdmin):

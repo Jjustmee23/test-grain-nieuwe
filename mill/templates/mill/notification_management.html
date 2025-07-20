@@ -1,0 +1,337 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Notification Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-stats {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .user-preferences-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .user-preferences-header {
+        background: #f8f9fa;
+        padding: 15px;
+        border-bottom: 1px solid #e0e0e0;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .user-preferences-body {
+        padding: 20px;
+    }
+    
+    .category-checkbox {
+        margin-right: 10px;
+    }
+    
+    .send-notification-form {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .notification-type-badge {
+        font-size: 0.8em;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 10px;
+    }
+    
+    .admin-badge {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .super-admin-badge {
+        background-color: #6f42c1;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-bell"></i> Notification Management</h1>
+                <div>
+                    <a href="{% url 'microsoft365_settings' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-cog"></i> Email Settings
+                    </a>
+                    <a href="{% url 'admin' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Admin
+                    </a>
+                </div>
+            </div>
+
+            <!-- Notification Statistics -->
+            <div class="notification-stats">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3>{{ stats.total_notifications }}</h3>
+                            <p>Total Notifications ({{ stats.period_days }} days)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3>{{ stats.unread_notifications }}</h3>
+                            <p>Unread Notifications</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3>{{ stats.email_sent }}</h3>
+                            <p>Emails Sent</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h3>{{ users.count }}</h3>
+                            <p>Active Users</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Notification Form -->
+            <div class="send-notification-form">
+                <h4><i class="fas fa-paper-plane"></i> Send Notification</h4>
+                <form method="post" action="{% url 'send_notification' %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="user_ids" class="form-label">Select Users</label>
+                                <select name="user_ids" id="user_ids" class="form-select" multiple required>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.username }} 
+                                        {% if user.first_name or user.last_name %}
+                                            ({{ user.first_name }} {{ user.last_name }})
+                                        {% endif %}
+                                        {% if user.is_superuser %}
+                                            <span class="badge bg-danger">Super Admin</span>
+                                        {% elif user.groups.all %}
+                                            <span class="badge bg-warning">Admin</span>
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="category_name" class="form-label">Notification Category</label>
+                                <select name="category_name" id="category_name" class="form-select" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.name }}">
+                                        {{ category.name }}
+                                        {% if category.requires_admin %}
+                                            <span class="notification-type-badge admin-badge">Admin</span>
+                                        {% endif %}
+                                        {% if category.requires_super_admin %}
+                                            <span class="notification-type-badge super-admin-badge">Super Admin</span>
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" name="title" id="title" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select name="priority" id="priority" class="form-select">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea name="message" id="message" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Notification
+                    </button>
+                </form>
+            </div>
+
+            <!-- User Notification Preferences -->
+            <h4><i class="fas fa-users"></i> User Notification Preferences</h4>
+            
+            {% for user in users %}
+            <div class="user-preferences-card">
+                <div class="user-preferences-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">
+                                {{ user.username }}
+                                {% if user.first_name or user.last_name %}
+                                    <small class="text-muted">({{ user.first_name }} {{ user.last_name }})</small>
+                                {% endif %}
+                            </h5>
+                            <small class="text-muted">{{ user.email }}</small>
+                            {% if user.is_superuser %}
+                                <span class="badge bg-danger ms-2">Super Admin</span>
+                            {% elif user.groups.all %}
+                                <span class="badge bg-warning ms-2">Admin</span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-2">User</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#user-{{ user.id }}">
+                                <i class="fas fa-edit"></i> Edit Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="collapse" id="user-{{ user.id }}">
+                    <div class="user-preferences-body">
+                        <form method="post" action="{% url 'update_user_preferences' user.id %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Delivery Channels</h6>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="receive_in_app" id="in_app_{{ user.id }}" 
+                                                   class="form-check-input" 
+                                                   {% if user.usernotificationpreference.receive_in_app %}checked{% endif %}>
+                                            <label class="form-check-label" for="in_app_{{ user.id }}">
+                                                Receive In-App Notifications
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="receive_email" id="email_{{ user.id }}" 
+                                                   class="form-check-input" 
+                                                   {% if user.usernotificationpreference.receive_email %}checked{% endif %}>
+                                            <label class="form-check-label" for="email_{{ user.id }}">
+                                                Receive Email Notifications
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="email_address_{{ user.id }}" class="form-label">Email Address</label>
+                                        <input type="email" name="email_address" id="email_address_{{ user.id }}" 
+                                               class="form-control" value="{{ user.usernotificationpreference.email_address|default:user.email }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="can_modify_preferences" id="can_modify_{{ user.id }}" 
+                                                   class="form-check-input" 
+                                                   {% if user.usernotificationpreference.can_modify_preferences %}checked{% endif %}>
+                                            <label class="form-check-label" for="can_modify_{{ user.id }}">
+                                                User Can Modify Preferences
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6>Notification Categories</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Enabled Categories</label>
+                                        <div class="row">
+                                            {% for category in categories %}
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="enabled_categories" 
+                                                           value="{{ category.id }}" 
+                                                           id="enabled_{{ user.id }}_{{ category.id }}" 
+                                                           class="form-check-input category-checkbox"
+                                                           {% if category in user.usernotificationpreference.enabled_categories.all %}checked{% endif %}>
+                                                    <label class="form-check-label" for="enabled_{{ user.id }}_{{ category.id }}">
+                                                        {{ category.name }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Mandatory Categories (User Cannot Disable)</label>
+                                        <div class="row">
+                                            {% for category in categories %}
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input type="checkbox" name="mandatory_categories" 
+                                                           value="{{ category.id }}" 
+                                                           id="mandatory_{{ user.id }}_{{ category.id }}" 
+                                                           class="form-check-input category-checkbox"
+                                                           {% if category in user.usernotificationpreference.mandatory_notifications.all %}checked{% endif %}>
+                                                    <label class="form-check-label" for="mandatory_{{ user.id }}_{{ category.id }}">
+                                                        {{ category.name }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Preferences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize select2 for user selection
+    $('#user_ids').select2({
+        placeholder: 'Select users...',
+        allowClear: true
+    });
+    
+    // Auto-resize textarea
+    $('#message').on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
+{% endblock %} 

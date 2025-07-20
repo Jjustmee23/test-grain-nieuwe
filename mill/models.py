@@ -122,6 +122,8 @@ class UserProfile(models.Model):
     # Only for non-super_admin users (admins and public_users)
     allowed_cities = models.ManyToManyField(City, blank=True)
     allowed_factories = models.ManyToManyField(Factory, blank=True)
+    # Support tickets permission for super admins
+    support_tickets_enabled = models.BooleanField(default=False, help_text="Enable support tickets management for this user")
 
     def __str__(self):
         return f"Profile for {self.user.username}"
@@ -354,31 +356,258 @@ from django.contrib.auth.models import User
 class NotificationCategory(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
+    
+    # Notification types for different user roles
+    NOTIFICATION_TYPES = [
+        ('batch_assignment', 'Batch Assignment'),
+        ('batch_approval', 'Batch Approval'),
+        ('batch_rejection', 'Batch Rejection'),
+        ('batch_completion', 'Batch Completion'),
+        ('system_warning', 'System Warning'),
+        ('device_alert', 'Device Alert'),
+        ('production_alert', 'Production Alert'),
+        ('maintenance_reminder', 'Maintenance Reminder'),
+        ('user_management', 'User Management'),
+        ('data_export', 'Data Export'),
+        ('factory_status', 'Factory Status'),
+    ]
+    
+    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPES, default='system_warning')
+    is_active = models.BooleanField(default=True)
+    requires_admin = models.BooleanField(default=False)
+    requires_super_admin = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
 
 class UserNotificationPreference(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    enabled_category = models.ManyToManyField(NotificationCategory, blank=True)
+    enabled_categories = models.ManyToManyField(NotificationCategory, blank=True)
     receive_in_app = models.BooleanField(default=True)
     receive_email = models.BooleanField(default=False)
-
-
-class Notification(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(NotificationCategory, on_delete=models.CASCADE)
-    message = models.CharField(max_length=255)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    read = models.BooleanField(default=False)
-    link = models.URLField(blank=True, null=True)
+    
+    # Email settings
+    email_address = models.EmailField(blank=True, null=True)
+    email_verified = models.BooleanField(default=False)
+    
+    # Permission settings
+    can_modify_preferences = models.BooleanField(default=True)
+    mandatory_notifications = models.ManyToManyField(NotificationCategory, blank=True, related_name='mandatory_users')
+    
+    # Role-based settings
+    is_admin = models.BooleanField(default=False)
+    is_super_admin = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.category}: {self.message}"
+        return f"Preferences for {self.user.username}"
     
+    def save(self, *args, **kwargs):
+        # Auto-set email preferences if user has valid email
+        if self.user.email and not self.email_address:
+            self.email_address = self.user.email
+            self.receive_email = True
+        
+        # Auto-set role-based settings
+        if self.user.groups.filter(name='admin').exists():
+            self.is_admin = True
+        if self.user.groups.filter(name='Superadmin').exists() or self.user.is_superuser:
+            self.is_super_admin = True
+            
+        super().save(*args, **kwargs)
+
+class Notification(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    category = models.ForeignKey(NotificationCategory, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, default='Notification')
+    message = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    
+    # Delivery channels
+    sent_in_app = models.BooleanField(default=False)
+    sent_email = models.BooleanField(default=False)
+    
+    # Email tracking
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    email_error = models.TextField(blank=True, null=True)
+    
+    # Related objects
+    related_batch = models.ForeignKey('Batch', on_delete=models.CASCADE, null=True, blank=True)
+    related_factory = models.ForeignKey('Factory', on_delete=models.CASCADE, null=True, blank=True)
+    related_device = models.ForeignKey('Device', on_delete=models.CASCADE, null=True, blank=True)
+    
+    # User interaction
+    read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    link = models.URLField(blank=True, null=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.category}: {self.title} - {self.user.username}"
 
     class Meta:
-        ordering = ['-timestamp']
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'read', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['priority', 'created_at']),
+        ]
+    
+    def mark_as_read(self):
+        if not self.read:
+            self.read = True
+            self.read_at = timezone.now()
+            self.save()
+
+class EmailHistory(models.Model):
+    """Track all emails sent to users with detailed information"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='email_history')
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    email_type = models.CharField(max_length=50, choices=[
+        ('welcome', 'Welcome Email'),
+        ('password_reset', 'Password Reset'),
+        ('notification', 'Notification'),
+        ('custom', 'Custom Message'),
+        ('mass_message', 'Mass Message'),
+        ('system_alert', 'System Alert'),
+    ])
+    sent_at = models.DateTimeField(auto_now_add=True)
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='emails_sent')
+    status = models.CharField(max_length=20, choices=[
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+        ('pending', 'Pending'),
+    ], default='pending')
+    error_message = models.TextField(blank=True, null=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    clicked_at = models.DateTimeField(null=True, blank=True)
+    
+    # For mass messages
+    mass_message_group = models.CharField(max_length=50, blank=True, null=True)  # admin, user, super_admin, all
+    
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name_plural = 'Email History'
+    
+    def __str__(self):
+        return f"{self.email_type} to {self.user.username} - {self.sent_at.strftime('%Y-%m-%d %H:%M')}"
+
+class EmailTemplate(models.Model):
+    name = models.CharField(max_length=100)
+    subject = models.CharField(max_length=200)
+    html_content = models.TextField()
+    text_content = models.TextField()
+    category = models.ForeignKey(NotificationCategory, on_delete=models.CASCADE, null=True, blank=True)
+    template_type = models.CharField(max_length=50, choices=[
+        ('notification', 'Notification'),
+        ('welcome', 'Welcome Email'),
+        ('password_reset', 'Password Reset'),
+        ('custom', 'Custom Template'),
+    ], default='notification')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Template variables
+    variables = models.JSONField(default=dict, help_text="Available template variables")
+    
+    def __str__(self):
+        return f"{self.name} ({self.template_type})"
+
+class MassMessage(models.Model):
+    """For sending mass messages to user groups"""
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    subject = models.CharField(max_length=200)
+    target_groups = models.JSONField(default=list, help_text="List of target groups: ['admin', 'user', 'super_admin', 'all']")
+    target_users = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='mass_messages_received')
+    sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mass_messages_sent')
+    sent_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=[
+        ('draft', 'Draft'),
+        ('sending', 'Sending'),
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+    ], default='draft')
+    total_recipients = models.IntegerField(default=0)
+    sent_count = models.IntegerField(default=0)
+    failed_count = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['-sent_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.sent_at.strftime('%Y-%m-%d %H:%M')}"
+
+class Microsoft365Settings(models.Model):
+    """Simple Microsoft 365 settings for OAuth2 authentication"""
+    client_id = models.CharField(max_length=255, blank=True, help_text="Azure AD Application Client ID")
+    client_secret = models.CharField(max_length=255, blank=True, help_text="Azure AD Application Client Secret")
+    tenant_id = models.CharField(max_length=255, blank=True, help_text="Azure AD Tenant ID")
+    auth_user = models.CharField(max_length=255, blank=True, help_text="User email for authentication (e.g., danny.v@...)")
+    from_email = models.CharField(max_length=255, blank=True, help_text="Shared mailbox email (e.g., noreply@...)")
+    from_name = models.CharField(max_length=255, default="Mill Application", help_text="From name for emails")
+    
+    # OAuth2 tokens
+    access_token = models.TextField(blank=True, help_text="OAuth2 access token")
+    refresh_token = models.TextField(blank=True, help_text="OAuth2 refresh token")
+    token_expires_at = models.DateTimeField(null=True, blank=True, help_text="Token expiration time")
+    
+    # Status
+    is_active = models.BooleanField(default=True, help_text="Active configuration")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Microsoft 365 Settings"
+        verbose_name_plural = "Microsoft 365 Settings"
+    
+    def __str__(self):
+        return f"Microsoft 365 ({self.auth_user} -> {self.from_email})"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one active configuration
+        if self.is_active:
+            Microsoft365Settings.objects.exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+class NotificationLog(models.Model):
+    """Log for tracking notification delivery"""
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE)
+    delivery_method = models.CharField(max_length=20, choices=[('app', 'In-App'), ('email', 'Email')])
+    status = models.CharField(max_length=20, choices=[('success', 'Success'), ('failed', 'Failed')])
+    error_message = models.TextField(blank=True, null=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.notification} - {self.delivery_method} - {self.status}"
+
+    class Meta:
+        ordering = ['-sent_at']
+        indexes = [
+            models.Index(fields=['notification', 'delivery_method', 'status']),
+        ]
 
 class DoorOpenLogs(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='door_open_logs')
@@ -503,6 +732,61 @@ class ContactTicket(models.Model):
         if self.is_closed and self.updated_at and self.created_at:
             return self.updated_at - self.created_at
         return None
+
+    def get_responses(self):
+        """Get all responses for this ticket"""
+        return self.responses.all().order_by('created_at')
+
+    def get_last_response(self):
+        """Get the last response for this ticket"""
+        return self.responses.last()
+
+    def has_unread_responses(self, user):
+        """Check if user has unread responses"""
+        return self.responses.filter(
+            created_by__isnull=False,
+            created_by__is_staff=True,
+            is_read=False
+        ).exclude(created_by=user).exists()
+
+    def mark_responses_as_read(self, user):
+        """Mark all responses as read for a user"""
+        self.responses.filter(
+            created_by__isnull=False,
+            created_by__is_staff=True,
+            is_read=False
+        ).exclude(created_by=user).update(is_read=True)
+
+
+class TicketResponse(models.Model):
+    """Responses to support tickets"""
+    ticket = models.ForeignKey(ContactTicket, on_delete=models.CASCADE, related_name='responses')
+    message = models.TextField()
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='ticket_responses'
+    )
+    is_internal = models.BooleanField(default=False, help_text="Internal note not visible to user")
+    is_read = models.BooleanField(default=False, help_text="Whether the response has been read")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Ticket Response'
+        verbose_name_plural = 'Ticket Responses'
+
+    def __str__(self):
+        return f"Response to {self.ticket.subject} - {self.created_at}"
+
+    def get_author_name(self):
+        """Get the name of the response author"""
+        if self.created_by:
+            return self.created_by.get_full_name() or self.created_by.username
+        return "System"
 
        
 @receiver(pre_save, sender=RawData)

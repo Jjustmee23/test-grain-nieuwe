@@ -208,3 +208,23 @@ class FeedbackForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Please either select specific factories or check 'All Factories'"
             )
+
+
+class TicketResponseForm(forms.ModelForm):
+    class Meta:
+        model = TicketResponse
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': _('Type your response here...'),
+                    'rows': 4
+                }
+            )
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['message'].label = _('Your Response')
+        self.fields['message'].help_text = _('Provide a detailed response to help resolve the issue')

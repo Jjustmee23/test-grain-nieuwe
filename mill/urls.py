@@ -4,13 +4,16 @@ from django.contrib import admin
 from .views_new import testmill
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('/', views.index, name='index'),
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
     path('test/', testmill, name='mill'),
+
+    # OAuth2 callback URL
+    path('auth/callback/', views.auth_callback, name='auth_callback'),
 
     # Batch URLs
     path('batches/', views.BatchListView.as_view(), name='batch-list'),
@@ -38,6 +41,23 @@ urlpatterns = [
     # path('admin/',admin.site.urls,name='admin'),
     path('admin/', views.admin_view, name='admin'),
     path('super-admin/', admin.site.urls),
+    
+    # Notification management URLs
+    path('notification-management/', views.notification_management, name='notification_management'),
+    path('send-notification/', views.send_notification, name='send_notification'),
+    path('update-user-preferences/<int:user_id>/', views.update_user_notification_preferences, name='update_user_preferences'),
+    path('microsoft365-settings/', views.microsoft365_settings, name='microsoft365_settings'),
+    path('test-email-connection/', views.test_email_connection, name='test_email_connection'),
+    path('test-email-send/', views.test_email_send, name='test_email_send'),
+    
+    # Email management URLs
+    path('email-history/', views.email_history, name='email_history'),
+    path('user-email-history/<int:user_id>/', views.user_email_history, name='user_email_history'),
+    path('send-direct-email/<int:user_id>/', views.send_direct_email, name='send_direct_email'),
+    path('mass-messaging/', views.mass_messaging, name='mass_messaging'),
+    path('email-templates/', views.email_templates, name='email_templates'),
+    path('send-welcome-email/<int:user_id>/', views.send_welcome_email, name='send_welcome_email'),
+    path('send-password-reset-email/<int:user_id>/', views.send_password_reset_email, name='send_password_reset_email'),
     path('change-password/', views.change_password, name='change_password'),
     path('profile/manage/', views.manage_profile, name='manage_profile'),
 
@@ -100,6 +120,13 @@ urlpatterns = [
     # path('notifications/create/', views.NotificationCreateView.as_view(), name='notification-create'),
     path('notifications/<int:pk>/', views.NotificationDetailView.as_view(), name='notification-detail'),
 
+    # Notification API endpoints
+    path('api/notifications/send/', views.notification_api_views.SendNotificationView.as_view(), name='api_send_notification'),
+    path('api/user/preferences/', views.notification_api_views.UserPreferencesView.as_view(), name='api_user_preferences'),
+    path('api/user/notifications/', views.notification_api_views.UserNotificationsView.as_view(), name='api_user_notifications'),
+    path('api/admin/notifications/', views.notification_api_views.AdminNotificationManagementView.as_view(), name='api_admin_notifications'),
+    path('api/notifications/stats/', views.notification_api_views.NotificationStatsView.as_view(), name='api_notification_stats'),
+
     # path('notifications/<int:pk>/update/', views.NotificationUpdateView.as_view(), name='notification-update'),
 
     # API endpoints
@@ -116,10 +143,25 @@ urlpatterns = [
 
 
 
+    # Contact and Ticket URLs
     path('contact/', views.contact, name='contact'),
     path('contact/success/', views.contact_success, name='contact_success'),
+    
+    # User Ticket URLs
     path('tickets/', views.my_tickets, name='my_tickets'),
+    path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
     path('tickets/<int:ticket_id>/update/', views.ticket_update, name='ticket_update'),
+    
+    # Admin Ticket URLs
+    path('admin/tickets/', views.admin_tickets, name='admin_tickets'),
+    path('admin/tickets/<int:ticket_id>/', views.admin_ticket_detail, name='admin_ticket_detail'),
+    path('admin/tickets/<int:ticket_id>/status-update/', views.admin_ticket_status_update, name='admin_ticket_status_update'),
+    path('admin/tickets/search-users/', views.admin_search_users, name='admin_search_users'),
+    path('admin/tickets/create/', views.admin_create_ticket, name='admin_create_ticket'),
+    path('admin/tickets/<int:ticket_id>/quick-reply/', views.admin_quick_reply, name='admin_quick_reply'),
+    path('admin/tickets/<int:ticket_id>/assign/', views.admin_assign_ticket, name='admin_assign_ticket'),
+    path('admin/tickets/<int:ticket_id>/transfer/', views.admin_transfer_ticket, name='admin_transfer_ticket'),
+    path('admin/tickets/<int:ticket_id>/delete/', views.admin_delete_ticket, name='admin_delete_ticket'),
     
 
 

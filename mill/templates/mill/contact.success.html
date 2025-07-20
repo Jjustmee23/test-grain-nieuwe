@@ -49,13 +49,13 @@
         </div>
         
         <div class="action-buttons">
-            <a href="{% url 'mill:contact' %}" class="btn btn-outline-primary">{% trans "Submit Another Ticket" %}</a>
-            <a href="{% url 'mill:index' %}" class="btn btn-primary">{% trans "Return to Home" %}</a>
+                            <a href="{% url 'contact' %}" class="btn btn-outline-primary">{% trans "Submit Another Ticket" %}</a>
+                <a href="{% url 'index' %}" class="btn btn-primary">{% trans "Return to Home" %}</a>
         </div>
         
         {% if user.is_authenticated %}
         <div class="mt-4">
-            <p>{% trans "You can view the status of your tickets in" %} <a href="{% url 'mill:my_tickets' %}">{% trans "My Tickets" %}</a>.</p>
+            <p>{% trans "You can view the status of your tickets in" %} <a href="{% url 'manage_profile' %}">{% trans "My Tickets" %}</a>.</p>
         </div>
         {% endif %}
     </div>
