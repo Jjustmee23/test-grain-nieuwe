@@ -16,12 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function refreshCharts() {
+    updateDeviceInfo();
     fetchChartData();
+}
+
+function updateDeviceInfo() {
+    const deviceSelector = document.getElementById('deviceSelector');
+    const selectedDeviceName = document.getElementById('selectedDeviceName');
+    
+    if (deviceSelector && selectedDeviceName) {
+        const selectedOption = deviceSelector.options[deviceSelector.selectedIndex];
+        selectedDeviceName.textContent = selectedOption.text;
+    }
 }
 
 function initializeCharts() {
     // Hourly Chart
-    const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+    const hourlyCanvas = document.getElementById('hourlyChart');
+    if (!hourlyCanvas) {
+        console.warn('hourlyChart canvas not found');
+        return;
+    }
+    const hourlyCtx = hourlyCanvas.getContext('2d');
     window.hourlyChart = new Chart(hourlyCtx, {
         type: 'bar',
         data: {
@@ -49,7 +65,12 @@ function initializeCharts() {
     });
 
     // Daily Chart
-    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    const dailyCanvas = document.getElementById('dailyChart');
+    if (!dailyCanvas) {
+        console.warn('dailyChart canvas not found');
+        return;
+    }
+    const dailyCtx = dailyCanvas.getContext('2d');
     window.dailyChart = new Chart(dailyCtx, {
         type: 'bar',
         data: {
@@ -77,7 +98,12 @@ function initializeCharts() {
     });
 
     // Monthly Chart
-    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    const monthlyCanvas = document.getElementById('monthlyChart');
+    if (!monthlyCanvas) {
+        console.warn('monthlyChart canvas not found');
+        return;
+    }
+    const monthlyCtx = monthlyCanvas.getContext('2d');
     window.monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
         data: {
@@ -107,7 +133,12 @@ function initializeCharts() {
     });
 
     // Yearly Chart
-    const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+    const yearlyCanvas = document.getElementById('yearlyChart');
+    if (!yearlyCanvas) {
+        console.warn('yearlyChart canvas not found');
+        return;
+    }
+    const yearlyCtx = yearlyCanvas.getContext('2d');
     window.yearlyChart = new Chart(yearlyCtx, {
         type: 'pie',
         data: {
@@ -134,6 +165,7 @@ function initializeCharts() {
 
 function fetchChartData() {
     const date = document.getElementById('datePicker').value;
+    const deviceId = document.getElementById('deviceSelector') ? document.getElementById('deviceSelector').value : 'all';
 
     if (typeof factoryId === 'undefined' || factoryId === null) {
         console.error('Factory ID is missing.');
@@ -147,7 +179,12 @@ function fetchChartData() {
         return;
     }
 
-    fetch(`/api/chart_data?factory_id=${factoryId}&date=${date}`)
+    // Use the new device-specific API endpoint
+    const apiUrl = deviceId === 'all' 
+        ? `/api/chart_data?factory_id=${factoryId}&date=${date}`
+        : `/api/device-chart-data/${factoryId}/?date=${date}&device_id=${deviceId}`;
+
+    fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
             if (data.error) {

@@ -7,8 +7,10 @@ from django.db.models.functions import TruncHour
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.urls import reverse
-from mill.utils import calculate_chart_data, is_allowed_factory
+from mill.utils.chart_handler_utils import calculate_chart_data, calculate_device_chart_data
+from mill.utils.permmissions_handler_utils import is_allowed_factory
 from django.core.serializers.json import DjangoJSONEncoder
+from django.http import JsonResponse
 import json
 
 @login_required
@@ -27,6 +29,12 @@ def view_statistics(request, factory_id):
             messages.error(request, "User profile not found.")
             return redirect('index')
 
+    # Get devices for this factory
+    devices = Device.objects.filter(factory=factory).order_by('name')
+    
+    # Get selected device from query parameters
+    selected_device_id = request.GET.get('device_id', 'all')
+    
     # Get batches for this specific factory only
     batches = Batch.objects.filter(
         factory=factory  # This ensures we only get batches for the current factory
@@ -62,6 +70,8 @@ def view_statistics(request, factory_id):
 
     context = {
         'factory': factory,
+        'devices': devices,
+        'selected_device_id': selected_device_id,
         'selected_date': timezone.now().date(),
         'current_year': datetime.now().year,
         'batches': batch_details_json,
@@ -70,3 +80,42 @@ def view_statistics(request, factory_id):
     }
 
     return render(request, 'mill/view_statistics.html', context)
+
+@login_required
+def get_device_chart_data(request, factory_id):
+    """API endpoint to get chart data filtered by device"""
+    try:
+        # Get the factory
+        factory = get_object_or_404(Factory, id=factory_id)
+        
+        # Check user permissions
+        if not request.user.is_superuser:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                if not user_profile.allowed_factories.filter(id=factory_id).exists():
+                    return JsonResponse({'error': 'Permission denied'}, status=403)
+            except UserProfile.DoesNotExist:
+                return JsonResponse({'error': 'User profile not found'}, status=403)
+        
+        # Get parameters
+        selected_date_str = request.GET.get('date', timezone.now().strftime('%Y-%m-%d'))
+        device_id = request.GET.get('device_id', 'all')
+        
+        # Parse date
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = timezone.now().date()
+        
+        # Get chart data based on device filter
+        if device_id == 'all':
+            # Use existing function for all devices
+            chart_data = calculate_chart_data(selected_date, factory_id)
+        else:
+            # Filter by specific device
+            chart_data = calculate_device_chart_data(selected_date, factory_id, device_id)
+        
+        return JsonResponse(chart_data)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

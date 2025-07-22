@@ -83,6 +83,7 @@ urlpatterns = [
     path('tv-dashboard/', views.tv_dashboard, name='tv-dashboard'),
 
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
+    path('api/device-chart-data/<int:factory_id>/', views.get_device_chart_data, name='get_device_chart_data'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
     path('preview-data/', views.preview_data, name='preview_data'),
