@@ -1485,3 +1485,17 @@ class TVDashboardSettings(models.Model):
             variables['--animation-duration'] = '0.3s'
         
         return variables
+
+class TwoFactorAuth(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    secret_key = models.CharField(max_length=32, unique=True)
+    is_enabled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"2FA for {self.user.username}"
+    
+    class Meta:
+        verbose_name = "Two Factor Authentication"
+        verbose_name_plural = "Two Factor Authentications"

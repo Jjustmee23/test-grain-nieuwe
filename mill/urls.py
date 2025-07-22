@@ -61,6 +61,10 @@ urlpatterns = [
     path('send-password-reset-email/<int:user_id>/', views.send_password_reset_email, name='send_password_reset_email'),
     path('change-password/', views.change_password, name='change_password'),
     path('profile/manage/', views.manage_profile, name='manage_profile'),
+    
+    # Two-Factor Authentication URLs
+    path('profile/setup-2fa/', views.setup_2fa, name='setup_2fa'),
+    path('profile/2fa-status/', views.get_2fa_status, name='get_2fa_status'),
 
 
     # Authentication
@@ -148,6 +152,10 @@ urlpatterns = [
     # Contact and Ticket URLs
     path('contact/', views.contact, name='contact'),
     path('contact/success/', views.contact_success, name='contact_success'),
+    
+    # Legal URLs
+    path('terms/', views.terms_of_service, name='terms_of_service'),
+    path('privacy/', views.privacy_policy, name='privacy_policy'),
     
     # User Ticket URLs
     path('tickets/', views.my_tickets, name='my_tickets'),

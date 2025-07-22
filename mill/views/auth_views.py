@@ -123,3 +123,11 @@ def assign_rights(request, user_id):
 
     return render(request, 'mill/assign_rights.html', {'user': user, 'groups': groups})
 
+def terms_of_service(request):
+    """Display Terms of Service page"""
+    return render(request, 'mill/terms_of_service.html')
+
+def privacy_policy(request):
+    """Display Privacy Policy page"""
+    return render(request, 'mill/privacy_policy.html')
+

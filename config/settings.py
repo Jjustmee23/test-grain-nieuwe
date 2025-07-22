@@ -217,3 +217,18 @@ LOGGING = {
 }
 
 from .settings_jazzmin import *
+
+# Two-Factor Authentication Settings
+LOGIN_URL = 'two_factor:login'
+LOGIN_REDIRECT_URL = 'two_factor:profile'
+LOGOUT_REDIRECT_URL = '/'
+
+# 2FA Configuration
+TWO_FACTOR_CALL_GATEWAY = 'two_factor.gateways.fake.Fake'
+TWO_FACTOR_SMS_GATEWAY = 'two_factor.gateways.fake.Fake'
+TWO_FACTOR_TOTP_ISSUER = 'Mill Management System'
+
+# Session Management
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True
