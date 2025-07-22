@@ -123,15 +123,16 @@ def manage_city(request):
     if search_query:
         cities = cities.filter(name__icontains=search_query)
 
-    city_data = [
-        {
+    # Get cities with factory counts
+    cities_with_counts = []
+    for city in cities:
+        factories_count = Factory.objects.filter(city=city).count()
+        cities_with_counts.append({
             'id': city.id,
             'name': city.name,
-            'factories_count': Factory.objects.filter(city=city).count()
-        }
-        for city in cities
-    ]
+            'factories_count': factories_count
+        })
 
     return render(request, 'mill/manage_city.html', {
-        'cities': city_data,
+        'cities': cities_with_counts,
     })

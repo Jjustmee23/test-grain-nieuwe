@@ -3,134 +3,386 @@
 {% load i18n %}
 {% block title %}Manage Devices{% endblock %}
 
-
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+    
+    .action-bar {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .action-bar .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: 3px solid white;
+        border-radius: 15px;
+        padding: 1rem 2rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .action-bar .btn-success:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    }
+    
+    .content-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+    }
+    
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .section-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .badge-new {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #212529;
+    }
+    
+    .badge-existing {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #20c997;
+        box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(32, 201, 151, 0.3);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-status {
+        border: none;
+        border-radius: 20px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-status.active {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-status.inactive {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+    }
+    
+    .table {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+    
+    .table thead th.serial-col {
+        width: 150px;
+    }
+    
+    .table thead th.name-col {
+        width: 120px;
+    }
+    
+    .table thead th.city-col {
+        width: 150px;
+    }
+    
+    .table thead th.status-col {
+        width: 100px;
+    }
+    
+    .table thead th.counter-col {
+        width: 120px;
+    }
+    
+    .table thead th.actions-col {
+        width: 200px;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+    }
+    
+    .table tbody td {
+        padding: 0.75rem;
+        border: none;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+        word-wrap: break-word;
+        max-width: 200px;
+    }
+    
+    .table tbody td.serial-number {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #6f42c1;
+        max-width: 150px;
+        word-break: break-all;
+    }
+    
+    .table tbody td.device-name {
+        max-width: 120px;
+        font-weight: 600;
+    }
+    
+    .table tbody td.city {
+        max-width: 150px;
+    }
+    
+    .table tbody td.status {
+        max-width: 100px;
+    }
+    
+    .table tbody td.counter {
+        max-width: 120px;
+    }
+    
+    .table tbody td.actions {
+        max-width: 200px;
+        white-space: nowrap;
+    }
+    
+    .badge-city {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .filter-container {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        color: #0c5460;
+    }
+    
+    .collapsible-content {
+        display: none;
+    }
+    
+    .collapsible-content.show {
+        display: block;
+    }
+    
+    .section-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .section-icon.rotated {
+        transform: rotate(180deg);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="bi bi-display"></i>
+            {% trans "Manage Devices" %}
+        </h1>
+        <p class="page-subtitle">{% trans "Add, edit, and manage devices in your system" %}</p>
+    </div>
+</div>
 
-<div class="admin-container">
-    <h2>{% trans "Manage Devices" %}</h2>
-
-    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans "Back to Admin Dashboard" %}</a>
-
+<div class="container">
+    <!-- Action Bar -->
+    <div class="action-bar">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <button class="btn btn-success btn-lg" onclick="toggleAddDevice()">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        {% trans "Add New Device" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Flash Messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i>
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endif %}
-    <!-- Add Device Manually -->
-    <h3>{% trans 'Add Device' %}</h3>
 
-        <div class="accordion-body">
-            <form method="POST" action="{% url 'add_device' %}">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="new_device_name" class="form-label">{% trans "Device Name" %}</label>
-                    <input type="text" class="form-control" id="new_device_name" name="new_device_name" required>
+    <!-- Add Device Section (Collapsible) -->
+    <div class="content-section" id="addDeviceSection" style="display: none;">
+        <h3 class="section-title">
+            <i class="bi bi-plus-circle"></i>
+            {% trans 'Add Device' %}
+        </h3>
+        <form method="POST" action="{% url 'add_device' %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="new_device_name" class="form-label">{% trans "Device Name" %}</label>
+                        <input type="text" class="form-control" id="new_device_name" name="new_device_name" placeholder="{% trans 'Enter device name...' %}" required>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label for="new_device_serial" class="form-label">{% trans "Device Serial Number" %}</label>
-                    <input type="text" class="form-control" id="new_device_serial" name="new_device_serial" required>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="new_device_serial" class="form-label">{% trans "Device Serial Number" %}</label>
+                        <input type="text" class="form-control" id="new_device_serial" name="new_device_serial" placeholder="{% trans 'Enter serial number...' %}" required>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">{% trans "Add Device" %}</button>
-            </form>
-        </div>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                {% trans "Add Device" %}
+            </button>
+        </form>
+    </div>
 
-        <!-- New Devices Section -->
-    <h3>{% trans 'New Devices' %}</h3>
-
-        <div class="accordion-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>{% trans "Serial Number" %}</th>
-                        <th>{% trans "Device Name" %}</th>
-                        <th>{% trans "City" %}</th>
-                        <th>{% trans "Status" %}</th>
-                        <th>{% trans "Selected Counter" %}</th>
-                        <th>{% trans "Actions" %}</th>
-                        {% comment %} <th>{% trans "Pair Device" %}</th> {% endcomment %}
-                    </tr>
-                </thead>
-                <tbody id="existing-devices-table-body">
-                    {% for device in existing_devices %}
-                        {% if device.name == device.id %}
-                            <tr id="device-row-{{ device.id }}">
-                                <td>{{ device.id }}</td>
-                                <td>{{ device.name }}</td>
-                                <td>
-                                    {% if device.city %}
-                                        {{ device.city.name }}
-                                    {% else %}
-                                        {% trans "Not Assigned" %}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="device_id" value="{{ device.id }}">
-                                        <button type="submit" class="btn btn-warning btn-sm">
-                                            {% if device.status %}
-                                                {% trans "Deactivate" %}
-                                            {% else %}
-                                                {% trans "Activate" %}
-                                            {% endif %}
-                                        </button>
-                                    </form>
-                                </td>
-                                <td>
-                                    <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="update_device_counter">
-                                        <input type="hidden" name="device_id" value="{{ device.id }}">
-                                        <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
-                                            <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
-                                            <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
-                                            <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
-                                            <option value="counter_4" {% if device.selected_counter == 'counter_4' %}selected{% endif %}>{% trans "Counter 4" %}</option>
-                                        </select>
-                                    </form>
-                                </td>
-                                <td>
-                                    <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="rename_device">
-                                        <input type="hidden" name="device_id" value="{{ device.id }}">
-                                        <input type="text" name="new_device_name" value={{device.name}} class="form-control mb-2" required>
-                                        <button type="submit" class="btn btn-warning btn-sm mb-1">{% trans "Edit" %}</button>
-                                    </form>
-                                    <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="device_id" value="{{ device.id }}">
-                                        <button type="submit" class="btn btn-danger btn-sm">{% trans "Remove" %}</button>
-                                    </form>
-                                </td>
-                                {% comment %} <td>
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="showPairDeviceModal('{{ device.id }}')">{% trans "Pair" %}</button>
-                                </td> {% endcomment %}
-                            </tr>
-                        {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-                <!-- Existing Devices Section -->
-    <h3>{% trans 'Existing Devices' %}</h3>
-    <h4>Filter by city</h4>
-
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <form method="GET" action="{% url 'manage_devices' %}" class="form-inline">
-                <div class="input-group">
-                    <select name="city" class="form-select" onchange="this.form.submit()">
+    <!-- Filter Section -->
+    <div class="content-section">
+        <h4>{% trans "Filter by city" %}</h4>
+        <div class="filter-container">
+            <div class="flex-grow-1">
+                <form method="GET" action="{% url 'manage_devices' %}" class="d-flex gap-2">
+                    <select name="city" class="form-control" onchange="this.form.submit()">
                         <option value="">{% trans "All Cities" %}</option>
                         {% for city in cities %}
                             <option value="{{ city.id }}" {% if selected_city|stringformat:"s" == city.id|stringformat:"s" %}selected{% endif %}>
@@ -139,90 +391,206 @@
                         {% endfor %}
                     </select>
                     {% if selected_city %}
-                        <a href="{% url 'manage_devices' %}" class="btn btn-outline-secondary">{% trans "Clear" %}</a>
+                        <a href="{% url 'manage_devices' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>
+                            {% trans "Clear" %}
+                        </a>
                     {% endif %}
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
-    <div class="accordion-body">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>{% trans "Serial Number" %}</th>
-                    <th>{% trans "Device Name" %}</th>
-                    <th>{% trans "City" %}</th>
-                    <th>{% trans "Status" %}</th>
-                    <th>{% trans "Selected Counter" %}</th>
-                    <th>{% trans "Actions" %}</th>
-                    {% comment %} <th>{% trans "Pair Device" %}</th> {% endcomment %}
-                </tr>
-            </thead>
-            <tbody id="existing-devices-table-body">
-                {% for device in existing_devices %}
-                    {% if device.name != device.id %}
-                    
-                        <tr id="device-row-{{ device.id }}">
-                            <td>{{ device.id }}</td>
-                            <td>{{ device.name }}</td>
-                            <td>
-                                {% if device.city %}
-                                    {{ device.city.name }}
-                                {% else %}
-                                    {% trans "Not Assigned" %}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="device_id" value="{{ device.id }}">
-                                    <button type="submit" class="btn btn-warning btn-sm">
-                                        {% if device.status %}
-                                            {% trans "Deactivate" %}
-                                        {% else %}
-                                            {% trans "Activate" %}
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="update_device_counter">
-                                    <input type="hidden" name="device_id" value="{{ device.id }}">
-                                    <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
-                                        <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
-                                        <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
-                                        <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
-                                        <option value="counter_4" {% if device.selected_counter == 'counter_4' %}selected{% endif %}>{% trans "Counter 4" %}</option>
-                                    </select>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="rename_device">
-                                    <input type="hidden" name="device_id" value="{{ device.id }}">
-                                    <input type="text" name="new_device_name" value={{device.name}} class="form-control mb-2" required>
-                                    <button type="submit" class="btn btn-warning btn-sm mb-1">{% trans "Edit" %}</button>
-                                </form>
-                                <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="device_id" value="{{ device.id }}">
-                                    <button type="submit" class="btn btn-danger btn-sm">{% trans "Remove" %}</button>
-                                </form>
-                            </td>
-                            {% comment %} <td>
-                                <button type="button" class="btn btn-primary btn-sm" onclick="showPairDeviceModal('{{ device.id }}')">{% trans "Pair" %}</button>
-                            </td> {% endcomment %}
+
+    <!-- New Devices Section -->
+    <div class="content-section">
+        <h3 class="section-title" onclick="toggleSection('newDevicesSection', 'newDevicesIcon')">
+            <div class="section-header">
+                <i class="bi bi-exclamation-triangle section-icon" id="newDevicesIcon"></i>
+                {% trans 'New Devices (Unnamed)' %}
+            </div>
+            <span class="section-badge badge-new">
+                {{ new_devices_count }}
+            </span>
+        </h3>
+        <div class="collapsible-content" id="newDevicesSection">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="serial-col">{% trans "Serial Number" %}</th>
+                            <th class="name-col">{% trans "Device Name" %}</th>
+                            <th class="city-col">{% trans "City" %}</th>
+                            <th class="status-col">{% trans "Status" %}</th>
+                            <th class="counter-col">{% trans "Selected Counter" %}</th>
+                            <th class="actions-col">{% trans "Actions" %}</th>
                         </tr>
-                        
-                    {% endif %}
-                {% endfor %}
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody>
+                        {% for device in existing_devices %}
+                            {% if device.name == device.id|stringformat:"s" %}
+                                <tr id="device-row-{{ device.id }}">
+                                    <td class="serial-number">{{ device.id }}</td>
+                                    <td class="device-name">{{ device.name }}</td>
+                                    <td class="city">
+                                        {% if device.city %}
+                                            <span class="badge-city">{{ device.city.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Not Assigned" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="status">
+                                        <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <button type="submit" class="btn btn-status {% if device.status %}active{% else %}inactive{% endif %}">
+                                                {% if device.status %}
+                                                    {% trans "ACTIVE" %}
+                                                {% else %}
+                                                    {% trans "INACTIVE" %}
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="counter">
+                                        <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="update_device_counter">
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
+                                                <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
+                                                <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
+                                                <option value="counter_4" {% if device.selected_counter == 'counter_4' %}selected{% endif %}>{% trans "Counter 4" %}</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td class="actions">
+                                        <div class="d-flex gap-2">
+                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="rename_device">
+                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required>
+                                                <button type="submit" class="btn btn-warning btn-sm">
+                                                    <i class="bi bi-pencil me-1"></i>
+                                                    {% trans "Edit" %}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-trash me-1"></i>
+                                                    {% trans "Verwijderen" %}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-        
+
+    <!-- Existing Devices Section -->
+    <div class="content-section">
+        <h3 class="section-title" onclick="toggleSection('existingDevicesSection', 'existingDevicesIcon')">
+            <div class="section-header">
+                <i class="bi bi-list-ul section-icon" id="existingDevicesIcon"></i>
+                {% trans 'Existing Devices (Named)' %}
+            </div>
+            <span class="section-badge badge-existing">
+                {{ existing_devices_count }}
+            </span>
+        </h3>
+        <div class="collapsible-content show" id="existingDevicesSection">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th class="actions-col">{% trans "ACTIONS" %}</th>
+                            <th class="counter-col">{% trans "SELECTED COUNTER" %}</th>
+                            <th class="status-col">{% trans "STATUS" %}</th>
+                            <th class="city-col">{% trans "CITY" %}</th>
+                            <th class="name-col">{% trans "DEVICE NAME" %}</th>
+                            <th class="serial-col">{% trans "SERIAL NUMBER #" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in existing_devices %}
+                            {% if device.name != device.id|stringformat:"s" %}
+                                <tr id="device-row-{{ device.id }}">
+                                    <td class="actions">
+                                        <div class="d-flex gap-2">
+                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="rename_device">
+                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required>
+                                                <button type="submit" class="btn btn-warning btn-sm">
+                                                    <i class="bi bi-pencil me-1"></i>
+                                                    {% trans "Edit" %}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{% url 'remove_device' %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    <i class="bi bi-trash me-1"></i>
+                                                    {% trans "Verwijderen" %}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    <td class="counter">
+                                        <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="update_device_counter">
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
+                                                <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
+                                                <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
+                                                <option value="counter_4" {% if device.selected_counter == 'counter_4' %}selected{% endif %}>{% trans "Counter 4" %}</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td class="status">
+                                        <form method="POST" action="{% url 'toggle_device_status' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="device_id" value="{{ device.id }}">
+                                            <button type="submit" class="btn btn-status {% if device.status %}active{% else %}inactive{% endif %}">
+                                                {% if device.status %}
+                                                    {% trans "ACTIVE" %}
+                                                {% else %}
+                                                    {% trans "INACTIVE" %}
+                                                {% endif %}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="city">
+                                        {% if device.city %}
+                                            <span class="badge-city">{{ device.city.name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">{% trans "Not Assigned" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="device-name">
+                                        <strong>{{ device.name }}</strong>
+                                    </td>
+                                    <td class="serial-number">
+                                        <code>{{ device.id }}</code>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -253,22 +621,32 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-     function showPairDeviceModal(deviceId) {
-        document.getElementById('pair_device_id').value = deviceId;
-        new bootstrap.Modal(document.getElementById('pairDeviceModal')).show();
+function toggleAddDevice() {
+    const section = document.getElementById('addDeviceSection');
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
     }
-{% comment %}
-    function fetchAndUpdateDeviceCounters() {
-        fetch("{% url 'manage_devices' %}")
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('existing-devices-table-body').innerHTML = html;
-        });
-    }
+}
 
-    setInterval(fetchAndUpdateDeviceCounters, 10000);
-{% endcomment %}
+function toggleSection(sectionId, iconId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(iconId);
+    
+    if (section.classList.contains('show')) {
+        section.classList.remove('show');
+        icon.classList.remove('rotated');
+    } else {
+        section.classList.add('show');
+        icon.classList.add('rotated');
+    }
+}
+
+function showPairDeviceModal(deviceId) {
+    document.getElementById('pair_device_id').value = deviceId;
+    new bootstrap.Modal(document.getElementById('pairDeviceModal')).show();
+}
 </script>
 {% endblock %}

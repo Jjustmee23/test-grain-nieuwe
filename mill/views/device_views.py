@@ -37,7 +37,7 @@ def manage_devices(request):
     devices_with_cities = []
     for device in devices_query:
         device_data = {
-            'id': device.id,
+            'id': str(device.id),  # Convert to string for comparison
             'name': device.name,
             'status': device.status,
             'selected_counter': device.selected_counter,
@@ -65,10 +65,16 @@ def manage_devices(request):
             device.save()
             messages.success(request, f"Device renamed to {new_name}")
 
+    # Calculate device counts
+    new_devices_count = sum(1 for device in devices_with_cities if str(device['name']) == str(device['id']))
+    existing_devices_count = sum(1 for device in devices_with_cities if str(device['name']) != str(device['id']))
+
     return render(request, 'mill/manage_devices.html', {
         'existing_devices': devices_with_cities,
         'cities': cities,
-        'selected_city': selected_city
+        'selected_city': selected_city,
+        'new_devices_count': new_devices_count,
+        'existing_devices_count': existing_devices_count
     })
 
 
@@ -106,8 +112,10 @@ def remove_device(request):
         device_id = request.POST.get('device_id')
         try:
             device = Device.objects.get(id=device_id)
-            # device.delete()  # Remove the device from the database
+            device_name = device.name
+            device.delete()  # Remove the device from the database
+            messages.success(request, f'Device "{device_name}" removed successfully.')
         except Device.DoesNotExist:
-            pass  # Handle the case where the device does not exist
+            messages.error(request, 'Device not found.')
 
     return redirect('manage_devices')  # Redirect back to the manage devices page

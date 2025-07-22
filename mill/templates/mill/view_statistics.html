@@ -785,11 +785,11 @@ function animateValue(element, start, end, duration, formatter) {
 </style>
 
 <!-- Required JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Font Awesome replaced with Bootstrap Icons (already loaded in base template) -->
-    <script src="{% static 'js/view_statistics.js' %}"></script>
+<script src="{% static 'js/view_statistics.js' %}"></script>
 
 <!-- Date Range Modal -->
 <div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
@@ -1063,26 +1063,26 @@ function exportDateRangeData() {
         const gaugeValue = document.getElementById('gaugeValue');
         
         if (gaugeNeedle && gaugeValue) {
-            // Calculate needle rotation (0-180 degrees)
-            const needleRotation = (progressPercentage / 100) * 180;
+        // Calculate needle rotation (0-180 degrees)
+        const needleRotation = (progressPercentage / 100) * 180;
+        
+        // Animate needle
+        let currentRotation = 0;
+        const targetRotation = needleRotation;
+        const animationDuration = 2000; // 2 seconds
+        const animationSteps = 60;
+        const rotationIncrement = targetRotation / animationSteps;
+        
+        const animation = setInterval(() => {
+            currentRotation += rotationIncrement;
+            if (currentRotation >= targetRotation) {
+                currentRotation = targetRotation;
+                clearInterval(animation);
+            }
             
-            // Animate needle
-            let currentRotation = 0;
-            const targetRotation = needleRotation;
-            const animationDuration = 2000; // 2 seconds
-            const animationSteps = 60;
-            const rotationIncrement = targetRotation / animationSteps;
-            
-            const animation = setInterval(() => {
-                currentRotation += rotationIncrement;
-                if (currentRotation >= targetRotation) {
-                    currentRotation = targetRotation;
-                    clearInterval(animation);
-                }
-                
-                gaugeNeedle.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
-                gaugeValue.textContent = `${(currentRotation / 180 * 100).toFixed(1)}%`;
-            }, animationDuration / animationSteps);
+            gaugeNeedle.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
+            gaugeValue.textContent = `${(currentRotation / 180 * 100).toFixed(1)}%`;
+        }, animationDuration / animationSteps);
         }
         
         // Update stats (with null checks)

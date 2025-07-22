@@ -34,7 +34,7 @@ def view_statistics(request, factory_id):
     
     # Get selected device from query parameters
     selected_device_id = request.GET.get('device_id', 'all')
-    
+
     # Get batches for this specific factory only
     batches = Batch.objects.filter(
         factory=factory  # This ensures we only get batches for the current factory
