@@ -9,3 +9,5 @@ requests
 django-cors-headers
 msal
 cryptography
+qrcode
+pyotp

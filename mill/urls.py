@@ -4,11 +4,10 @@ from django.contrib import admin
 from .views_new import testmill
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views, notification_api_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    path('/', views.index, name='index'),
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
     path('test/', testmill, name='mill'),
 
@@ -29,6 +28,17 @@ urlpatterns = [
     # Sensor URLs
     path('sensor/data/', views.sensor_data_receiver, name='sensor-data'),
     path('sensor/status/<str:device_id>/', views.sensor_status, name='sensor-status'),
+    path('mqtt/data/', views.mqtt_data_receiver, name='mqtt-data'),
+    
+    # Power Management URLs
+    path('power-dashboard/', power_management_views.power_dashboard, name='power_dashboard'),
+    path('power-events/', power_management_views.power_events_list, name='power_events_list'),
+    path('power-events/<int:event_id>/', power_management_views.power_event_detail, name='power_event_detail'),
+    path('power-events/<int:event_id>/resolve/', power_management_views.resolve_power_event, name='resolve_power_event'),
+    path('device-power-status/<str:device_id>/', power_management_views.device_power_status, name='device_power_status'),
+    path('power-notification-settings/', power_management_views.power_notification_settings, name='power_notification_settings'),
+    path('power-analytics/', power_management_views.power_analytics, name='power_analytics'),
+    path('api/power-status/<int:factory_id>/', power_management_views.power_status_api, name='power_status_api'),
     
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics-dashboard'),

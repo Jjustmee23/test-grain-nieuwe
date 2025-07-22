@@ -50,6 +50,32 @@
             </div>
         </div>
         
+        <!-- Power Status Section (Super Admin Only) -->
+        {% if user.is_superuser %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-lightning-charge me-2"></i>
+                            Power Status Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="powerStatusContainer">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading power status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Control Buttons Section -->
         <div class="row mb-4">
             <div class="col-6 col-md-2 mb-2">
@@ -1503,6 +1529,124 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Power Status Functions (Super Admin Only)
+{% if user.is_superuser %}
+function loadPowerStatus() {
+    const factoryId = {{ factory.id }};
+    
+    fetch(`/api/power-status/${factoryId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Power status error:', data.error);
+                return;
+            }
+            
+            updatePowerStatusDisplay(data);
+        })
+        .catch(error => {
+            console.error('Error loading power status:', error);
+        });
+}
+
+function updatePowerStatusDisplay(data) {
+    const container = document.getElementById('powerStatusContainer');
+    
+    if (!container) return;
+    
+    const { summary, devices } = data;
+    
+    // Create summary cards
+    const summaryHTML = `
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle fs-1"></i>
+                    <h4 class="mt-2">${summary.devices_with_power}</h4>
+                    <p class="mb-0">Devices with Power</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <h4 class="mt-2">${summary.devices_without_power}</h4>
+                    <p class="mb-0">Devices without Power</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-cpu fs-1"></i>
+                    <h4 class="mt-2">${summary.total_devices}</h4>
+                    <p class="mb-0">Total Devices</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="bi bi-lightning fs-1"></i>
+                    <h4 class="mt-2">${summary.recent_events_24h}</h4>
+                    <p class="mb-0">Events (24h)</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Create device status cards
+    const deviceHTML = devices.map(device => `
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card ${device.has_power ? 'border-success' : 'border-danger'}">
+                <div class="card-header ${device.has_power ? 'bg-success' : 'bg-danger'} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">${device.device_name}</h6>
+                        <span class="badge ${device.has_power ? 'bg-light text-success' : 'bg-light text-danger'}">
+                            ${device.has_power ? 'POWER ON' : 'POWER OFF'}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">AIN1 Value:</small><br>
+                            <strong>${device.ain1_value !== null ? device.ain1_value.toFixed(2) : 'N/A'}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Last Check:</small><br>
+                            <strong>${device.last_check ? new Date(device.last_check).toLocaleString() : 'N/A'}</strong>
+                        </div>
+                    </div>
+                    ${device.power_loss_detected_at ? `
+                        <div class="mt-2">
+                            <small class="text-muted">Power Lost:</small><br>
+                            <strong class="text-danger">${new Date(device.power_loss_detected_at).toLocaleString()}</strong>
+                        </div>
+                    ` : ''}
+                    ${device.production_during_power_loss ? `
+                        <div class="mt-2">
+                            <span class="badge bg-danger">⚠️ Production without Power</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = summaryHTML + deviceHTML;
+}
+
+// Auto-refresh power status every 5 minutes
+setInterval(loadPowerStatus, 5 * 60 * 1000);
+
+// Load power status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadPowerStatus();
+});
+{% endif %}
 </script>
 <script>
 // Add this to your existing JavaScript
