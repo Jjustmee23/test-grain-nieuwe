@@ -322,6 +322,12 @@ class NotificationService:
                         "contentType": "HTML",
                         "content": html_content
                     },
+                    "from": {
+                        "emailAddress": {
+                            "address": sender_email,
+                            "name": self.ms365_settings.from_name
+                        }
+                    },
                     "toRecipients": [
                         {
                             "emailAddress": {

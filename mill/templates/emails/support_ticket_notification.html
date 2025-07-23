@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Ticket - {{ ticket.subject }}</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* Email container */
+        .email-wrapper {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        
+        /* Header section */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        }
+        
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .ticket-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 20px;
+            display: inline-block;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Content section */
+        .content {
+            padding: 50px 40px;
+        }
+        
+        .ticket-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            line-height: 1.3;
+        }
+        
+        /* Ticket info card */
+        .ticket-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 35px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .ticket-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .ticket-icon {
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ticket-label {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .ticket-value {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        .status-new { 
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        
+        .status-in_progress { 
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #212529;
+        }
+        
+        .status-pending { 
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+        
+        .status-resolved { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .status-closed { 
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+        }
+        
+        /* Priority badges */
+        .priority-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        .priority-low { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .priority-medium { 
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #212529;
+        }
+        
+        .priority-high { 
+            background: linear-gradient(135deg, #fd7e14 0%, #e74c3c 100%);
+            color: white;
+        }
+        
+        .priority-urgent { 
+            background: linear-gradient(135deg, #dc3545 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        /* Message content */
+        .message-section {
+            background: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 35px;
+            margin-bottom: 35px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+        
+        .message-icon {
+            font-size: 24px;
+            color: #667eea;
+        }
+        
+        .message-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .message-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #495057;
+        }
+        
+        /* Action buttons */
+        .action-section {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .action-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 36px;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .action-button.secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+        }
+        
+        .action-button.secondary:hover {
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.6);
+        }
+        
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .footer-content {
+            color: #6c757d;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .footer-links {
+            margin-top: 20px;
+        }
+        
+        .footer-link {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 500;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .email-wrapper {
+                border-radius: 16px;
+            }
+            
+            .header {
+                padding: 40px 25px;
+            }
+            
+            .content {
+                padding: 40px 25px;
+            }
+            
+            .ticket-title {
+                font-size: 28px;
+            }
+            
+            .ticket-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-button {
+                padding: 16px 32px;
+                font-size: 15px;
+            }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-wrapper {
+                background: #1a1a1a;
+                color: #ffffff;
+            }
+            
+            .ticket-title {
+                color: #ffffff;
+            }
+            
+            .message-section {
+                background: #2d2d2d;
+                border-color: #404040;
+            }
+            
+            .message-content {
+                color: #e0e0e0;
+            }
+            
+            .ticket-info {
+                background: linear-gradient(135deg, #2d2d2d 0%, #404040 100%);
+            }
+            
+            .ticket-value {
+                color: #e0e0e0;
+            }
+            
+            .footer {
+                background: #2d2d2d;
+                border-color: #404040;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-icon">🎫</div>
+            <div class="logo">Support Ticket</div>
+            <div class="header-subtitle">Mill Application Support System</div>
+            <div class="ticket-badge">Ticket #{{ ticket.id }}</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h1 class="ticket-title">{{ ticket.subject }}</h1>
+
+            <!-- Ticket Information -->
+            <div class="ticket-info">
+                <div class="ticket-grid">
+                    <div class="ticket-item">
+                        <div class="ticket-icon">📋</div>
+                        <div>
+                            <div class="ticket-label">Ticket ID</div>
+                            <div class="ticket-value">#{{ ticket.id }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-item">
+                        <div class="ticket-icon">🏷️</div>
+                        <div>
+                            <div class="ticket-label">Type</div>
+                            <div class="ticket-value">{{ ticket.get_ticket_type_display }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-item">
+                        <div class="ticket-icon">⚡</div>
+                        <div>
+                            <div class="ticket-label">Priority</div>
+                            <div class="ticket-value">
+                                <span class="priority-badge priority-{{ ticket.priority|lower }}">
+                                    {{ ticket.get_priority_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-item">
+                        <div class="ticket-icon">📊</div>
+                        <div>
+                            <div class="ticket-label">Status</div>
+                            <div class="ticket-value">
+                                <span class="status-badge status-{{ ticket.status|lower }}">
+                                    {{ ticket.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-item">
+                        <div class="ticket-icon">👤</div>
+                        <div>
+                            <div class="ticket-label">Created By</div>
+                            <div class="ticket-value">{{ ticket.name }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ticket-item">
+                        <div class="ticket-icon">📅</div>
+                        <div>
+                            <div class="ticket-label">Created</div>
+                            <div class="ticket-value">{{ ticket.created_at|date:"M j, Y, g:i a" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Content -->
+            <div class="message-section">
+                <div class="message-header">
+                    <div class="message-icon">💬</div>
+                    <div class="message-title">Ticket Message</div>
+                </div>
+                <div class="message-content">
+                    {{ ticket.message|linebreaks }}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-section">
+                <div class="action-grid">
+                    <a href="{{ ticket_url }}" class="action-button">
+                        🔍 View Ticket
+                    </a>
+                    <a href="{{ reply_url }}" class="action-button secondary">
+                        💬 Reply to Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <p><strong>Mill Application</strong> - Professional Production Management System</p>
+                <p>This is an automated notification from the Mill Application support system.</p>
+                <p>For immediate assistance, please contact your system administrator.</p>
+                
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Support Portal</a>
+                    <a href="#" class="footer-link">Documentation</a>
+                    <a href="#" class="footer-link">Contact Admin</a>
+                </div>
+                
+                <p style="margin-top: 25px; font-size: 12px; opacity: 0.7;">
+                    © {% now "Y" %} Mill Application. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

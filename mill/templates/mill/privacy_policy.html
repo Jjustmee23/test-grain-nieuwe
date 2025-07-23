@@ -1,0 +1,253 @@
+{% extends 'mill/base.html' %}
+
+{% block content %}
+<style>
+    .legal-container {
+        background: linear-gradient(135deg, #88C0B8 0%, #D8E2DC 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .legal-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+    }
+    
+    .legal-header {
+        background: linear-gradient(135deg, #88C0B8 0%, #6FAF9A 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .legal-content {
+        padding: 2rem;
+        line-height: 1.8;
+    }
+    
+    .legal-content h2 {
+        color: #0c2d48;
+        border-bottom: 2px solid #88C0B8;
+        padding-bottom: 0.5rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .legal-content h3 {
+        color: #0c2d48;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .legal-content p {
+        margin-bottom: 1rem;
+        text-align: justify;
+    }
+    
+    .legal-content ul {
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+    
+    .legal-content li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .legal-content .highlight {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .legal-content .important {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-weight: bold;
+    }
+    
+    .legal-content .info-box {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+</style>
+
+<div class="legal-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="legal-card">
+                    <div class="legal-header">
+                        <h1><i class="bi bi-shield-check me-2"></i>Privacy Policy</h1>
+                        <p class="mb-0">Last updated: January 22, 2025</p>
+                    </div>
+                    
+                    <div class="legal-content">
+                        <div class="highlight">
+                            <strong>IMPORTANT:</strong> This Privacy Policy explains how NexonSolutions collects, uses, and protects your personal information when you use the Mill Management System. This policy complies with the General Data Protection Regulation (GDPR) and other applicable European privacy laws.
+                        </div>
+
+                        <h2>1. Data Controller Information</h2>
+                        <p><strong>Controller:</strong> NexonSolutions</p>
+                        <p><strong>Contact:</strong> Through the Mill Management System support interface</p>
+                        <p><strong>Purpose:</strong> Mill Management System operation and support</p>
+
+                        <h2>2. Personal Data We Collect</h2>
+                        <h3>2.1 Account Information</h3>
+                        <ul>
+                            <li>Username and email address</li>
+                            <li>First and last name</li>
+                            <li>Password (encrypted)</li>
+                            <li>Account creation date and last login time</li>
+                            <li>User role and permissions</li>
+                        </ul>
+
+                        <h3>2.2 Usage Data</h3>
+                        <ul>
+                            <li>Login and logout times</li>
+                            <li>Pages visited and features used</li>
+                            <li>System interactions and actions performed</li>
+                            <li>Error logs and system diagnostics</li>
+                            <li>IP address and browser information</li>
+                        </ul>
+
+                        <h3>2.3 Business Data</h3>
+                        <ul>
+                            <li>Factory and production information</li>
+                            <li>Device data and sensor readings</li>
+                            <li>Batch information and production statistics</li>
+                            <li>Support tickets and communications</li>
+                            <li>User preferences and settings</li>
+                        </ul>
+
+                        <h2>3. Legal Basis for Processing</h2>
+                        <p>We process your personal data based on the following legal grounds:</p>
+                        <ul>
+                            <li><strong>Contract Performance:</strong> To provide the Mill Management System services</li>
+                            <li><strong>Legitimate Interest:</strong> To improve our services and ensure system security</li>
+                            <li><strong>Consent:</strong> For optional features and communications (where applicable)</li>
+                            <li><strong>Legal Obligation:</strong> To comply with applicable laws and regulations</li>
+                        </ul>
+
+                        <h2>4. How We Use Your Data</h2>
+                        <h3>4.1 Primary Purposes</h3>
+                        <ul>
+                            <li>Providing and maintaining the Mill Management System</li>
+                            <li>User authentication and account management</li>
+                            <li>Processing and storing production data</li>
+                            <li>Generating reports and analytics</li>
+                            <li>Providing customer support</li>
+                        </ul>
+
+                        <h3>4.2 Secondary Purposes</h3>
+                        <ul>
+                            <li>System improvement and optimization</li>
+                            <li>Security monitoring and threat prevention</li>
+                            <li>Compliance with legal obligations</li>
+                            <li>Research and development (anonymized data only)</li>
+                        </ul>
+
+                        <h2>5. Data Sharing and Transfers</h2>
+                        <p><strong>5.1 Internal Sharing:</strong> Your data may be shared within NexonSolutions for the purposes described in this policy.</p>
+                        
+                        <p><strong>5.2 Third-Party Services:</strong> We may use third-party services for:</p>
+                        <ul>
+                            <li>Hosting and infrastructure (with appropriate safeguards)</li>
+                            <li>Email delivery and notifications</li>
+                            <li>Analytics and monitoring (anonymized data)</li>
+                            <li>Payment processing (if applicable)</li>
+                        </ul>
+                        
+                        <p><strong>5.3 Legal Requirements:</strong> We may disclose your data if required by law or to protect our rights and safety.</p>
+                        
+                        <div class="info-box">
+                            <strong>Data Transfers:</strong> All data transfers outside the European Economic Area (EEA) are conducted with appropriate safeguards, including Standard Contractual Clauses approved by the European Commission.
+                        </div>
+
+                        <h2>6. Your Rights Under GDPR</h2>
+                        <p>As a data subject, you have the following rights:</p>
+                        
+                        <h3>6.1 Right of Access</h3>
+                        <p>You can request a copy of your personal data and information about how it is processed.</p>
+                        
+                        <h3>6.2 Right to Rectification</h3>
+                        <p>You can request correction of inaccurate or incomplete personal data.</p>
+                        
+                        <h3>6.3 Right to Erasure ("Right to be Forgotten")</h3>
+                        <p>You can request deletion of your personal data, subject to legal obligations and legitimate interests.</p>
+                        
+                        <h3>6.4 Right to Data Portability</h3>
+                        <p>You can request your personal data in a structured, machine-readable format.</p>
+                        
+                        <h3>6.5 Right to Restrict Processing</h3>
+                        <p>You can request limitation of data processing in certain circumstances.</p>
+                        
+                        <h3>6.6 Right to Object</h3>
+                        <p>You can object to processing based on legitimate interests or for direct marketing.</p>
+                        
+                        <h3>6.7 Right to Withdraw Consent</h3>
+                        <p>Where processing is based on consent, you can withdraw consent at any time.</p>
+                        
+                        <h3>6.8 Right to Lodge a Complaint</h3>
+                        <p>You have the right to lodge a complaint with your local data protection authority.</p>
+
+                        <h2>7. Data Security</h2>
+                        <p><strong>7.1 Technical Measures:</strong> We implement appropriate technical and organizational measures to protect your data:</p>
+                        <ul>
+                            <li>Encryption of data in transit and at rest</li>
+                            <li>Regular security assessments and updates</li>
+                            <li>Access controls and authentication</li>
+                            <li>Backup and disaster recovery procedures</li>
+                            <li>Employee training on data protection</li>
+                        </ul>
+                        
+                        <p><strong>7.2 Incident Response:</strong> In the event of a data breach, we will notify affected users and relevant authorities as required by law.</p>
+
+                        <h2>8. Data Retention</h2>
+                        <p><strong>8.1 Retention Periods:</strong> We retain your data for as long as necessary to:</p>
+                        <ul>
+                            <li>Provide our services</li>
+                            <li>Comply with legal obligations</li>
+                            <li>Resolve disputes</li>
+                            <li>Enforce our agreements</li>
+                        </ul>
+                        
+                        <p><strong>8.2 Deletion:</strong> When data is no longer needed, it is securely deleted or anonymized.</p>
+
+                        <h2>9. Cookies and Tracking</h2>
+                        <p><strong>9.1 Essential Cookies:</strong> We use necessary cookies for system functionality and security.</p>
+                        
+                        <p><strong>9.2 Analytics Cookies:</strong> We may use analytics cookies to improve our services (with consent where required).</p>
+                        
+                        <p><strong>9.3 Cookie Management:</strong> You can manage cookie preferences through your browser settings.</p>
+
+                        <h2>10. Children's Privacy</h2>
+                        <p>The Mill Management System is not intended for use by individuals under 16 years of age. We do not knowingly collect personal data from children under 16.</p>
+
+                        <h2>11. Changes to This Policy</h2>
+                        <p>We may update this Privacy Policy from time to time. We will notify users of significant changes through the application or by email.</p>
+
+                        <h2>12. Contact Information</h2>
+                        <p>For questions about this Privacy Policy or to exercise your rights, please contact us through the Mill Management System support interface.</p>
+
+                        <div class="important">
+                            <strong>By using the Mill Management System, you acknowledge that you have read and understood this Privacy Policy and consent to the processing of your personal data as described herein.</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

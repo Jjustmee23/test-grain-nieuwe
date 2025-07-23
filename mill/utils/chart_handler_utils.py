@@ -68,9 +68,9 @@ def calculate_daily_data(factory_id, selected_date):
     for data in production_data:
         date_str = data.created_at.strftime('%Y-%m-%d')
         if date_str in DailyData:
-            DailyData[date_str] = data.daily_production
+            DailyData[date_str] += data.daily_production  # Sum instead of overwrite
         if date_str == DailyLabels[-1]:
-            WeeklyData = data.weekly_production
+            WeeklyData += data.weekly_production  # Sum weekly data too
 
     return DailyLabels, [DailyData[label] for label in DailyLabels], WeeklyData
 
@@ -122,7 +122,7 @@ def calculate_daily_data_batch(factory_id, batch_start_date, selected_date):
     for data in production_data:
         date_str = data.created_at.strftime('%Y-%m-%d')
         if date_str in DailyData:
-            DailyData[date_str] = data.daily_production
+            DailyData[date_str] += data.daily_production  # Sum instead of overwrite
 
     return DailyLabels, [DailyData[label] for label in DailyLabels]
 
@@ -197,7 +197,7 @@ def calculate_monthly_data(factory_id, selected_date):
     for data in production_data:
         month_str = data.created_at.strftime('%Y-%m')
         if month_str in MonthlyData:
-            MonthlyData[month_str] = data.monthly_production
+            MonthlyData[month_str] += data.monthly_production  # Sum instead of overwrite
 
     return MonthlyLabels, [MonthlyData[label] for label in MonthlyLabels]
 
@@ -205,17 +205,19 @@ def calculate_yearly_data(factory_id, selected_date):
     current_year = selected_date.year
     previous_year = current_year - 1
 
-    last_current_year_entry = ProductionData.objects.filter(
+    # Sum all current year data from all devices in the factory
+    current_year_data = ProductionData.objects.filter(
         device__factory_id=factory_id,
         created_at__year=current_year
-    ).order_by('-created_at').first()
-    YearlyCurrent = last_current_year_entry.yearly_production if last_current_year_entry else 0
+    )
+    YearlyCurrent = sum(data.yearly_production for data in current_year_data) if current_year_data.exists() else 0
 
-    last_previous_year_entry = ProductionData.objects.filter(
+    # Sum all previous year data from all devices in the factory
+    previous_year_data = ProductionData.objects.filter(
         device__factory_id=factory_id,
         created_at__year=previous_year
-    ).order_by('-created_at').first()
-    YearlyPrevious = last_previous_year_entry.yearly_production if last_previous_year_entry else 0
+    )
+    YearlyPrevious = sum(data.yearly_production for data in previous_year_data) if previous_year_data.exists() else 0
 
     return YearlyCurrent, YearlyPrevious
 
@@ -330,6 +332,106 @@ def calculate_date_range_data(factory_id, start_date, end_date):
         'total_production': total_production,
         'date_range': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
         'days_count': len(daily_labels)
+    }
+
+def calculate_device_chart_data(date, factory_id, device_id):
+    """Calculate chart data for a specific device"""
+    selected_date = datetime.strptime(date, '%Y-%m-%d') if isinstance(date, str) else date
+    
+    # Filter by specific device
+    device_filter = {'device_id': device_id, 'device__factory_id': factory_id}
+    
+    # Calculate hourly data for specific device
+    start_datetime = datetime.combine(selected_date, datetime.min.time())
+    end_datetime = datetime.combine(selected_date, datetime.max.time())
+
+    production_data = TransactionData.objects.filter(
+        device_id=device_id,
+        device__factory_id=factory_id,
+        created_at__range=[start_datetime, end_datetime]
+    ).order_by('created_at')
+
+    # Prepare labels for 24 hours
+    HourlyLabels = [(start_datetime + timedelta(hours=i)).strftime('%Y-%m-%d %H:00') for i in range(24)]
+    HourlyData = {label: 0 for label in HourlyLabels}
+    HourlyCounts = {label: 0 for label in HourlyLabels}
+
+    for data in production_data:
+        hour_label = data.created_at.strftime('%Y-%m-%d %H:00')
+        if hour_label in HourlyData:
+            HourlyData[hour_label] += data.daily_production
+            HourlyCounts[hour_label] += 1
+
+    # Optionally, average if multiple entries per hour
+    HourlyAverages = [
+        HourlyData[label] / HourlyCounts[label] if HourlyCounts[label] > 0 else 0
+        for label in HourlyLabels
+    ]
+
+    # Calculate daily data for specific device
+    DailyLabels = [(selected_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(6)][::-1]
+    DailyData = {label: 0 for label in DailyLabels}
+    WeeklyData = 0
+
+    production_data = ProductionData.objects.filter(
+        device_id=device_id,
+        device__factory_id=factory_id,
+        created_at__date__range=[selected_date - timedelta(days=5), selected_date]
+    ).order_by('-created_at')
+
+    for data in production_data:
+        date_str = data.created_at.strftime('%Y-%m-%d')
+        if date_str in DailyData:
+            DailyData[date_str] = data.daily_production
+        if date_str == DailyLabels[-1]:
+            WeeklyData = data.weekly_production
+
+    # Calculate monthly data for specific device
+    MonthlyLabels = [(selected_date - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(12)][::-1]
+    MonthlyData = {label: 0 for label in MonthlyLabels}
+    month_ends = get_month_ends(selected_date)
+    
+    production_data = ProductionData.objects.filter(
+        device_id=device_id,
+        device__factory_id=factory_id,
+        created_at__date__in=month_ends
+    ).order_by('created_at')
+
+    for data in production_data:
+        month_str = data.created_at.strftime('%Y-%m')
+        if month_str in MonthlyData:
+            MonthlyData[month_str] = data.monthly_production
+
+    # Calculate yearly data for specific device
+    current_year = selected_date.year
+    previous_year = current_year - 1
+
+    last_current_year_entry = ProductionData.objects.filter(
+        device_id=device_id,
+        device__factory_id=factory_id,
+        created_at__year=current_year
+    ).order_by('-created_at').first()
+    YearlyCurrent = last_current_year_entry.yearly_production if last_current_year_entry else 0
+
+    last_previous_year_entry = ProductionData.objects.filter(
+        device_id=device_id,
+        device__factory_id=factory_id,
+        created_at__year=previous_year
+    ).order_by('-created_at').first()
+    YearlyPrevious = last_previous_year_entry.yearly_production if last_previous_year_entry else 0
+
+    return {
+        "hourly_labels": HourlyLabels,
+        "hourly_data": HourlyAverages,
+        'daily_labels': DailyLabels,
+        'daily_data': [DailyData[label] for label in DailyLabels],
+        'monthly_labels': MonthlyLabels,
+        'monthly_data': [MonthlyData[label] for label in MonthlyLabels],
+        'yearly_current': YearlyCurrent,
+        'yearly_previous': YearlyPrevious,
+        'daily_total': DailyData[DailyLabels[-1]] if DailyLabels else 0,
+        'monthly_total': MonthlyData[MonthlyLabels[-1]] if MonthlyLabels else 0,
+        'weekly_total': WeeklyData
     }
 
 # Email notification function

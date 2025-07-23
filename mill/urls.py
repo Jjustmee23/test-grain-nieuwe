@@ -4,11 +4,10 @@ from django.contrib import admin
 from .views_new import testmill
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views, notification_api_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    path('/', views.index, name='index'),
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
     path('test/', testmill, name='mill'),
 
@@ -29,6 +28,17 @@ urlpatterns = [
     # Sensor URLs
     path('sensor/data/', views.sensor_data_receiver, name='sensor-data'),
     path('sensor/status/<str:device_id>/', views.sensor_status, name='sensor-status'),
+    path('mqtt/data/', views.mqtt_data_receiver, name='mqtt-data'),
+    
+    # Power Management URLs
+    path('power-dashboard/', power_management_views.power_dashboard, name='power_dashboard'),
+    path('power-events/', power_management_views.power_events_list, name='power_events_list'),
+    path('power-events/<int:event_id>/', power_management_views.power_event_detail, name='power_event_detail'),
+    path('power-events/<int:event_id>/resolve/', power_management_views.resolve_power_event, name='resolve_power_event'),
+    path('device-power-status/<str:device_id>/', power_management_views.device_power_status, name='device_power_status'),
+    path('power-notification-settings/', power_management_views.power_notification_settings, name='power_notification_settings'),
+    path('power-analytics/', power_management_views.power_analytics, name='power_analytics'),
+    path('api/power-status/<int:factory_id>/', power_management_views.power_status_api, name='power_status_api'),
     
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics-dashboard'),
@@ -53,6 +63,7 @@ urlpatterns = [
     # Email management URLs
     path('email-history/', views.email_history, name='email_history'),
     path('user-email-history/<int:user_id>/', views.user_email_history, name='user_email_history'),
+    path('user-email-management/<int:user_id>/', views.user_email_management, name='user_email_management'),
     path('send-direct-email/<int:user_id>/', views.send_direct_email, name='send_direct_email'),
     path('mass-messaging/', views.mass_messaging, name='mass_messaging'),
     path('email-templates/', views.email_templates, name='email_templates'),
@@ -60,6 +71,10 @@ urlpatterns = [
     path('send-password-reset-email/<int:user_id>/', views.send_password_reset_email, name='send_password_reset_email'),
     path('change-password/', views.change_password, name='change_password'),
     path('profile/manage/', views.manage_profile, name='manage_profile'),
+    
+    # Two-Factor Authentication URLs
+    path('profile/setup-2fa/', views.setup_2fa, name='setup_2fa'),
+    path('profile/2fa-status/', views.get_2fa_status, name='get_2fa_status'),
 
 
     # Authentication
@@ -82,6 +97,7 @@ urlpatterns = [
     path('tv-dashboard/', views.tv_dashboard, name='tv-dashboard'),
 
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
+    path('api/device-chart-data/<int:factory_id>/', views.get_device_chart_data, name='get_device_chart_data'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
     path('preview-data/', views.preview_data, name='preview_data'),
@@ -146,6 +162,10 @@ urlpatterns = [
     # Contact and Ticket URLs
     path('contact/', views.contact, name='contact'),
     path('contact/success/', views.contact_success, name='contact_success'),
+    
+    # Legal URLs
+    path('terms/', views.terms_of_service, name='terms_of_service'),
+    path('privacy/', views.privacy_policy, name='privacy_policy'),
     
     # User Ticket URLs
     path('tickets/', views.my_tickets, name='my_tickets'),

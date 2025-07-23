@@ -14,7 +14,8 @@ from .models import (
     Device, Notification, NotificationCategory, ProductionData, City, Factory, 
     UserProfile, Batch, FlourBagCount, Alert, BatchNotification, TVDashboardSettings,
     UserNotificationPreference, EmailTemplate, Microsoft365Settings, NotificationLog,
-    EmailHistory, MassMessage
+    EmailHistory, MassMessage, PowerEvent, DevicePowerStatus, PowerNotificationSettings,
+    PowerManagementPermission
 )
 import requests
 
@@ -580,6 +581,70 @@ class CustomUserAdmin(BaseUserAdmin):
         if obj is None:  # Creating new user
             return []
         return super().get_inline_instances(request, obj)
+    
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:user_id>/email-management/',
+                self.admin_site.admin_view(self.email_management_view),
+                name='user-email-management',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def email_management_view(self, request, user_id):
+        from django.shortcuts import render, get_object_or_404
+        from django.contrib.auth.models import User
+        from mill.models import EmailHistory, EmailTemplate
+        from mill.services.simple_email_service import SimpleEmailService
+        
+        user = get_object_or_404(User, id=user_id)
+        email_service = SimpleEmailService()
+        
+        # Get email history for this user
+        email_history = EmailHistory.objects.filter(user=user).order_by('-sent_at')
+        
+        # Get available email templates
+        email_templates = EmailTemplate.objects.filter(is_active=True)
+        
+        # Handle email sending
+        if request.method == 'POST':
+            email_type = request.POST.get('email_type')
+            subject = request.POST.get('subject')
+            message = request.POST.get('message')
+            template_id = request.POST.get('template_id')
+            
+            if template_id:
+                template = EmailTemplate.objects.get(id=template_id)
+                subject = template.subject
+                message = template.content
+            
+            # Send email
+            success, response = email_service.send_email(
+                user.email,
+                subject,
+                message,
+                email_type=email_type
+            )
+            
+            if success:
+                messages.success(request, f'Email successfully sent to {user.email}')
+            else:
+                messages.error(request, f'Failed to send email: {response}')
+            
+            return HttpResponseRedirect(request.path)
+        
+        context = {
+            'user': user,
+            'email_history': email_history,
+            'email_templates': email_templates,
+            'title': f'Email Management - {user.username}',
+            'opts': self.model._meta,
+        }
+        
+        return render(request, 'admin/mill/user/email_management.html', context)
 
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
@@ -676,3 +741,166 @@ class TVDashboardSettingsAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         return qs.filter(is_active=True)
+
+
+# Power Management Admin Classes
+@admin.register(PowerEvent)
+class PowerEventAdmin(admin.ModelAdmin):
+    list_display = ('device', 'event_type', 'severity', 'is_resolved', 'created_at', 'ain1_value')
+    list_filter = ('event_type', 'severity', 'is_resolved', 'created_at', 'device__factory')
+    search_fields = ('device__name', 'message', 'device__factory__name')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'notification_sent', 'email_sent', 'super_admin_notified')
+    
+    fieldsets = (
+        ('Event Information', {
+            'fields': ('device', 'event_type', 'severity', 'message')
+        }),
+        ('Power Data', {
+            'fields': ('ain1_value', 'previous_ain1_value'),
+            'classes': ('collapse',)
+        }),
+        ('Production Data', {
+            'fields': ('counter_1_value', 'counter_2_value', 'counter_3_value', 'counter_4_value'),
+            'classes': ('collapse',)
+        }),
+        ('Resolution', {
+            'fields': ('is_resolved', 'resolved_by', 'resolved_at', 'resolution_notes')
+        }),
+        ('Notification Status', {
+            'fields': ('notification_sent', 'email_sent', 'super_admin_notified'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(DevicePowerStatus)
+class DevicePowerStatusAdmin(admin.ModelAdmin):
+    list_display = ('device', 'has_power', 'ain1_value', 'last_power_check', 'power_threshold')
+    list_filter = ('has_power', 'last_power_check', 'device__factory')
+    search_fields = ('device__name', 'device__factory__name')
+    ordering = ('-last_power_check',)
+    readonly_fields = ('created_at', 'updated_at', 'last_power_check')
+    
+    fieldsets = (
+        ('Device Information', {
+            'fields': ('device', 'has_power')
+        }),
+        ('Power Data', {
+            'fields': ('ain1_value', 'power_threshold', 'last_power_check')
+        }),
+        ('Power Events', {
+            'fields': ('power_loss_detected_at', 'power_restored_at'),
+            'classes': ('collapse',)
+        }),
+        ('Production Tracking', {
+            'fields': ('production_during_power_loss', 'last_production_check'),
+            'classes': ('collapse',)
+        }),
+        ('Notification Settings', {
+            'fields': ('notify_on_power_loss', 'notify_on_power_restore', 'notify_on_production_without_power'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(PowerNotificationSettings)
+class PowerNotificationSettingsAdmin(admin.ModelAdmin):
+    list_display = ('user', 'notify_power_loss', 'notify_power_restore', 'notification_frequency')
+    list_filter = ('notify_power_loss', 'notify_power_restore', 'notify_production_without_power', 'notification_frequency')
+    search_fields = ('user__username', 'user__email')
+    filter_horizontal = ('responsible_devices',)
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user',)
+        }),
+        ('In-App Notifications', {
+            'fields': ('notify_power_loss', 'notify_power_restore', 'notify_production_without_power', 'notify_power_fluctuation')
+        }),
+        ('Email Notifications', {
+            'fields': ('email_power_loss', 'email_power_restore', 'email_production_without_power', 'email_power_fluctuation')
+        }),
+        ('Device Assignment', {
+            'fields': ('responsible_devices',)
+        }),
+        ('Settings', {
+            'fields': ('notification_frequency',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(PowerManagementPermission)
+class PowerManagementPermissionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'can_access_power_management', 'can_view_power_status', 'can_resolve_power_events', 'granted_at')
+    list_filter = ('can_access_power_management', 'can_view_power_status', 'can_resolve_power_events', 'granted_at')
+    search_fields = ('user__username', 'user__email', 'granted_by__username')
+    readonly_fields = ('granted_at',)
+    
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user', 'granted_by')
+        }),
+        ('Permissions', {
+            'fields': ('can_access_power_management', 'can_view_power_status', 'can_resolve_power_events')
+        }),
+        ('Additional Information', {
+            'fields': ('notes', 'granted_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return request.user.is_superuser
+    
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Only on creation
+            obj.granted_by = request.user
+        super().save_model(request, obj, form, change)

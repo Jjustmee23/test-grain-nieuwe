@@ -1485,3 +1485,272 @@ class TVDashboardSettings(models.Model):
             variables['--animation-duration'] = '0.3s'
         
         return variables
+
+class TwoFactorAuth(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    secret_key = models.CharField(max_length=32, unique=True)
+    is_enabled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"2FA for {self.user.username}"
+    
+    class Meta:
+        verbose_name = "Two Factor Authentication"
+        verbose_name_plural = "Two Factor Authentications"
+
+class PowerEvent(models.Model):
+    """Track power events for devices"""
+    EVENT_TYPES = [
+        ('power_loss', 'Power Loss'),
+        ('power_restored', 'Power Restored'),
+        ('production_without_power', 'Production Without Power'),
+        ('power_fluctuation', 'Power Fluctuation'),
+        ('battery_low', 'Battery Low'),
+        ('power_surge', 'Power Surge'),
+    ]
+    
+    SEVERITY_LEVELS = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='power_events')
+    event_type = models.CharField(max_length=30, choices=EVENT_TYPES)
+    severity = models.CharField(max_length=10, choices=SEVERITY_LEVELS, default='medium')
+    
+    # Power data
+    ain1_value = models.FloatField(null=True, blank=True, help_text="Power value when event occurred")
+    previous_ain1_value = models.FloatField(null=True, blank=True, help_text="Previous power value")
+    
+    # Production data at time of event
+    counter_1_value = models.IntegerField(null=True, blank=True)
+    counter_2_value = models.IntegerField(null=True, blank=True)
+    counter_3_value = models.IntegerField(null=True, blank=True)
+    counter_4_value = models.IntegerField(null=True, blank=True)
+    
+    # Event details
+    message = models.TextField()
+    is_resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_power_events'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_notes = models.TextField(blank=True, null=True)
+    
+    # Notification tracking
+    notification_sent = models.BooleanField(default=False)
+    email_sent = models.BooleanField(default=False)
+    super_admin_notified = models.BooleanField(default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['device', 'event_type', 'created_at']),
+            models.Index(fields=['is_resolved', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - {self.get_event_type_display()} ({self.created_at})"
+    
+    def get_severity_color(self):
+        """Return Bootstrap color class based on severity"""
+        colors = {
+            'low': 'info',
+            'medium': 'warning',
+            'high': 'danger',
+            'critical': 'dark',
+        }
+        return colors.get(self.severity, 'secondary')
+    
+    def mark_as_resolved(self, user, notes=""):
+        """Mark power event as resolved"""
+        self.is_resolved = True
+        self.resolved_by = user
+        self.resolved_at = timezone.now()
+        self.resolution_notes = notes
+        self.save()
+
+class DevicePowerStatus(models.Model):
+    """Current power status for each device"""
+    device = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='power_status')
+    
+    # Current power state
+    has_power = models.BooleanField(default=True)
+    ain1_value = models.FloatField(null=True, blank=True)
+    last_power_check = models.DateTimeField(auto_now=True)
+    
+    # Power thresholds
+    power_threshold = models.FloatField(default=0.0, help_text="Minimum power value to consider device as powered")
+    
+    # Status tracking
+    power_loss_detected_at = models.DateTimeField(null=True, blank=True)
+    power_restored_at = models.DateTimeField(null=True, blank=True)
+    
+    # Production tracking during power loss
+    production_during_power_loss = models.BooleanField(default=False)
+    last_production_check = models.DateTimeField(null=True, blank=True)
+    
+    # Notification settings
+    notify_on_power_loss = models.BooleanField(default=True)
+    notify_on_power_restore = models.BooleanField(default=True)
+    notify_on_production_without_power = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Device Power Status'
+        verbose_name_plural = 'Device Power Statuses'
+        indexes = [
+            models.Index(fields=['has_power', 'updated_at']),
+            models.Index(fields=['device', 'has_power']),
+        ]
+    
+    def __str__(self):
+        return f"{self.device.name} - Power: {'ON' if self.has_power else 'OFF'}"
+    
+    def update_power_status(self, ain1_value):
+        """Update power status based on ain1_value"""
+        previous_has_power = self.has_power
+        self.ain1_value = ain1_value
+        self.last_power_check = timezone.now()
+        
+        # Determine if device has power
+        self.has_power = ain1_value > self.power_threshold
+        
+        # Handle power loss
+        if not self.has_power and previous_has_power:
+            self.power_loss_detected_at = timezone.now()
+            self.power_restored_at = None
+            
+        # Handle power restoration
+        elif self.has_power and not previous_has_power:
+            self.power_restored_at = timezone.now()
+            
+        self.save()
+        return previous_has_power != self.has_power  # Return True if status changed
+    
+    def check_production_without_power(self, counter_values):
+        """Check if production is happening without power"""
+        if not self.has_power:
+            # Get the last production data
+            last_production = ProductionData.objects.filter(device=self.device).order_by('-created_at').first()
+            
+            if last_production:
+                # Check if any counter has increased
+                for counter_name, current_value in counter_values.items():
+                    if counter_name == 'counter_1' and current_value > last_production.daily_production:
+                        self.production_during_power_loss = True
+                        self.last_production_check = timezone.now()
+                        self.save()
+                        return True
+                        
+        return False
+    
+    def get_status_display(self):
+        """Get human-readable status"""
+        if self.has_power:
+            return "Power ON"
+        else:
+            return "Power OFF"
+    
+    def get_status_color(self):
+        """Get Bootstrap color for status"""
+        if self.has_power:
+            return "success"
+        else:
+            return "danger"
+
+class PowerNotificationSettings(models.Model):
+    """Settings for power-related notifications"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='power_notification_settings')
+    
+    # Notification preferences
+    notify_power_loss = models.BooleanField(default=True)
+    notify_power_restore = models.BooleanField(default=True)
+    notify_production_without_power = models.BooleanField(default=True)
+    notify_power_fluctuation = models.BooleanField(default=False)
+    
+    # Email preferences
+    email_power_loss = models.BooleanField(default=True)
+    email_power_restore = models.BooleanField(default=False)
+    email_production_without_power = models.BooleanField(default=True)
+    email_power_fluctuation = models.BooleanField(default=False)
+    
+    # Device assignments
+    responsible_devices = models.ManyToManyField(Device, blank=True, related_name='power_responsible_users')
+    
+    # Notification frequency
+    notification_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('immediate', 'Immediate'),
+            ('hourly', 'Hourly'),
+            ('daily', 'Daily'),
+        ],
+        default='immediate'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Power Notification Setting'
+        verbose_name_plural = 'Power Notification Settings'
+    
+    def __str__(self):
+        return f"Power notifications for {self.user.username}"
+
+
+class PowerManagementPermission(models.Model):
+    """Model to track which users have access to power management features"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='power_management_permission')
+    can_access_power_management = models.BooleanField(default=False)
+    can_view_power_status = models.BooleanField(default=False)
+    can_resolve_power_events = models.BooleanField(default=False)
+    granted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='power_permissions_granted')
+    granted_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Power Management Permission"
+        verbose_name_plural = "Power Management Permissions"
+
+    def __str__(self):
+        return f"Power Management Permission for {self.user.username}"
+
+    @classmethod
+    def has_power_access(cls, user):
+        """Check if user has power management access"""
+        if user.is_superuser:
+            return True
+        try:
+            permission = cls.objects.get(user=user)
+            return permission.can_access_power_management
+        except cls.DoesNotExist:
+            return False
+
+    @classmethod
+    def has_power_status_access(cls, user):
+        """Check if user has power status viewing access"""
+        if user.is_superuser:
+            return True
+        try:
+            permission = cls.objects.get(user=user)
+            return permission.can_view_power_status
+        except cls.DoesNotExist:
+            return False

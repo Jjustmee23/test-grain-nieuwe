@@ -5,17 +5,177 @@
         <div class="row align-items-center justify-content-center">
             <div class="col-12 text-center">
                 <div class="footer-buttons">
-                    <a href="#" class="btn btn-outline-light btn-sm mx-2">{% trans "Terms" %}</a>
-                    <a href="#" class="btn btn-outline-light btn-sm mx-2">{% trans "Privacy" %}</a>
+                    <button type="button" class="btn btn-outline-light btn-sm mx-2" data-bs-toggle="modal" data-bs-target="#termsModal">{% trans "Terms" %}</button>
+                    <button type="button" class="btn btn-outline-light btn-sm mx-2" data-bs-toggle="modal" data-bs-target="#privacyModal">{% trans "Privacy" %}</button>
                     <a href="{% url 'contact' %}" class="btn btn-outline-light btn-sm mx-2">{% trans "Support" %}</a>
                 </div>
                 <div class="mt-3">
-                    <small>&copy; 2025 Mill Management System. {% trans "All rights reserved." %}</small>
+                    <small>&copy; 2025 NexonSolutions - Mill Management System. {% trans "All rights reserved." %}</small>
                 </div>
             </div>
         </div>
     </div>
 </footer>
+
+<!-- Terms of Service Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="termsModalLabel">{% trans "Terms of Service" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="terms-content">
+                    <h4>{% trans "Terms of Service for Mill Management System" %}</h4>
+                    <p><strong>{% trans "Effective Date:" %}</strong> January 1, 2025</p>
+                    
+                    <h5>1. {% trans "Acceptance of Terms" %}</h5>
+                    <p>{% trans "By accessing and using the Mill Management System (hereinafter referred to as 'the Service'), you accept and agree to be bound by the terms and provision of this agreement." %}</p>
+                    
+                    <h5>2. {% trans "Service Description" %}</h5>
+                    <p>{% trans "The Mill Management System is a comprehensive digital platform designed for managing mill operations, production data, device monitoring, and administrative functions." %}</p>
+                    
+                    <h5>3. {% trans "Ownership and Intellectual Property" %}</h5>
+                    <p>{% trans "The Service and all its components, including but not limited to software, design, content, and functionality, are owned by NexonSolutions. All rights, title, and interest in and to the Service remain the exclusive property of NexonSolutions." %}</p>
+                    
+                    <h5>4. {% trans "User Responsibilities" %}</h5>
+                    <ul>
+                        <li>{% trans "Maintain the confidentiality of your account credentials" %}</li>
+                        <li>{% trans "Use the Service only for its intended purpose" %}</li>
+                        <li>{% trans "Comply with all applicable laws and regulations" %}</li>
+                        <li>{% trans "Report any security concerns immediately" %}</li>
+                    </ul>
+                    
+                    <h5>5. {% trans "Prohibited Activities" %}</h5>
+                    <p>{% trans "Users are prohibited from:" %}</p>
+                    <ul>
+                        <li>{% trans "Attempting to gain unauthorized access to the system" %}</li>
+                        <li>{% trans "Interfering with the Service's operation" %}</li>
+                        <li>{% trans "Sharing account credentials with unauthorized persons" %}</li>
+                        <li>{% trans "Using the Service for any illegal purposes" %}</li>
+                    </ul>
+                    
+                    <h5>6. {% trans "Data and Privacy" %}</h5>
+                    <p>{% trans "All data collected and processed through the Service is subject to our Privacy Policy. By using the Service, you consent to the collection and use of your data as described in our Privacy Policy." %}</p>
+                    
+                    <h5>7. {% trans "Limitation of Liability" %}</h5>
+                    <p>{% trans "NexonSolutions shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or use, arising out of or relating to the use of the Service." %}</p>
+                    
+                    <h5>8. {% trans "Indemnification" %}</h5>
+                    <p>{% trans "You agree to indemnify and hold harmless NexonSolutions from any claims, damages, or expenses arising from your use of the Service or violation of these Terms." %}</p>
+                    
+                    <h5>9. {% trans "Termination" %}</h5>
+                    <p>{% trans "NexonSolutions reserves the right to terminate or suspend access to the Service at any time, with or without cause, with or without notice." %}</p>
+                    
+                    <h5>10. {% trans "Governing Law" %}</h5>
+                    <p>{% trans "These Terms shall be governed by and construed in accordance with the laws of the European Union and applicable national laws." %}</p>
+                    
+                    <h5>11. {% trans "Changes to Terms" %}</h5>
+                    <p>{% trans "NexonSolutions reserves the right to modify these Terms at any time. Users will be notified of any changes, and continued use of the Service constitutes acceptance of the modified Terms." %}</p>
+                    
+                    <h5>12. {% trans "Contact Information" %}</h5>
+                    <p>{% trans "For questions regarding these Terms of Service, please contact us through the Support button." %}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">{% trans "Privacy Policy" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="privacy-content">
+                    <h4>{% trans "Privacy Policy for Mill Management System" %}</h4>
+                    <p><strong>{% trans "Effective Date:" %}</strong> January 1, 2025</p>
+                    
+                    <h5>1. {% trans "Information We Collect" %}</h5>
+                    <p>{% trans "We collect the following types of information:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "Personal Information:" %}</strong> {% trans "Name, email address, username, and contact details" %}</li>
+                        <li><strong>{% trans "Operational Data:" %}</strong> {% trans "Production data, device information, and system usage statistics" %}</li>
+                        <li><strong>{% trans "Technical Data:" %}</strong> {% trans "IP addresses, browser information, and device identifiers" %}</li>
+                    </ul>
+                    
+                    <h5>2. {% trans "How We Use Your Information" %}</h5>
+                    <p>{% trans "We use the collected information to:" %}</p>
+                    <ul>
+                        <li>{% trans "Provide and maintain the Mill Management System" %}</li>
+                        <li>{% trans "Process and analyze production data" %}</li>
+                        <li>{% trans "Send notifications and alerts" %}</li>
+                        <li>{% trans "Improve system performance and user experience" %}</li>
+                        <li>{% trans "Comply with legal obligations" %}</li>
+                    </ul>
+                    
+                    <h5>3. {% trans "Data Processing and Storage" %}</h5>
+                    <p>{% trans "Your data is processed and stored in accordance with European data protection regulations (GDPR). We implement appropriate technical and organizational measures to ensure data security." %}</p>
+                    
+                    <h5>4. {% trans "Data Sharing and Disclosure" %}</h5>
+                    <p>{% trans "We do not sell, trade, or otherwise transfer your personal information to third parties except:" %}</p>
+                    <ul>
+                        <li>{% trans "With your explicit consent" %}</li>
+                        <li>{% trans "To comply with legal requirements" %}</li>
+                        <li>{% trans "To protect our rights and safety" %}</li>
+                        <li>{% trans "To authorized service providers who assist in system operation" %}</li>
+                    </ul>
+                    
+                    <h5>5. {% trans "Your Rights Under GDPR" %}</h5>
+                    <p>{% trans "As a user, you have the following rights:" %}</p>
+                    <ul>
+                        <li><strong>{% trans "Right of Access:" %}</strong> {% trans "Request access to your personal data" %}</li>
+                        <li><strong>{% trans "Right to Rectification:" %}</strong> {% trans "Request correction of inaccurate data" %}</li>
+                        <li><strong>{% trans "Right to Erasure:" %}</strong> {% trans "Request deletion of your personal data" %}</li>
+                        <li><strong>{% trans "Right to Data Portability:" %}</strong> {% trans "Request transfer of your data" %}</li>
+                        <li><strong>{% trans "Right to Object:" %}</strong> {% trans "Object to processing of your data" %}</li>
+                        <li><strong>{% trans "Right to Restrict Processing:" %}</strong> {% trans "Request restriction of data processing" %}</li>
+                    </ul>
+                    
+                    <h5>6. {% trans "Data Retention" %}</h5>
+                    <p>{% trans "We retain your personal data only for as long as necessary to fulfill the purposes outlined in this policy, or as required by law. Production data may be retained for longer periods for operational and analytical purposes." %}</p>
+                    
+                    <h5>7. {% trans "Security Measures" %}</h5>
+                    <p>{% trans "We implement comprehensive security measures to protect your data, including:" %}</p>
+                    <ul>
+                        <li>{% trans "Encryption of data in transit and at rest" %}</li>
+                        <li>{% trans "Regular security audits and updates" %}</li>
+                        <li>{% trans "Access controls and authentication mechanisms" %}</li>
+                        <li>{% trans "Monitoring and logging of system access" %}</li>
+                    </ul>
+                    
+                    <h5>8. {% trans "Cookies and Tracking" %}</h5>
+                    <p>{% trans "We use essential cookies for system functionality and session management. These cookies are necessary for the proper operation of the Mill Management System." %}</p>
+                    
+                    <h5>9. {% trans "International Data Transfers" %}</h5>
+                    <p>{% trans "Your data may be processed in countries outside the European Economic Area (EEA). We ensure that such transfers comply with GDPR requirements through appropriate safeguards." %}</p>
+                    
+                    <h5>10. {% trans "Data Breach Notification" %}</h5>
+                    <p>{% trans "In the event of a data breach that poses a risk to your rights and freedoms, we will notify you and relevant authorities within 72 hours of becoming aware of the breach." %}</p>
+                    
+                    <h5>11. {% trans "Changes to Privacy Policy" %}</h5>
+                    <p>{% trans "We may update this Privacy Policy from time to time. We will notify you of any material changes and obtain your consent where required by law." %}</p>
+                    
+                    <h5>12. {% trans "Contact Information" %}</h5>
+                    <p>{% trans "For questions about this Privacy Policy or to exercise your data protection rights, please contact us through the Support button." %}</p>
+                    
+                    <h5>13. {% trans "Data Protection Officer" %}</h5>
+                    <p>{% trans "NexonSolutions has designated a Data Protection Officer to ensure compliance with data protection regulations. Contact details are available through the Support system." %}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .footer {
@@ -53,5 +213,96 @@
     
     .footer-logo:hover {
         transform: rotate(10deg);
+    }
+    
+    /* Modal Styling */
+    .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border-bottom: none;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .terms-content h4,
+    .privacy-content h4 {
+        color: #667eea;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .terms-content h5,
+    .privacy-content h5 {
+        color: #333;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+    
+    .terms-content p,
+    .privacy-content p {
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        color: #555;
+    }
+    
+    .terms-content ul,
+    .privacy-content ul {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+    
+    .terms-content li,
+    .privacy-content li {
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+        color: #555;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #eee;
+        padding: 1rem 2rem;
+    }
+    
+    .modal-footer .btn {
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+    }
+    
+    /* Scrollbar styling for modal content */
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .modal-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 4px;
+    }
+    
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #5a6fd8;
     }
 </style>

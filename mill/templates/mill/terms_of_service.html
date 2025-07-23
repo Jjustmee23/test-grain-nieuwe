@@ -1,0 +1,196 @@
+{% extends 'mill/base.html' %}
+
+{% block content %}
+<style>
+    .legal-container {
+        background: linear-gradient(135deg, #88C0B8 0%, #D8E2DC 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .legal-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+    }
+    
+    .legal-header {
+        background: linear-gradient(135deg, #88C0B8 0%, #6FAF9A 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .legal-content {
+        padding: 2rem;
+        line-height: 1.8;
+    }
+    
+    .legal-content h2 {
+        color: #0c2d48;
+        border-bottom: 2px solid #88C0B8;
+        padding-bottom: 0.5rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .legal-content h3 {
+        color: #0c2d48;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .legal-content p {
+        margin-bottom: 1rem;
+        text-align: justify;
+    }
+    
+    .legal-content ul {
+        margin-bottom: 1rem;
+        padding-left: 2rem;
+    }
+    
+    .legal-content li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .legal-content .highlight {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .legal-content .important {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-weight: bold;
+    }
+</style>
+
+<div class="legal-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="legal-card">
+                    <div class="legal-header">
+                        <h1><i class="bi bi-file-text me-2"></i>Terms of Service</h1>
+                        <p class="mb-0">Last updated: January 22, 2025</p>
+                    </div>
+                    
+                    <div class="legal-content">
+                        <div class="highlight">
+                            <strong>IMPORTANT:</strong> By accessing and using the Mill Management System, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the application.
+                        </div>
+
+                        <h2>1. Ownership and Intellectual Property</h2>
+                        <p><strong>1.1 Complete Ownership:</strong> The Mill Management System, including all software, code, databases, designs, graphics, text, and any other content or materials, is the exclusive property of <strong>NexonSolutions</strong>. All rights, title, and interest in and to the application remain with NexonSolutions.</p>
+                        
+                        <p><strong>1.2 Intellectual Property Rights:</strong> All intellectual property rights, including but not limited to copyrights, trademarks, trade secrets, patents, and other proprietary rights, are owned by NexonSolutions. No rights are granted to users beyond the limited license to use the application as described herein.</p>
+                        
+                        <p><strong>1.3 No Transfer of Rights:</strong> Nothing in these Terms of Service shall be construed as transferring any ownership rights to users. Users acknowledge that they have no ownership interest in the application or any related intellectual property.</p>
+
+                        <h2>2. License and Usage</h2>
+                        <p><strong>2.1 Limited License:</strong> NexonSolutions grants users a limited, non-exclusive, non-transferable, revocable license to access and use the Mill Management System solely for authorized business purposes.</p>
+                        
+                        <p><strong>2.2 Usage Restrictions:</strong> Users may not:</p>
+                        <ul>
+                            <li>Copy, modify, distribute, sell, or lease any part of the application</li>
+                            <li>Reverse engineer, decompile, or disassemble the application</li>
+                            <li>Remove or alter any proprietary notices or labels</li>
+                            <li>Use the application for any illegal or unauthorized purpose</li>
+                            <li>Attempt to gain unauthorized access to the application or its systems</li>
+                            <li>Interfere with or disrupt the application's operation</li>
+                        </ul>
+
+                        <h2>3. User Responsibilities and Liability Limitations</h2>
+                        <p><strong>3.1 User Data and Content:</strong> Users are solely responsible for:</p>
+                        <ul>
+                            <li>The accuracy, legality, and appropriateness of all data entered into the system</li>
+                            <li>Maintaining the confidentiality of their account credentials</li>
+                            <li>All activities that occur under their account</li>
+                            <li>Complying with all applicable laws and regulations</li>
+                        </ul>
+                        
+                        <p><strong>3.2 NexonSolutions Liability Limitations:</strong> To the maximum extent permitted by applicable law, NexonSolutions shall not be liable for:</p>
+                        <ul>
+                            <li>Any indirect, incidental, special, consequential, or punitive damages</li>
+                            <li>Loss of profits, revenue, data, or business opportunities</li>
+                            <li>Any damages resulting from user actions, errors, or omissions</li>
+                            <li>System downtime, data loss, or service interruptions</li>
+                            <li>Any third-party claims arising from user use of the application</li>
+                        </ul>
+                        
+                        <div class="important">
+                            <strong>3.3 Complete Indemnification:</strong> Users agree to indemnify, defend, and hold harmless NexonSolutions, its officers, directors, employees, and agents from and against any and all claims, damages, losses, costs, and expenses (including reasonable attorneys' fees) arising from or relating to their use of the application, violation of these terms, or any actions taken by users within the system.
+                        </div>
+
+                        <h2>4. Data Protection and Privacy (GDPR Compliance)</h2>
+                        <p><strong>4.1 Data Processing:</strong> NexonSolutions processes personal data in accordance with the General Data Protection Regulation (GDPR) and other applicable European data protection laws.</p>
+                        
+                        <p><strong>4.2 User Rights:</strong> Users have the right to:</p>
+                        <ul>
+                            <li>Access their personal data</li>
+                            <li>Request correction of inaccurate data</li>
+                            <li>Request deletion of their data (subject to legal obligations)</li>
+                            <li>Data portability</li>
+                            <li>Object to processing</li>
+                            <li>Withdraw consent where applicable</li>
+                        </ul>
+                        
+                        <p><strong>4.3 Data Security:</strong> NexonSolutions implements appropriate technical and organizational measures to protect personal data against unauthorized access, alteration, disclosure, or destruction.</p>
+
+                        <h2>5. Service Availability and Modifications</h2>
+                        <p><strong>5.1 Service Availability:</strong> NexonSolutions strives to maintain high availability but does not guarantee uninterrupted access to the application. The service may be temporarily unavailable for maintenance, updates, or other reasons.</p>
+                        
+                        <p><strong>5.2 Modifications:</strong> NexonSolutions reserves the right to:</p>
+                        <ul>
+                            <li>Modify, suspend, or discontinue the application at any time</li>
+                            <li>Update these Terms of Service with notice to users</li>
+                            <li>Change features, functionality, or user interface</li>
+                            <li>Implement security updates or patches</li>
+                        </ul>
+
+                        <h2>6. Termination</h2>
+                        <p><strong>6.1 Termination by NexonSolutions:</strong> NexonSolutions may terminate or suspend user access to the application immediately, without prior notice, for any violation of these terms or for any other reason at NexonSolutions' sole discretion.</p>
+                        
+                        <p><strong>6.2 Termination by User:</strong> Users may terminate their account by contacting NexonSolutions support. Upon termination, the user's right to use the application ceases immediately.</p>
+                        
+                        <p><strong>6.3 Effect of Termination:</strong> Upon termination, NexonSolutions may delete user data in accordance with its data retention policies and applicable law.</p>
+
+                        <h2>7. Governing Law and Dispute Resolution</h2>
+                        <p><strong>7.1 Governing Law:</strong> These Terms of Service shall be governed by and construed in accordance with the laws of the European Union and applicable member state laws.</p>
+                        
+                        <p><strong>7.2 Dispute Resolution:</strong> Any disputes arising from these terms shall be resolved through:</p>
+                        <ul>
+                            <li>First, good faith negotiations between the parties</li>
+                            <li>If unsuccessful, mediation in accordance with EU mediation procedures</li>
+                            <li>As a last resort, binding arbitration in accordance with EU arbitration rules</li>
+                        </ul>
+
+                        <h2>8. Miscellaneous</h2>
+                        <p><strong>8.1 Entire Agreement:</strong> These Terms of Service constitute the entire agreement between users and NexonSolutions regarding the use of the Mill Management System.</p>
+                        
+                        <p><strong>8.2 Severability:</strong> If any provision of these terms is found to be unenforceable, the remaining provisions shall continue in full force and effect.</p>
+                        
+                        <p><strong>8.3 Waiver:</strong> No waiver of any provision of these terms shall be effective unless in writing and signed by NexonSolutions.</p>
+                        
+                        <p><strong>8.4 Contact Information:</strong> For questions about these Terms of Service, please contact NexonSolutions through the support system.</p>
+
+                        <div class="highlight">
+                            <strong>By using the Mill Management System, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. NexonSolutions retains all rights, title, and interest in the application, and users have no ownership rights whatsoever.</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

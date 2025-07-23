@@ -1,0 +1,436 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Power Event Details{% endblock %}
+
+{% block content %}
+<style>
+    .power-event-detail {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .detail-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .detail-title {
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .detail-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+    }
+    
+    .event-detail-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .event-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .event-severity {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .event-severity.critical {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .event-severity.high {
+        background: #fd7e14;
+        color: white;
+    }
+    
+    .event-severity.medium {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .event-severity.low {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .event-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .info-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 1rem;
+    }
+    
+    .event-message {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #28a745;
+    }
+    
+    .event-message h4 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .event-message p {
+        color: #666;
+        margin: 0;
+        line-height: 1.6;
+    }
+    
+    .counter-values {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .counter-values h4 {
+        color: #333;
+        margin-bottom: 15px;
+    }
+    
+    .counter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .counter-item {
+        text-align: center;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .counter-label {
+        font-weight: bold;
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .counter-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .btn-modern {
+        padding: 12px 24px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .btn-primary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-success-modern {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .btn-success-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+    
+    .btn-secondary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .resolution-section {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .resolution-section h4 {
+        color: #856404;
+        margin-bottom: 15px;
+    }
+    
+    .resolution-info {
+        color: #856404;
+        margin-bottom: 10px;
+    }
+    
+    .resolution-notes {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ffeaa7;
+        color: #333;
+        font-style: italic;
+    }
+</style>
+
+<div class="power-event-detail">
+    <!-- Detail Header -->
+    <div class="detail-header">
+        <h1 class="detail-title">
+            <i class="bi bi-lightning-charge me-3"></i>
+            Power Event Details
+        </h1>
+        <p class="detail-subtitle">
+            Detailed information about power event #{{ event.id }}
+        </p>
+    </div>
+
+    <!-- Event Detail Card -->
+    <div class="event-detail-card">
+        <!-- Event Header -->
+        <div class="event-header">
+            <h2 class="event-title">
+                <i class="bi bi-lightning me-2"></i>
+                {{ event.get_event_type_display }}
+            </h2>
+            <span class="event-severity {{ event.severity }}">
+                {{ event.get_severity_display }}
+            </span>
+        </div>
+
+        <!-- Event Information Grid -->
+        <div class="event-info-grid">
+            <div class="info-item">
+                <div class="info-label">Device</div>
+                <div class="info-value">{{ event.device.name }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Factory</div>
+                <div class="info-value">{{ event.device.factory.name|default:"Unknown" }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Event Type</div>
+                <div class="info-value">{{ event.get_event_type_display }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Severity</div>
+                <div class="info-value">{{ event.get_severity_display }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Created At</div>
+                <div class="info-value">{{ event.created_at|date:"F d, Y H:i:s" }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    {% if event.is_resolved %}
+                        <span class="badge bg-success">Resolved</span>
+                    {% else %}
+                        <span class="badge bg-warning">Active</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Message -->
+        {% if event.message %}
+        <div class="event-message">
+            <h4><i class="bi bi-chat-text me-2"></i>Event Message</h4>
+            <p>{{ event.message }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Power Values -->
+        {% if event.ain1_value %}
+        <div class="info-item">
+            <div class="info-label">Power Value (AIN1)</div>
+            <div class="info-value">{{ event.ain1_value }} V</div>
+        </div>
+        {% endif %}
+
+        <!-- Counter Values -->
+        <div class="counter-values">
+            <h4><i class="bi bi-speedometer2 me-2"></i>Counter Values at Event Time</h4>
+            <div class="counter-grid">
+                {% if event.counter_1_value %}
+                <div class="counter-item">
+                    <div class="counter-label">Counter 1</div>
+                    <div class="counter-value">{{ event.counter_1_value }}</div>
+                </div>
+                {% endif %}
+                
+                {% if event.counter_2_value %}
+                <div class="counter-item">
+                    <div class="counter-label">Counter 2</div>
+                    <div class="counter-value">{{ event.counter_2_value }}</div>
+                </div>
+                {% endif %}
+                
+                {% if event.counter_3_value %}
+                <div class="counter-item">
+                    <div class="counter-label">Counter 3</div>
+                    <div class="counter-value">{{ event.counter_3_value }}</div>
+                </div>
+                {% endif %}
+                
+                {% if event.counter_4_value %}
+                <div class="counter-item">
+                    <div class="counter-label">Counter 4</div>
+                    <div class="counter-value">{{ event.counter_4_value }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Resolution Section -->
+        {% if event.is_resolved %}
+        <div class="resolution-section">
+            <h4><i class="bi bi-check-circle me-2"></i>Resolution Information</h4>
+            <div class="resolution-info">
+                <strong>Resolved by:</strong> {{ event.resolved_by.username|default:"Unknown" }}<br>
+                <strong>Resolved at:</strong> {{ event.resolved_at|date:"F d, Y H:i:s" }}
+            </div>
+            {% if event.resolution_notes %}
+            <div class="resolution-notes">
+                <strong>Notes:</strong> {{ event.resolution_notes }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'power_events_list' %}" class="btn-modern btn-secondary-modern">
+                <i class="bi bi-arrow-left"></i>
+                Back to Events
+            </a>
+            
+            <a href="{% url 'power_dashboard' %}" class="btn-modern btn-primary-modern">
+                <i class="bi bi-speedometer2"></i>
+                Power Dashboard
+            </a>
+            
+            {% if not event.is_resolved %}
+            <button class="btn-modern btn-success-modern" onclick="resolveEvent({{ event.id }})">
+                <i class="bi bi-check"></i>
+                Mark Resolved
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function resolveEvent(eventId) {
+    if (confirm('Are you sure you want to mark this event as resolved?')) {
+        const notes = prompt('Please enter resolution notes (optional):');
+        
+        fetch(`/power-events/${eventId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `notes=${encodeURIComponent(notes || '')}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Event resolved successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while resolving the event.');
+        });
+    }
+}
+</script>
+{% endblock %} 

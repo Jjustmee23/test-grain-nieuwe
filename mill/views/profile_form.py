@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
 from django.utils import timezone
+from mill.models import UserProfile, UserNotificationPreference
 
 class UserUpdateForm(forms.ModelForm):
     email = forms.EmailField(
@@ -37,6 +38,38 @@ class UserUpdateForm(forms.ModelForm):
         if email and User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('This email address is already in use.')
         return email
+
+class UserProfileForm(forms.ModelForm):
+    """Form for updating user profile information"""
+    
+    class Meta:
+        model = UserProfile
+        fields = ['team']
+        widgets = {
+            'team': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your team name'
+            })
+        }
+
+class NotificationPreferenceForm(forms.ModelForm):
+    """Form for notification preferences"""
+    
+    class Meta:
+        model = UserNotificationPreference
+        fields = ['receive_in_app', 'receive_email', 'email_address']
+        widgets = {
+            'receive_in_app': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'receive_email': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'email_address': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter email for notifications'
+            })
+        }
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

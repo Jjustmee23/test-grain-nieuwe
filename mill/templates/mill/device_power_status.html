@@ -1,0 +1,411 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Device Power Status - {{ device.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .device-power-status {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .status-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .status-title {
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .status-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+    }
+    
+    .status-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .device-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .device-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .power-status-badge {
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+    
+    .power-status-badge.on {
+        background: #28a745;
+        color: white;
+    }
+    
+    .power-status-badge.off {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .status-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .info-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        color: #333;
+        font-size: 1rem;
+    }
+    
+    .power-chart {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .power-chart h4 {
+        color: #333;
+        margin-bottom: 15px;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .events-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .events-section h4 {
+        color: #333;
+        margin-bottom: 15px;
+    }
+    
+    .event-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        border: 1px solid #dee2e6;
+    }
+    
+    .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .event-title {
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .event-time {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .event-severity {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .event-severity.critical {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .event-severity.high {
+        background: #fd7e14;
+        color: white;
+    }
+    
+    .event-severity.medium {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .event-severity.low {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .btn-modern {
+        padding: 12px 24px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .btn-primary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+    
+    .btn-secondary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: #ddd;
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="device-power-status">
+    <!-- Status Header -->
+    <div class="status-header">
+        <h1 class="status-title">
+            <i class="bi bi-cpu me-3"></i>
+            Device Power Status
+        </h1>
+        <p class="status-subtitle">
+            Detailed power status for {{ device.name }}
+        </p>
+    </div>
+
+    <!-- Status Card -->
+    <div class="status-card">
+        <!-- Device Header -->
+        <div class="device-header">
+            <h2 class="device-name">{{ device.name }}</h2>
+            <span class="power-status-badge {% if power_status.has_power %}on{% else %}off{% endif %}">
+                {% if power_status.has_power %}
+                    <i class="bi bi-check-circle me-2"></i>POWER ON
+                {% else %}
+                    <i class="bi bi-exclamation-triangle me-2"></i>POWER OFF
+                {% endif %}
+            </span>
+        </div>
+
+        <!-- Status Information Grid -->
+        <div class="status-info-grid">
+            <div class="info-item">
+                <div class="info-label">Device ID</div>
+                <div class="info-value">{{ device.id }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Factory</div>
+                <div class="info-value">{{ device.factory.name|default:"Unknown" }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Device Status</div>
+                <div class="info-value">
+                    {% if device.status %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Selected Counter</div>
+                <div class="info-value">{{ device.selected_counter|default:"Not set" }}</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Current Power Value (AIN1)</div>
+                <div class="info-value">
+                    {% if power_status.ain1_value %}
+                        {{ power_status.ain1_value }} V
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Power Threshold</div>
+                <div class="info-value">{{ power_status.power_threshold|default:"0.0" }} V</div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Last Power Check</div>
+                <div class="info-value">
+                    {% if power_status.last_power_check %}
+                        {{ power_status.last_power_check|date:"F d, Y H:i:s" }}
+                    {% else %}
+                        Never
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Power Loss Detected</div>
+                <div class="info-value">
+                    {% if power_status.power_loss_detected_at %}
+                        {{ power_status.power_loss_detected_at|date:"F d, Y H:i:s" }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-item">
+                <div class="info-label">Production During Power Loss</div>
+                <div class="info-value">
+                    {% if power_status.production_during_power_loss %}
+                        <span class="badge bg-danger">Yes - Critical Issue</span>
+                    {% else %}
+                        <span class="badge bg-success">No</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Power Events -->
+        <div class="events-section">
+            <h4><i class="bi bi-lightning me-2"></i>Recent Power Events</h4>
+            
+            {% if power_events %}
+                {% for event in power_events %}
+                    <div class="event-item">
+                        <div class="event-header">
+                            <h5 class="event-title">{{ event.get_event_type_display }}</h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="event-severity {{ event.severity }}">
+                                    {{ event.get_severity_display }}
+                                </span>
+                                <span class="event-time">{{ event.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                        </div>
+                        <p class="mb-2">{{ event.message }}</p>
+                        <div class="d-flex gap-3">
+                            <small><strong>Power Value:</strong> {{ event.ain1_value|default:"N/A" }} V</small>
+                            <small><strong>Status:</strong> 
+                                {% if event.is_resolved %}
+                                    <span class="badge bg-success">Resolved</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Active</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'power_event_detail' event.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-check-circle"></i>
+                    <h5>No Power Events</h5>
+                    <p>No power-related events have been recorded for this device.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'power_dashboard' %}" class="btn-modern btn-secondary-modern">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+            
+            <a href="{% url 'power_events_list' %}?device={{ device.id }}" class="btn-modern btn-primary-modern">
+                <i class="bi bi-list"></i>
+                View All Events
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %} 

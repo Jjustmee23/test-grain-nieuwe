@@ -1,0 +1,580 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Power Management Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .power-dashboard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .dashboard-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .dashboard-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .dashboard-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    
+    .stat-card.critical {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+    
+    .stat-card.critical .stat-label {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .stat-card.warning {
+        background: linear-gradient(135deg, #ffa726, #ff9800);
+        color: white;
+    }
+    
+    .stat-card.warning .stat-label {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .stat-card.success {
+        background: linear-gradient(135deg, #66bb6a, #4caf50);
+        color: white;
+    }
+    
+    .stat-card.success .stat-label {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .content-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .section-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-modern {
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .btn-primary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .btn-danger-modern {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+    
+    .btn-danger-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        color: white;
+    }
+    
+    .btn-success-modern {
+        background: linear-gradient(135deg, #66bb6a, #4caf50);
+        color: white;
+    }
+    
+    .btn-success-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 187, 106, 0.4);
+        color: white;
+    }
+    
+    .event-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-left: 5px solid #ddd;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .event-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .event-card.critical {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #fff5f5, #ffe6e6);
+    }
+    
+    .event-card.high {
+        border-left-color: #fd7e14;
+        background: linear-gradient(135deg, #fff8f0, #ffe8d6);
+    }
+    
+    .event-card.medium {
+        border-left-color: #ffc107;
+        background: linear-gradient(135deg, #fffbf0, #fff3cd);
+    }
+    
+    .event-card.low {
+        border-left-color: #17a2b8;
+        background: linear-gradient(135deg, #f0f9ff, #e6f3ff);
+    }
+    
+    .event-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .event-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #333;
+        margin: 0;
+    }
+    
+    .event-time {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .event-message {
+        color: #555;
+        margin-bottom: 10px;
+    }
+    
+    .event-details {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .device-status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .device-status-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 2px solid #ddd;
+        transition: all 0.3s ease;
+    }
+    
+    .device-status-card.power-off {
+        border-color: #dc3545;
+        background: linear-gradient(135deg, #fff5f5, #ffe6e6);
+    }
+    
+    .device-status-card.power-on {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #f0fff4, #e6ffe6);
+    }
+    
+    .device-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .device-factory {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .power-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .power-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .power-indicator.on {
+        background: #28a745;
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    }
+    
+    .power-indicator.off {
+        background: #dc3545;
+        box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    }
+    
+    .power-value {
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .last-check {
+        color: #666;
+        font-size: 0.8rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 30px;
+    }
+    
+    .page-link {
+        padding: 10px 15px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        color: #333;
+        text-decoration: none;
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .page-link:hover {
+        background: #e9ecef;
+        color: #333;
+        text-decoration: none;
+    }
+    
+    .page-link.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+</style>
+
+<div class="power-dashboard">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">
+            <i class="bi bi-lightning-charge me-3"></i>
+            Power Management Dashboard
+        </h1>
+        <p class="dashboard-subtitle">
+            Monitor device power status and manage power-related events
+        </p>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stat-card {% if summary.critical_events > 0 %}critical{% elif summary.unresolved_events > 0 %}warning{% else %}success{% endif %}">
+            <div class="stat-icon">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-number">{{ summary.unresolved_events }}</div>
+            <div class="stat-label">Active Power Events</div>
+        </div>
+        
+        <div class="stat-card {% if summary.critical_events > 0 %}critical{% else %}success{% endif %}">
+            <div class="stat-icon">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <div class="stat-number">{{ summary.critical_events }}</div>
+            <div class="stat-label">Critical Events</div>
+        </div>
+        
+        <div class="stat-card {% if devices_with_issues.count > 0 %}warning{% else %}success{% endif %}">
+            <div class="stat-icon">
+                <i class="bi bi-power"></i>
+            </div>
+            <div class="stat-number">{{ devices_with_issues.count }}</div>
+            <div class="stat-label">Devices Without Power</div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-number">{{ summary.total_events }}</div>
+            <div class="stat-label">Total Events Tracked</div>
+        </div>
+    </div>
+
+    <!-- Active Power Events -->
+    <div class="content-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Active Power Events
+            </h2>
+            <div class="section-actions">
+                <a href="{% url 'power_events_list' %}" class="btn-modern btn-primary-modern">
+                    <i class="bi bi-list"></i>
+                    View All Events
+                </a>
+                <a href="{% url 'power_analytics' %}" class="btn-modern btn-success-modern">
+                    <i class="bi bi-graph-up"></i>
+                    Analytics
+                </a>
+            </div>
+        </div>
+
+        {% if active_events %}
+            {% for event in active_events %}
+                <div class="event-card {{ event.severity }}">
+                    <div class="event-header">
+                        <h3 class="event-title">
+                            <i class="bi bi-lightning me-2"></i>
+                            {{ event.get_event_type_display }}
+                        </h3>
+                        <span class="event-time">{{ event.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="event-message">{{ event.message }}</div>
+                    <div class="event-details">
+                        <span><strong>Device:</strong> {{ event.device.name }}</span>
+                        <span><strong>Factory:</strong> {{ event.device.factory.name|default:"Unknown" }}</span>
+                        <span><strong>Severity:</strong> 
+                            <span class="badge bg-{{ event.get_severity_color }}">{{ event.get_severity_display }}</span>
+                        </span>
+                        {% if event.ain1_value %}
+                            <span><strong>Power Value:</strong> {{ event.ain1_value }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'power_event_detail' event.id %}" class="btn-modern btn-primary-modern btn-sm">
+                            <i class="bi bi-eye"></i>
+                            View Details
+                        </a>
+                        <button class="btn-modern btn-success-modern btn-sm" onclick="resolveEvent({{ event.id }})">
+                            <i class="bi bi-check"></i>
+                            Mark Resolved
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Pagination -->
+            {% if active_events.has_other_pages %}
+                <div class="pagination">
+                    {% if active_events.has_previous %}
+                        <a href="?page={{ active_events.previous_page_number }}" class="page-link">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in active_events.paginator.page_range %}
+                        {% if active_events.number == num %}
+                            <span class="page-link active">{{ num }}</span>
+                        {% elif num > active_events.number|add:'-3' and num < active_events.number|add:'3' %}
+                            <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if active_events.has_next %}
+                        <a href="?page={{ active_events.next_page_number }}" class="page-link">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-check-circle"></i>
+                <h3>No Active Power Events</h3>
+                <p>All devices are operating normally with stable power supply.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Devices with Power Issues -->
+    <div class="content-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-power me-2"></i>
+                Devices with Power Issues
+            </h2>
+            <div class="section-actions">
+                <a href="{% url 'power_notification_settings' %}" class="btn-modern btn-primary-modern">
+                    <i class="bi bi-gear"></i>
+                    Notification Settings
+                </a>
+            </div>
+        </div>
+
+        {% if devices_with_issues %}
+            <div class="device-status-grid">
+                {% for power_status in devices_with_issues %}
+                    <div class="device-status-card power-off">
+                        <div class="device-name">{{ power_status.device.name }}</div>
+                        <div class="device-factory">{{ power_status.device.factory.name|default:"Unknown Factory" }}</div>
+                        <div class="power-status">
+                            <span class="power-indicator off"></span>
+                            <span class="power-value">Power OFF</span>
+                        </div>
+                        {% if power_status.ain1_value %}
+                            <div class="power-value">AIN1: {{ power_status.ain1_value }}</div>
+                        {% endif %}
+                        <div class="last-check">
+                            Last check: {{ power_status.last_power_check|date:"M d, Y H:i" }}
+                        </div>
+                        {% if power_status.power_loss_detected_at %}
+                            <div class="last-check">
+                                Power lost: {{ power_status.power_loss_detected_at|date:"M d, Y H:i" }}
+                            </div>
+                        {% endif %}
+                        <div class="mt-3">
+                            <a href="{% url 'device_power_status' power_status.device.id %}" class="btn-modern btn-primary-modern btn-sm">
+                                <i class="bi bi-eye"></i>
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-check-circle"></i>
+                <h3>All Devices Have Power</h3>
+                <p>No devices are currently experiencing power issues.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function resolveEvent(eventId) {
+    if (confirm('Are you sure you want to mark this event as resolved?')) {
+        const notes = prompt('Please enter resolution notes (optional):');
+        
+        fetch(`/power-events/${eventId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `notes=${encodeURIComponent(notes || '')}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Event resolved successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while resolving the event.');
+        });
+    }
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %} 

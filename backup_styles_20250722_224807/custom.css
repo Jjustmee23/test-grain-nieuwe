@@ -1,0 +1,36 @@
+a {
+    color: #88C0B8 !important;  /* Replace with your desired color */
+}
+
+.nav-link.active {
+    background-color: #88C0B8 !important;
+    color: #fff;
+}
+/* Change background color for all btn-primary buttons */
+.btn-primary {
+    background-color: #88C0B8 !important;  /* Replace with your desired color */
+    border-color: #88C0B8 !important;
+}
+
+a.nav-link {
+    color: #ffffff !important;  /* Replace with your desired color */
+}
+
+a.btn-info {
+    color: #ffff !important;  /* Replace with your desired color */
+}
+a.btn-success {
+    color: #ffff !important;  /* Replace with your desired color */
+}
+a.btn {
+    color: #ffff !important;  /* Replace with your desired color */
+}
+a.brand-link {
+    color: #ffff !important;  /* Replace with your desired color */
+}
+a.d-block {
+    color: #ffff !important;  /* Replace with your desired color */
+}
+selector-chosen{
+    background: #88C0B8 !important;  /* Replace with your desired color */
+}

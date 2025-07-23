@@ -1,178 +1,915 @@
 {% extends 'mill/base.html' %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0">Manage Profile</h2>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>Current User:</strong> {{ current_user }}<br>
-                        <strong>Last Updated:</strong> {{ last_update }}
-                    </div>
+{% csrf_token %}
+<style>
+    .profile-container {
+        background: linear-gradient(135deg, #88C0B8 0%, #D8E2DC 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .profile-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+    }
+    
+    .profile-header {
+        background: linear-gradient(135deg, #88C0B8 0%, #6FAF9A 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 2.5rem;
+        font-weight: bold;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .profile-stats {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .nav-tabs {
+        border: none;
+        background: #f8f9fa;
+        padding: 0 2rem;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+        border-radius: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: white;
+        color: #88C0B8;
+        border-bottom: 3px solid #88C0B8;
+    }
+    
+    .tab-content {
+        padding: 2rem;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e9ecef;
+    }
+    
+    .form-section h5 {
+        color: #0c2d48;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .btn-modern {
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #88C0B8 0%, #6FAF9A 100%);
+        color: white;
+    }
+    
+    .btn-warning-modern {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #0c2d48;
+    }
+    
+    .btn-success-modern {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-danger-modern {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+    
+    .ticket-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid #88C0B8;
+        transition: all 0.3s ease;
+    }
+    
+    .ticket-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .badge-modern {
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.3s ease;
+    }
+    
+    .activity-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+    }
+    
+    .notification-preference {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+    
+    .notification-preference:hover {
+        border-color: #88C0B8;
+        box-shadow: 0 5px 15px rgba(136, 192, 184, 0.1);
+    }
+    
+    .form-switch .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+        margin-top: 0;
+    }
+    
+    .form-switch .form-check-input:focus {
+        border-color: #88C0B8;
+        box-shadow: 0 0 0 0.2rem rgba(136, 192, 184, 0.25);
+    }
+    
+    .form-switch .form-check-input:checked {
+        background-color: #88C0B8;
+        border-color: #88C0B8;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .two-factor-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .qr-code-container {
+        text-align: center;
+        padding: 1rem;
+        background: white;
+        border-radius: 10px;
+        margin: 1rem 0;
+    }
+    
+    .backup-codes {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .session-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .session-active {
+        border-left: 4px solid #28a745;
+    }
+    
+    .session-inactive {
+        border-left: 4px solid #6c757d;
+    }
+    
+    /* App Instructions Styling */
+    .app-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    
+    .app-card:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .app-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .app-info {
+        flex-grow: 1;
+    }
+    
+    .app-info h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .app-links {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .app-links .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .setup-steps {
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .setup-steps li {
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+        color: #555;
+    }
+    
+    .setup-steps li::marker {
+        color: #88C0B8;
+        font-weight: bold;
+    }
+</style>
 
-                    {% if messages %}
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                    {% endfor %}
-                    {% endif %}
-
-                    <!-- Profile Update Form -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h4 class="mb-0">Update Profile Information</h4>
+<div class="profile-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="profile-card">
+                    <!-- Profile Header -->
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            {{ current_user|first|upper }}
                         </div>
-                        <div class="card-body">
-                            <form method="POST" class="form">
-                                {% csrf_token %}
-                                {% for field in user_form %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                    <small class="form-text text-muted">{{ field.help_text }}</small>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                    <div class="alert alert-danger mt-1">
-                                        {{ field.errors }}
-                                    </div>
-                                    {% endif %}
+                        <h2>{{ current_user }}</h2>
+                        <p class="mb-0">Last updated: {{ last_update }}</p>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_tickets }}</span>
+                                <span class="stat-label">Total Tickets</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ open_tickets }}</span>
+                                <span class="stat-label">Open Tickets</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ resolved_tickets }}</span>
+                                <span class="stat-label">Resolved</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_notifications }}</span>
+                                <span class="stat-label">Notifications</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ unread_notifications }}</span>
+                                <span class="stat-label">Unread</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                                <i class="bi bi-person-circle me-2"></i>Profile
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                                <i class="bi bi-shield-lock me-2"></i>Security
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                                <i class="bi bi-bell me-2"></i>Notifications
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets" type="button" role="tab">
+                                <i class="bi bi-ticket-detailed me-2"></i>Support Tickets
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                                <i class="bi bi-activity me-2"></i>Activity
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="profileTabsContent">
+                        <!-- Profile Tab -->
+                        <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                            {% if messages %}
+                                {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-info-circle me-2"></i>{{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                 </div>
                                 {% endfor %}
-                                <button type="submit" name="update_profile" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Update Profile
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                            {% endif %}
 
-                    <!-- Password Change Form -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h4 class="mb-0">Change Password</h4>
-                        </div>
-                        <div class="card-body">
                             <form method="POST" class="form">
                                 {% csrf_token %}
-                                {% for field in password_form %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                    <small class="form-text text-muted">{{ field.help_text|safe }}</small>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                    <div class="alert alert-danger mt-1">
-                                        {{ field.errors }}
+                                <div class="form-section">
+                                    <h5><i class="bi bi-person me-2"></i>Personal Information</h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ user_form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                                {{ user_form.first_name }}
+                                                {% if user_form.first_name.errors %}
+                                                <div class="text-danger mt-1">{{ user_form.first_name.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="{{ user_form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                                {{ user_form.last_name }}
+                                                {% if user_form.last_name.errors %}
+                                                <div class="text-danger mt-1">{{ user_form.last_name.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                    {% endif %}
+                                    <div class="mb-3">
+                                        <label for="{{ user_form.email.id_for_label }}" class="form-label">Email Address</label>
+                                        {{ user_form.email }}
+                                        {% if user_form.email.errors %}
+                                        <div class="text-danger mt-1">{{ user_form.email.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="submit" name="update_profile" class="btn btn-modern btn-primary-modern">
+                                        <i class="bi bi-check-circle me-2"></i>Update Profile
+                                    </button>
                                 </div>
-                                {% endfor %}
-                                <button type="submit" name="change_password" class="btn btn-warning">
-                                    <i class="fas fa-key"></i> Change Password
-                                </button>
                             </form>
-                        </div>
-                    </div>
 
-                    <!-- My Tickets Section -->
-                    <div class="card">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">
-                                <i class="fas fa-ticket-alt me-2"></i>My Support Tickets
-                            </h4>
-                            <a href="{% url 'contact' %}" class="btn btn-light">
-                                <i class="fas fa-plus me-1"></i>New Ticket
-                            </a>
+                            <!-- User Profile Information -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-gear me-2"></i>Account Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Username:</strong> {{ user.username }}</p>
+                                        <p><strong>Date Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+                                        <p><strong>Last Login:</strong> {{ user.last_login|date:"F d, Y H:i"|default:"Never" }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Account Status:</strong> 
+                                            <span class="badge badge-modern bg-success">Active</span>
+                                        </p>
+                                        <p><strong>User Type:</strong> 
+                                            {% if user.is_superuser %}
+                                                <span class="badge badge-modern bg-danger">Super Admin</span>
+                                            {% elif user.is_staff %}
+                                                <span class="badge badge-modern bg-warning">Admin</span>
+                                            {% else %}
+                                                <span class="badge badge-modern bg-info">User</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Team Information -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-people me-2"></i>Team Information</h5>
+                                <form method="POST" class="form">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="{{ profile_form.team.id_for_label }}" class="form-label">Team</label>
+                                        {{ profile_form.team }}
+                                        {% if profile_form.team.errors %}
+                                        <div class="text-danger mt-1">{{ profile_form.team.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="submit" name="update_profile_info" class="btn btn-modern btn-success-modern">
+                                        <i class="bi bi-check-circle me-2"></i>Update Team Info
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <!-- Statistics Cards -->
-                            <div class="row mb-4">
-                                <div class="col-md-4">
-                                    <div class="card bg-primary text-white">
-                                        <div class="card-body text-center">
-                                            <h5>{{ total_tickets }}</h5>
-                                            <small>Total Tickets</small>
+
+                        <!-- Security Tab -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <div class="form-section">
+                                <h5><i class="bi bi-key me-2"></i>Change Password</h5>
+                                <form method="POST" class="form">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="{{ password_form.old_password.id_for_label }}" class="form-label">Current Password</label>
+                                                {{ password_form.old_password }}
+                                                {% if password_form.old_password.errors %}
+                                                <div class="text-danger mt-1">{{ password_form.old_password.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="{{ password_form.new_password1.id_for_label }}" class="form-label">New Password</label>
+                                                {{ password_form.new_password1 }}
+                                                {% if password_form.new_password1.errors %}
+                                                <div class="text-danger mt-1">{{ password_form.new_password1.errors }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="{{ password_form.new_password2.id_for_label }}" class="form-label">Confirm Password</label>
+                                                {{ password_form.new_password2 }}
+                                                {% if password_form.new_password2.errors %}
+                                                <div class="text-danger mt-1">{{ password_form.new_password2.errors }}</div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card bg-warning text-white">
-                                        <div class="card-body text-center">
-                                            <h5>{{ open_tickets }}</h5>
-                                            <small>Open Tickets</small>
+                                    <button type="submit" name="change_password" class="btn btn-modern btn-warning-modern">
+                                        <i class="bi bi-shield-check me-2"></i>Change Password
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Two-Factor Authentication -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-shield me-2"></i>Two-Factor Authentication</h5>
+                                <div class="two-factor-section">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6>Enhanced Security (Aanbevolen)</h6>
+                                            <p class="text-muted">Two-factor authentication is niet verplicht maar wel sterk aanbevolen voor extra beveiliging. Het voegt een extra beveiligingslaag toe aan je account door een tweede verificatiemethode te vereisen naast je wachtwoord.</p>
+                                            
+                                            <div class="alert alert-light border-info">
+                                                <i class="bi bi-info-circle me-2 text-info"></i>
+                                                <strong>Waarom 2FA gebruiken?</strong>
+                                                <ul class="mb-0 mt-2">
+                                                    <li>Beschermt tegen ongeautoriseerde toegang</li>
+                                                    <li>Voorkomt account takeover bij gestolen wachtwoorden</li>
+                                                    <li>Voldoet aan moderne beveiligingsstandaarden</li>
+                                                    <li>Geeft extra gemoedsrust</li>
+                                                </ul>
+                                            </div>
+                                            
+                                            <div id="2fa-status-container">
+                                                {% if two_factor_enabled %}
+                                                    <div class="alert alert-success">
+                                                        <i class="bi bi-check-circle me-2"></i>
+                                                        <strong>Two-factor authentication is enabled</strong>
+                                                        <p class="mb-0">Your account is protected with an additional security layer.</p>
+                                                    </div>
+                                                    <button class="btn btn-modern btn-danger-modern" onclick="disableTwoFactor()">
+                                                        <i class="bi bi-shield-x me-2"></i>Disable 2FA
+                                                    </button>
+                                                {% else %}
+                                                    <div class="alert alert-info">
+                                                        <i class="bi bi-info-circle me-2"></i>
+                                                        <strong>Two-factor authentication is not enabled</strong>
+                                                        <p class="mb-0">Enable 2FA to add an extra layer of security to your account.</p>
+                                                    </div>
+                                                    <button class="btn btn-modern btn-primary-modern" onclick="enableTwoFactor()">
+                                                        <i class="bi bi-shield-check me-2"></i>Enable 2FA
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div id="qr-code-container" class="qr-code-container">
+                                                <i class="bi bi-qr-code" style="font-size: 4rem; color: #88C0B8;"></i>
+                                                <p class="mt-2 text-muted">QR Code will appear here when enabling 2FA</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card bg-success text-white">
-                                        <div class="card-body text-center">
-                                            <h5>{{ resolved_tickets }}</h5>
-                                            <small>Resolved</small>
+                                    
+                                    <div id="verification-section" style="display: none;">
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            <strong>Verification Required</strong>
+                                            <p class="mb-2">Please scan the QR code with your authenticator app and enter the verification code below.</p>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <input type="text" id="verification-code" class="form-control" placeholder="Enter 6-digit code" maxlength="6">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <button class="btn btn-modern btn-success-modern" onclick="verifyTwoFactor()">
+                                                        <i class="bi bi-check me-2"></i>Verify & Enable
+                                                    </button>
+                                                    <button class="btn btn-modern btn-secondary-modern" onclick="cancelTwoFactor()">
+                                                        <i class="bi bi-x me-2"></i>Cancel
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Authenticator App Instructions -->
+                                    <div id="app-instructions" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <h6><i class="bi bi-info-circle me-2"></i>Recommended Authenticator Apps</h6>
+                                            <p class="mb-3">2-staps verificatie is niet verplicht maar wel sterk aanbevolen voor extra beveiliging. Hier zijn enkele populaire authenticator apps die je kunt gebruiken:</p>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="app-card">
+                                                        <div class="app-icon bg-primary text-white">
+                                                            <i class="bi bi-google"></i>
+                                                        </div>
+                                                        <div class="app-info">
+                                                            <h6>Google Authenticator</h6>
+                                                            <p class="text-muted mb-2">Gratis, eenvoudig te gebruiken</p>
+                                                            <div class="app-links">
+                                                                <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-google-play me-1"></i>Android
+                                                                </a>
+                                                                <a href="https://apps.apple.com/us/app/google-authenticator/id388497605" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-apple me-1"></i>iOS
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="app-card">
+                                                        <div class="app-icon bg-success text-white">
+                                                            <i class="bi bi-shield-check"></i>
+                                                        </div>
+                                                        <div class="app-info">
+                                                            <h6>Authy</h6>
+                                                            <p class="text-muted mb-2">Multi-device sync, backup mogelijkheden</p>
+                                                            <div class="app-links">
+                                                                <a href="https://play.google.com/store/apps/details?id=com.authy.authy" target="_blank" class="btn btn-sm btn-outline-success">
+                                                                    <i class="bi bi-google-play me-1"></i>Android
+                                                                </a>
+                                                                <a href="https://apps.apple.com/us/app/authy/id494168017" target="_blank" class="btn btn-sm btn-outline-success">
+                                                                    <i class="bi bi-apple me-1"></i>iOS
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="app-card">
+                                                        <div class="app-icon bg-info text-white">
+                                                            <i class="bi bi-microsoft"></i>
+                                                        </div>
+                                                        <div class="app-info">
+                                                            <h6>Microsoft Authenticator</h6>
+                                                            <p class="text-muted mb-2">Integratie met Microsoft services</p>
+                                                            <div class="app-links">
+                                                                <a href="https://play.google.com/store/apps/details?id=com.azure.authenticator" target="_blank" class="btn btn-sm btn-outline-info">
+                                                                    <i class="bi bi-google-play me-1"></i>Android
+                                                                </a>
+                                                                <a href="https://apps.apple.com/us/app/microsoft-authenticator/id983156458" target="_blank" class="btn btn-sm btn-outline-info">
+                                                                    <i class="bi bi-apple me-1"></i>iOS
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="app-card">
+                                                        <div class="app-icon bg-warning text-white">
+                                                            <i class="bi bi-1-circle"></i>
+                                                        </div>
+                                                        <div class="app-info">
+                                                            <h6>1Password</h6>
+                                                            <p class="text-muted mb-2">Password manager met 2FA integratie</p>
+                                                            <div class="app-links">
+                                                                <a href="https://play.google.com/store/apps/details?id=com.1password.android" target="_blank" class="btn btn-sm btn-outline-warning">
+                                                                    <i class="bi bi-google-play me-1"></i>Android
+                                                                </a>
+                                                                <a href="https://apps.apple.com/us/app/1password-password-manager/id568903335" target="_blank" class="btn btn-sm btn-outline-warning">
+                                                                    <i class="bi bi-apple me-1"></i>iOS
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-3">
+                                                <h6><i class="bi bi-lightbulb me-2"></i>Setup Instructies:</h6>
+                                                <ol class="setup-steps">
+                                                    <li>Download en installeer een van de bovenstaande authenticator apps</li>
+                                                    <li>Open de app en kies voor "QR Code scannen" of "Barcode toevoegen"</li>
+                                                    <li>Scan de QR code die hierboven wordt weergegeven</li>
+                                                    <li>De app zal automatisch een 6-cijferige code genereren</li>
+                                                    <li>Voer deze code in het veld hierboven in en klik op "Verify & Enable"</li>
+                                                </ol>
+                                                
+                                                <div class="alert alert-warning mt-3">
+                                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                                    <strong>Belangrijk:</strong> Bewaar je authenticator app veilig. Als je je telefoon verliest of de app verwijdert, kun je mogelijk niet meer inloggen zonder backup codes.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="backup-codes-section" style="display: none;">
+                                        <div class="backup-codes">
+                                            <h6><i class="bi bi-key me-2"></i>Backup Codes</h6>
+                                            <p class="text-muted">Store these backup codes in a safe place. You can use them to access your account if you lose your 2FA device.</p>
+                                            <div id="backup-codes-list" class="row">
+                                                <!-- Backup codes will be generated here -->
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {% if tickets %}
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-dark">
-                                            <tr>
-                                                <th>Ticket ID</th>
-                                                <th>Subject</th>
-                                                <th>Type</th>
-                                                <th>Priority</th>
-                                                <th>Status</th>
-                                                <th>Created</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for ticket in tickets %}
-                                            <tr>
-                                                <td>#{{ ticket.id }}</td>
-                                                <td>
-                                                    <strong>{{ ticket.subject }}</strong>
-                                                    {% if ticket.has_unread_responses %}
-                                                        <span class="badge bg-danger ms-2">New Response</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-secondary">{{ ticket.get_ticket_type_display }}</span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge {{ ticket.get_priority_display_class }}">
-                                                        {{ ticket.get_priority_display }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge {{ ticket.get_status_display_class }}">
-                                                        {{ ticket.get_status_display }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ ticket.created_at|date:"M d, Y H:i" }}</td>
-                                                <td>
-                                                    <a href="{% url 'ticket_detail' ticket.id %}" 
-                                                       class="btn btn-sm btn-primary">
-                                                        <i class="fas fa-eye"></i> View
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                            <!-- Session Management -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-display me-2"></i>Session Management</h5>
+                                <div class="session-item session-active">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <h6 class="mb-1">Current Session</h6>
+                                            <p class="text-muted mb-1">Chrome on Windows 10 - {{ user.last_login|date:"M d, Y H:i" }}</p>
+                                            <small class="text-success">Active now</small>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <span class="badge badge-modern bg-success">Current</span>
+                                        </div>
+                                    </div>
                                 </div>
+                                
+                                <div class="session-item session-inactive">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <h6 class="mb-1">Previous Session</h6>
+                                            <p class="text-muted mb-1">Firefox on Windows 10 - {{ user.last_login|date:"M d, Y H:i"|default:"Unknown" }}</p>
+                                            <small class="text-muted">Last active 2 days ago</small>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <button class="btn btn-sm btn-outline-danger">Terminate</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-modern btn-warning-modern">
+                                    <i class="bi bi-x-circle me-2"></i>Terminate All Other Sessions
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Notifications Tab -->
+                        <div class="tab-pane fade" id="notifications" role="tabpanel">
+                            <div class="form-section">
+                                <h5><i class="bi bi-bell me-2"></i>Notification Preferences</h5>
+                                <form method="POST" class="form">
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="notification-preference">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-1">In-App Notifications</h6>
+                                                        <small class="text-muted">Receive notifications within the application</small>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        {{ notification_form.receive_in_app }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="notification-preference">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-1">Email Notifications</h6>
+                                                        <small class="text-muted">Receive notifications via email</small>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        {{ notification_form.receive_email }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ notification_form.email_address.id_for_label }}" class="form-label">Notification Email Address</label>
+                                        {{ notification_form.email_address }}
+                                        {% if notification_form.email_address.errors %}
+                                        <div class="text-danger mt-1">{{ notification_form.email_address.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <button type="submit" name="update_notifications" class="btn btn-modern btn-primary-modern">
+                                        <i class="bi bi-check-circle me-2"></i>Update Notification Preferences
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- Recent Notifications -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-bell-fill me-2"></i>Recent Notifications</h5>
+                                {% if notifications %}
+                                    {% for notification in notifications %}
+                                    <div class="notification-preference">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ notification.title }}</h6>
+                                                <p class="text-muted mb-1">{{ notification.message|truncatewords:20 }}</p>
+                                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge badge-modern {{ notification.priority|lower }}">
+                                                    {{ notification.get_priority_display }}
+                                                </span>
+                                                {% if not notification.read %}
+                                                    <span class="badge badge-modern bg-danger ms-1">New</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="empty-state">
+                                        <i class="bi bi-bell"></i>
+                                        <h5>No notifications</h5>
+                                        <p>You haven't received any notifications yet.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Email History -->
+                            <div class="form-section">
+                                <h5><i class="bi bi-envelope me-2"></i>Email History</h5>
+                                {% if email_history %}
+                                    {% for email in email_history %}
+                                    <div class="notification-preference">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ email.subject }}</h6>
+                                                <p class="text-muted mb-1">{{ email.message|truncatewords:15 }}</p>
+                                                <small class="text-muted">{{ email.sent_at|timesince }} ago</small>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge badge-modern {{ email.status }}">
+                                                    {{ email.get_status_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="empty-state">
+                                        <i class="bi bi-envelope"></i>
+                                        <h5>No email history</h5>
+                                        <p>No emails have been sent to your account yet.</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Tickets Tab -->
+                        <div class="tab-pane fade" id="tickets" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="bi bi-ticket-detailed me-2"></i>My Support Tickets</h5>
+                                <a href="{% url 'contact' %}" class="btn btn-modern btn-success-modern">
+                                    <i class="bi bi-plus-circle me-2"></i>New Ticket
+                                </a>
+                            </div>
+
+                            {% if tickets %}
+                                {% for ticket in tickets %}
+                                <div class="ticket-card">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <h6 class="mb-0 me-3">#{{ ticket.id }} - {{ ticket.subject }}</h6>
+                                                {% if ticket.has_unread_responses %}
+                                                    <span class="badge badge-modern bg-danger">New Response</span>
+                                                {% endif %}
+                                            </div>
+                                            <p class="text-muted mb-2">{{ ticket.message|truncatewords:20 }}</p>
+                                            <div class="d-flex gap-2">
+                                                <span class="badge badge-modern bg-secondary">{{ ticket.get_ticket_type_display }}</span>
+                                                <span class="badge badge-modern {{ ticket.get_priority_display_class }}">
+                                                    {{ ticket.get_priority_display }}
+                                                </span>
+                                                <span class="badge badge-modern {{ ticket.get_status_display_class }}">
+                                                    {{ ticket.get_status_display }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <small class="text-muted d-block mb-2">{{ ticket.created_at|date:"M d, Y H:i" }}</small>
+                                            <a href="{% url 'ticket_detail' ticket.id %}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye me-1"></i>View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
 
                                 <!-- Pagination -->
                                 {% if tickets.has_other_pages %}
-                                <nav aria-label="Ticket pagination">
+                                <nav aria-label="Ticket pagination" class="mt-4">
                                     <ul class="pagination justify-content-center">
                                         {% if tickets.has_previous %}
                                             <li class="page-item">
@@ -201,15 +938,77 @@
                                 </nav>
                                 {% endif %}
                             {% else %}
-                                <div class="text-center py-5">
-                                    <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">No tickets found</h5>
-                                    <p class="text-muted">You haven't submitted any support tickets yet.</p>
-                                    <a href="{% url 'contact' %}" class="btn btn-primary">
-                                        <i class="fas fa-plus me-1"></i>Create Your First Ticket
+                                <div class="empty-state">
+                                    <i class="bi bi-ticket-detailed"></i>
+                                    <h5>No tickets found</h5>
+                                    <p>You haven't submitted any support tickets yet.</p>
+                                    <a href="{% url 'contact' %}" class="btn btn-modern btn-primary-modern">
+                                        <i class="bi bi-plus-circle me-2"></i>Create Your First Ticket
                                     </a>
                                 </div>
                             {% endif %}
+                        </div>
+
+                        <!-- Activity Tab -->
+                        <div class="tab-pane fade" id="activity" role="tabpanel">
+                            <h5><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+                            
+                            {% if recent_activities %}
+                                {% for activity in recent_activities %}
+                                <div class="activity-item">
+                                    <div class="activity-icon {{ activity.color }} text-white">
+                                        <i class="{{ activity.icon }}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ activity.title }}</h6>
+                                        <p class="text-muted mb-0">{{ activity.description }}</p>
+                                        <small class="text-muted">{{ activity.date|timesince }} ago</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="bi bi-activity"></i>
+                                    <h5>No recent activity</h5>
+                                    <p>Your recent activities will appear here.</p>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Additional User Information -->
+                            <div class="form-section mt-4">
+                                <h5><i class="bi bi-info-circle me-2"></i>Account Details</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Team:</strong> {{ team|default:"Not assigned" }}</p>
+                                        <p><strong>Allowed Cities:</strong> 
+                                            {% if allowed_cities %}
+                                                {% for city in allowed_cities %}{{ city.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                            {% else %}
+                                                All cities
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Allowed Factories:</strong> 
+                                            {% if allowed_factories %}
+                                                {% for factory in allowed_factories %}{{ factory.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                            {% else %}
+                                                All factories
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Support Tickets Enabled:</strong> 
+                                            {% if support_tickets_enabled %}
+                                                <span class="badge badge-modern bg-success">Yes</span>
+                                            {% else %}
+                                                <span class="badge badge-modern bg-secondary">No</span>
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Total Notifications:</strong> {{ total_notifications }}</p>
+                                        <p><strong>Unread Notifications:</strong> {{ unread_notifications }}</p>
+                                        <p><strong>Total Emails Sent:</strong> {{ total_emails }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -217,22 +1016,202 @@
         </div>
     </div>
 </div>
+
+<script>
+let currentDeviceId = null;
+
+function enableTwoFactor() {
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Setting up 2FA...';
+    button.disabled = true;
+    
+    // Make AJAX call to setup 2FA
+    fetch('{% url "setup_2fa" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: 'action=enable&csrfmiddlewaretoken=' + csrfToken
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show QR code
+            document.getElementById('qr-code-container').innerHTML = `
+                <img src="${data.qr_code}" alt="QR Code" style="max-width: 100%; height: auto;">
+                <p class="mt-2 text-muted">Scan this QR code with your authenticator app</p>
+                <p class="text-muted"><small>Secret Key: ${data.secret_key}</small></p>
+            `;
+            
+            // Store device ID for verification
+            currentDeviceId = data.device_id;
+            
+            // Show verification section and app instructions
+            document.getElementById('verification-section').style.display = 'block';
+            document.getElementById('app-instructions').style.display = 'block';
+            
+            // Update status
+            document.getElementById('2fa-status-container').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Setup in Progress</strong>
+                    <p class="mb-0">Please scan the QR code and enter the verification code to complete setup.</p>
+                </div>
+            `;
+        } else {
+            alert('Error: ' + data.message);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while setting up 2FA. Please try again.');
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function verifyTwoFactor() {
+    const code = document.getElementById('verification-code').value;
+    if (!code || code.length !== 6) {
+        alert('Please enter a valid 6-digit verification code');
+        return;
+    }
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Verifying...';
+    button.disabled = true;
+    
+    // Make AJAX call to verify 2FA
+    fetch('{% url "setup_2fa" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: `action=verify&device_id=${currentDeviceId}&token=${code}&csrfmiddlewaretoken=${csrfToken}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            alert('2FA enabled successfully!');
+            
+            // Reload page to show updated status
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while verifying 2FA. Please try again.');
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function cancelTwoFactor() {
+    // Reset the interface
+    document.getElementById('qr-code-container').innerHTML = `
+        <i class="bi bi-qr-code" style="font-size: 4rem; color: #88C0B8;"></i>
+        <p class="mt-2 text-muted">QR Code will appear here when enabling 2FA</p>
+    `;
+    document.getElementById('verification-section').style.display = 'none';
+    document.getElementById('app-instructions').style.display = 'none';
+    document.getElementById('2fa-status-container').innerHTML = `
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Two-factor authentication is not enabled</strong>
+            <p class="mb-0">Enable 2FA to add an extra layer of security to your account.</p>
+        </div>
+        <button class="btn btn-modern btn-primary-modern" onclick="enableTwoFactor()">
+            <i class="bi bi-shield-check me-2"></i>Enable 2FA
+        </button>
+    `;
+    currentDeviceId = null;
+}
+
+function disableTwoFactor() {
+    if (confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Disabling...';
+        button.disabled = true;
+        
+        // Make AJAX call to disable 2FA
+        fetch('{% url "setup_2fa" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: 'action=disable&csrfmiddlewaretoken=' + csrfToken
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('2FA disabled successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while disabling 2FA. Please try again.');
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+}
+
+// Generate backup codes (placeholder function)
+function generateBackupCodes() {
+    const codes = [];
+    for (let i = 0; i < 6; i++) {
+        codes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
+    }
+    return codes;
+}
+</script>
 {% endblock %}
 
 {% block extra_css %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-<style>
-    .card {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-    .card-header {
-        background-color: #f8f9fa;
-    }
-    .btn {
-        font-weight: 500;
-    }
-    .alert {
-        margin-bottom: 1rem;
-    }
-</style>
+<!-- Bootstrap Icons are already included in base template -->
 {% endblock %}

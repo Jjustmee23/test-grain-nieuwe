@@ -93,6 +93,12 @@ class SimpleEmailService:
                         "contentType": "HTML",
                         "content": html_content
                     },
+                    "from": {
+                        "emailAddress": {
+                            "address": self.settings.from_email,
+                            "name": self.settings.from_name
+                        }
+                    },
                     "toRecipients": [
                         {
                             "emailAddress": {

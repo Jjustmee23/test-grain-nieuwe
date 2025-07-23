@@ -1,0 +1,395 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+{{ form.media }}
+<style>
+    .email-management-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .email-tabs {
+        display: flex;
+        border-bottom: 2px solid #e1e1e1;
+        margin-bottom: 20px;
+    }
+    
+    .email-tab {
+        padding: 12px 24px;
+        background: #f8f9fa;
+        border: 1px solid #e1e1e1;
+        border-bottom: none;
+        cursor: pointer;
+        margin-right: 5px;
+        border-radius: 5px 5px 0 0;
+        font-weight: 500;
+    }
+    
+    .email-tab.active {
+        background: #fff;
+        border-bottom: 2px solid #007cba;
+        color: #007cba;
+    }
+    
+    .email-tab-content {
+        display: none;
+        padding: 20px;
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        border-radius: 0 0 5px 5px;
+    }
+    
+    .email-tab-content.active {
+        display: block;
+    }
+    
+    .email-form {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .email-form h3 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #007cba;
+        padding-bottom: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #007cba;
+        box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 10px;
+    }
+    
+    .btn-primary {
+        background: #007cba;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #005a8b;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #545b62;
+    }
+    
+    .email-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .email-history-table th,
+    .email-history-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e1e1e1;
+    }
+    
+    .email-history-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .email-history-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .status-success {
+        color: #28a745;
+        font-weight: 600;
+    }
+    
+    .status-error {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    
+    .template-selector {
+        margin-bottom: 15px;
+    }
+    
+    .preview-section {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .preview-section h4 {
+        margin-top: 0;
+        color: #333;
+    }
+    
+    .user-info {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #007cba;
+    }
+    
+    .user-info h2 {
+        margin: 0 0 10px 0;
+        color: #007cba;
+    }
+    
+    .user-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    
+    .user-detail {
+        display: flex;
+        align-items: center;
+    }
+    
+    .user-detail strong {
+        margin-right: 10px;
+        color: #333;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:auth_user_changelist' %}">Users</a>
+    &rsaquo; <a href="{% url 'admin:auth_user_change' user.id %}">{{ user.username }}</a>
+    &rsaquo; Email Management
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="email-management-container">
+    <div class="user-info">
+        <h2>📧 Email Management</h2>
+        <div class="user-details">
+            <div class="user-detail">
+                <strong>User:</strong> {{ user.get_full_name|default:user.username }}
+            </div>
+            <div class="user-detail">
+                <strong>Email:</strong> {{ user.email }}
+            </div>
+            <div class="user-detail">
+                <strong>Username:</strong> {{ user.username }}
+            </div>
+            <div class="user-detail">
+                <strong>Status:</strong> 
+                {% if user.is_active %}
+                    <span style="color: #28a745;">✓ Active</span>
+                {% else %}
+                    <span style="color: #dc3545;">✗ Inactive</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="email-tabs">
+        <div class="email-tab active" onclick="showTab('send-email')">📤 Send Email</div>
+        <div class="email-tab" onclick="showTab('email-history')">📋 Email History</div>
+    </div>
+
+    <!-- Send Email Tab -->
+    <div id="send-email" class="email-tab-content active">
+        <div class="email-form">
+            <h3>📤 Send New Email</h3>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="email_type">Email Type:</label>
+                    <select name="email_type" id="email_type" class="form-control" required>
+                        <option value="">Select email type...</option>
+                        <option value="welcome">Welcome Email</option>
+                        <option value="notification">Notification</option>
+                        <option value="support">Support</option>
+                        <option value="batch_update">Batch Update</option>
+                        <option value="custom">Custom Message</option>
+                    </select>
+                </div>
+
+                <div class="template-selector" id="template-selector" style="display: none;">
+                    <div class="form-group">
+                        <label for="template_id">Email Template:</label>
+                        <select name="template_id" id="template_id" class="form-control" onchange="loadTemplate()">
+                            <option value="">Select template...</option>
+                            {% for template in email_templates %}
+                                <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" name="subject" id="subject" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message:</label>
+                    <textarea name="message" id="message" class="form-control" rows="10" required></textarea>
+                </div>
+
+                <div class="preview-section" id="preview-section" style="display: none;">
+                    <h4>📄 Email Preview</h4>
+                    <div id="email-preview"></div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">📤 Send Email</button>
+                    <button type="button" class="btn btn-secondary" onclick="previewEmail()">👁️ Preview</button>
+                    <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-secondary">← Back to User</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email History Tab -->
+    <div id="email-history" class="email-tab-content">
+        <h3>📋 Email History for {{ user.username }}</h3>
+        
+        {% if email_history %}
+            <table class="email-history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Sent By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for email in email_history %}
+                    <tr>
+                        <td>{{ email.sent_at|date:"M d, Y H:i" }}</td>
+                        <td>{{ email.get_email_type_display }}</td>
+                        <td>{{ email.subject }}</td>
+                        <td>
+                            {% if email.status == 'sent' %}
+                                <span class="status-success">✓ Sent</span>
+                            {% else %}
+                                <span class="status-error">✗ Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ email.sent_by.get_full_name|default:email.sent_by.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: #666; padding: 40px;">
+                📭 No emails sent to this user yet.
+            </p>
+        {% endif %}
+        
+        <div style="margin-top: 20px;">
+            <a href="{% url 'admin:auth_user_change' user.id %}" class="btn btn-secondary">← Back to User</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.email-tab-content');
+    tabContents.forEach(content => content.classList.remove('active'));
+    
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.email-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Show selected tab content
+    document.getElementById(tabName).classList.add('active');
+    
+    // Add active class to clicked tab
+    event.target.classList.add('active');
+}
+
+function loadTemplate() {
+    const templateId = document.getElementById('template_id').value;
+    if (templateId) {
+        // Here you would typically make an AJAX call to get template content
+        // For now, we'll just show a placeholder
+        document.getElementById('subject').value = 'Template subject will be loaded';
+        document.getElementById('message').value = 'Template content will be loaded here...';
+    }
+}
+
+function previewEmail() {
+    const subject = document.getElementById('subject').value;
+    const message = document.getElementById('message').value;
+    
+    if (subject && message) {
+        const preview = document.getElementById('email-preview');
+        preview.innerHTML = `
+            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 4px; background: #f9f9f9;">
+                <h4 style="margin-top: 0; color: #333;">Subject: ${subject}</h4>
+                <hr style="margin: 15px 0;">
+                <div style="white-space: pre-wrap;">${message}</div>
+            </div>
+        `;
+        document.getElementById('preview-section').style.display = 'block';
+    } else {
+        alert('Please fill in both subject and message to preview.');
+    }
+}
+
+// Show template selector when email type is selected
+document.getElementById('email_type').addEventListener('change', function() {
+    const templateSelector = document.getElementById('template-selector');
+    if (this.value && this.value !== 'custom') {
+        templateSelector.style.display = 'block';
+    } else {
+        templateSelector.style.display = 'none';
+    }
+});
+</script>
+{% endblock %} 

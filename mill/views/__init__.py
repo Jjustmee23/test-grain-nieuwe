@@ -13,7 +13,7 @@ from .sensor_views import *
 from .admin_views import (
     change_password, notification_management, send_notification,
     update_user_notification_preferences, microsoft365_settings, test_email_connection, test_email_send,
-    email_history, user_email_history, send_direct_email, mass_messaging,
+    email_history, user_email_history, user_email_management, send_direct_email, mass_messaging,
     email_templates, send_welcome_email, send_password_reset_email
 )
 from .profile_views import manage_profile

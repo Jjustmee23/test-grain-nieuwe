@@ -4,203 +4,485 @@
 {% block title %}Manage Factories{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+    
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+    
+    .content-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .export-section {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #90caf9;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #20c997;
+        box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(32, 201, 151, 0.3);
+    }
+    
+    .btn-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-status {
+        border: none;
+        border-radius: 20px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-status.active {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-status.inactive {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+    }
+    
+    .table {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+    }
+    
+    .table tbody td {
+        padding: 1rem;
+        border: none;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+    }
+    
+    .badge-city {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .badge-sector {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .search-container {
+        display: flex;
+        gap: 1rem;
+        align-items: end;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        color: #721c24;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        color: #0c5460;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+        margin: 0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="bi bi-building"></i>
+            {% trans 'Manage Factories' %}
+        </h1>
+        <p class="page-subtitle">{% trans 'Add, edit, and manage factories in your system' %}</p>
+    </div>
+</div>
 
-
-
-<div class="admin-container">
-    <h2>{% trans 'Manage Factories' %}</h2>
-
-    <!-- Back to Admin Dashboard Button -->
-    <a href="{% url 'admin' %}" class="btn btn-secondary mb-3">{% trans 'Back to Admin Dashboard' %}</a>
-
+<div class="container">
     <!-- Flash Messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i>
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endif %}
 
-    <!-- Excel Export Section -->
-    <div class="mb-3">
-        <h3>{% trans 'Export Factories' %}</h3>
-        <form method="POST" action="{% url 'download_factories' %}" class="d-inline">
+    <!-- Export Section -->
+    <div class="export-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="mb-0">
+                    <i class="bi bi-download me-2"></i>
+                    {% trans 'Export Factories' %}
+                </h4>
+            </div>
+            <div class="col-md-4 text-end">
+                <form method="POST" action="{% url 'download_factories' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-file-earmark-excel me-2"></i>
+                        {% trans 'Download Factories as Excel' %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Factory Section -->
+    <div class="content-section">
+        <h3 class="section-title">
+            <i class="bi bi-plus-circle"></i>
+            {% trans 'Add New Factory' %}
+        </h3>
+        <form method="POST">
             {% csrf_token %}
-            <button type="submit" class="btn btn-info">{% trans 'Download Factories as Excel' %}</button>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="factory_name" class="form-label">{% trans 'Factory Name' %}</label>
+                        <input type="text" class="form-control" id="factory_name" name="factory_name" placeholder="{% trans 'Enter factory name...' %}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city_id" class="form-label">{% trans 'Select City' %}</label>
+                        <select id="city_id" name="city_id" class="form-control">
+                            <option value="">{% trans 'Select a city' %}</option>
+                            {% for city in cities %}
+                                <option value="{{ city.id }}">{{ city.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="group" class="form-label">{% trans 'Select Sector' %}</label>
+                        <select id="group" name="group" class="form-control">
+                            <option value="Public">{% trans 'Public' %}</option>
+                            <option value="private">{% trans 'Private' %}</option>
+                            <option value="commercial">{% trans 'Commercial' %}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="address" class="form-label">{% trans 'Address' %}</label>
+                        <textarea class="form-control" id="address" name="address" rows="2" placeholder="{% trans 'Enter full address for map functionality' %}"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="latitude" class="form-label">{% trans 'Latitude' %}</label>
+                        <input type="number" step="any" class="form-control" id="latitude" name="latitude" placeholder="33.2232">
+                        <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="longitude" class="form-label">{% trans 'Longitude' %}</label>
+                        <input type="number" step="any" class="form-control" id="longitude" name="longitude" placeholder="43.6793">
+                        <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" name="action" value="add_factory" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                {% trans 'Add Factory' %}
+            </button>
         </form>
     </div>
 
-    <h3>{% trans 'Add Factory' %}</h3>
-    <form method="POST">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="factory_name" class="form-label">{% trans 'Factory Name' %}:</label>
-            <input type="text" class="form-control" id="factory_name" name="factory_name" required>
-        </div>
-        <div class="mb-3">
-            <label for="city_id" class="form-label">{% trans 'Select City ' %}:</label>
-            <select id="city_id" name="city_id" class="form-control">
-                <!-- Add an empty option -->
-                <option value="">{% trans 'Select a city' %}</option>
-                {% for city in cities %}
-                    <option value="{{ city.id }}">{{ city.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="group" class="form-label">{% trans 'Select Sector' %}:</label>
-            <select id="group" name="group" class="form-control">
-                                                <option value="Public">{% trans 'Public' %}</option>
-                <option value="private">{% trans 'Private' %}</option>
-                <option value="commercial">{% trans 'Commercial' %}</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="address" class="form-label">{% trans 'Address' %}:</label>
-            <textarea class="form-control" id="address" name="address" rows="2" placeholder="{% trans 'Enter full address for map functionality' %}"></textarea>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="latitude" class="form-label">{% trans 'Latitude' %}:</label>
-                    <input type="number" step="any" class="form-control" id="latitude" name="latitude" placeholder="33.2232">
-                    <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="longitude" class="form-label">{% trans 'Longitude' %}:</label>
-                    <input type="number" step="any" class="form-control" id="longitude" name="longitude" placeholder="43.6793">
-                    <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
-                </div>
-            </div>
-        </div>
-        <button type="submit" name="action" value="add_factory" class="btn btn-primary">{% trans 'Add Factory' %}</button>
-    </form>
-
-    <h3>{% trans 'Existing Factories' %}</h3>
     <!-- Search and Filter Section -->
-<div class="mb-4">
-    <h4>{% trans 'Search and Filter' %}</h4>
-    <form method="GET" class="row g-3">
-        <div class="col-md-4">
-            <input type="text" class="form-control" name="search" 
-                   value="{{ search_query }}" placeholder="{% trans 'Search by factory name...' %}">
-        </div>
-        <div class="col-md-4">
-            <select class="form-control" name="city_filter">
-                <option value="">{% trans 'All Cities' %}</option>
-                {% for city in cities %}
-                    <option value="{{ city.id }}" {% if city.id|stringformat:"s" == city_filter %}selected{% endif %}>
-                        {{ city.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-4">
-            <button type="submit" class="btn btn-primary">{% trans 'Search' %}</button>
-            <a href="{% url 'manage_factory' %}" class="btn btn-secondary">{% trans 'Clear' %}</a>
-        </div>
-    </form>
-</div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>{% trans 'Factory Name' %}</th>
-                <th>{% trans 'City' %}</th>
-                <th>{% trans 'Sector' %}</th>
-                <th>{% trans 'Status' %}</th>
-                <th>{% trans 'Linked Devices' %}</th>
-                {% comment %} <th>{% trans 'Device Counters' %}</th> {% endcomment %}
-                <th>{% trans 'Actions' %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for factory in factories %}
-            <tr>
-                <td>{{ factory.name }}</td>
-                <td>{{ factory.city.name }}</td>
-                <td>
-                                                {% if factory.group == 'Public' %}
-                            {% trans 'Public' %}
-                    {% elif factory.group == 'private' %}
-                        {% trans 'Private' %}
-                    {% elif factory.group == 'commercial' %}
-                        {% trans 'Commercial' %}
-                    {% else %}
-                        {{ factory.group|title }}
-                    {% endif %}
-                </td>
-                <td>
-                    <form method="POST" style="display:inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="toggle_factory_status">
-                        <input type="hidden" name="factory_id" value="{{ factory.id }}">
-                        <button type="submit" class="btn btn-status {% if factory.status %}active{% else %}inactive{% endif %}">
-                            {% if factory.status %}
-                                {% trans 'Active' %}
+    <div class="content-section">
+        <h3 class="section-title">
+            <i class="bi bi-search"></i>
+            {% trans 'Search and Filter Factories' %}
+        </h3>
+        <form method="GET" class="search-container">
+            <div class="flex-grow-1">
+                <input type="text" class="form-control" name="search" 
+                       value="{{ search_query }}" placeholder="{% trans 'Search by factory name...' %}">
+            </div>
+            <div class="flex-grow-1">
+                <select class="form-control" name="city_filter">
+                    <option value="">{% trans 'All Cities' %}</option>
+                    {% for city in cities %}
+                        <option value="{{ city.id }}" {% if city.id|stringformat:"s" == city_filter %}selected{% endif %}>
+                            {{ city.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-2"></i>
+                {% trans 'Zoeken' %}
+            </button>
+            <a href="{% url 'manage_factory' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-2"></i>
+                {% trans 'Clear' %}
+            </a>
+        </form>
+    </div>
+
+    <!-- Existing Factories Section -->
+    <div class="content-section">
+        <h3 class="section-title">
+            <i class="bi bi-list-ul"></i>
+            {% trans 'Existing Factories' %}
+        </h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{% trans 'ACTIONS' %}</th>
+                        <th>{% trans 'LINKED DEVICES' %}</th>
+                        <th>{% trans 'STATUS' %}</th>
+                        <th>{% trans 'SECTOR' %}</th>
+                        <th>{% trans 'CITY' %}</th>
+                        <th>{% trans 'FACTORY NAME' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for factory in factories %}
+                    <tr>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-warning btn-sm" onclick="openEditModal('{{ factory.id }}', '{{ factory.name }}', '{{ factory.group }}', '{{ factory.address|default:"" }}', '{{ factory.latitude|default:"" }}', '{{ factory.longitude|default:"" }}')">
+                                    <i class="bi bi-pencil me-1"></i>
+                                    {% trans 'Edit' %}
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="openDeviceModal('link', '{{ factory.id }}');">
+                                    <i class="bi bi-link me-1"></i>
+                                    {% trans 'Link Device' %}
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="openDeviceModal('unlink', '{{ factory.id }}');">
+                                    <i class="bi bi-link-break me-1"></i>
+                                    {% trans 'Unlink Device' %}
+                                </button>
+                                <form method="POST" action="{% url 'manage_factory' %}" style="display:inline;" onsubmit="return confirm('{% trans 'Are you sure you want to delete this factory?' %}');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="remove_factory">
+                                    <input type="hidden" name="factory_id" value="{{ factory.id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm w-100">
+                                        <i class="bi bi-trash me-1"></i>
+                                        {% trans 'Remove' %}
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                        <td>
+                            {% if factory.devices|length > 0 %}
+                                <ul class="list-unstyled mb-0">
+                                    {% for device in factory.devices %}
+                                        <li>
+                                            {% if device.name %}
+                                                {{ device.name }}
+                                            {% else %}
+                                                {{ device.serial_number }}
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
                             {% else %}
-                                {% trans 'Inactive' %}
+                                <span class="text-muted">{% trans 'No devices linked' %}</span>
                             {% endif %}
-                        </button>
-                    </form>
-                </td>
-                <td>
-                    {% if factory.devices|length > 0 %}
-                        <ul>
-                            {% for device in factory.devices %}
-                                <li>
-                                    {% if device.name %}
-                                        {{ device.name }}
+                        </td>
+                        <td>
+                            <form method="POST" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_factory_status">
+                                <input type="hidden" name="factory_id" value="{{ factory.id }}">
+                                <button type="submit" class="btn btn-status {% if factory.status %}active{% else %}inactive{% endif %}">
+                                    {% if factory.status %}
+                                        {% trans 'ACTIVE' %}
                                     {% else %}
-                                        {{ device.serial_number }}
+                                        {% trans 'INACTIVE' %}
                                     {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {% trans 'No devices linked' %}
-                    {% endif %}
-                </td>
-                <td>
-                    {% if factory.devices|length > 0 %}
-                        <ul>
-                            {% for device in factory.devices %}
-                                <li>{{ device.selected_counter }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {% trans 'N/A' %}
-                    {% endif %}
-                </td>
-                <td>
-                    <!-- Edit Factory -->
-                    <button class="btn btn-warning" onclick="openEditModal('{{ factory.id }}', '{{ factory.name }}', '{{ factory.group }}', '{{ factory.address|default:"" }}', '{{ factory.latitude|default:"" }}', '{{ factory.longitude|default:"" }}')">{% trans 'Edit' %}</button>
-                    
-                    <!-- Remove Factory -->
-                    <form method="POST" action="{% url 'manage_factory' %}" style="display:inline;" onsubmit="return confirm('{% trans 'Are you sure you want to delete this factory?' %}');">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="remove_factory">
-                        <input type="hidden" name="factory_id" value="{{ factory.id }}">
-                        <button type="submit" class="btn btn-danger">{% trans 'Remove' %}</button>
-                    </form>
-                    
-                    <!-- Link Device to Factory -->
-                    <button class="btn btn-success" onclick="openDeviceModal('link', '{{ factory.id }}');">{% trans 'Link Device' %}</button>
-                    
-                    <!-- Unlink Device from Factory -->
-                    <button class="btn btn-warning" onclick="openDeviceModal('unlink', '{{ factory.id }}');">{% trans 'Unlink Device' %}</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                                </button>
+                            </form>
+                        </td>
+                        <td>
+                            <span class="badge-sector">
+                                {% if factory.group == 'Public' %}
+                                    {% trans 'PUBLIC' %}
+                                {% elif factory.group == 'private' %}
+                                    {% trans 'PRIVATE' %}
+                                {% elif factory.group == 'commercial' %}
+                                    {% trans 'COMMERCIAL' %}
+                                {% else %}
+                                    {{ factory.group|upper }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-city">{{ factory.city.name }}</span>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ factory.name }}</strong>
+                                {% if factory.address %}
+                                    <br><small class="text-muted">{{ factory.address }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <!-- Modal for Editing Factory -->
@@ -218,12 +500,12 @@
                     <input type="hidden" id="edit_factory_id" name="factory_id" value="">
                     
                     <div class="mb-3">
-                        <label for="edit_factory_name" class="form-label">{% trans 'Factory Name' %}:</label>
+                        <label for="edit_factory_name" class="form-label">{% trans 'Factory Name' %}</label>
                         <input type="text" class="form-control" id="edit_factory_name" name="factory_name" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="edit_group" class="form-label">{% trans 'Sector' %}:</label>
+                        <label for="edit_group" class="form-label">{% trans 'Sector' %}</label>
                         <select id="edit_group" name="group" class="form-control">
                             <option value="Public">{% trans 'Public' %}</option>
                             <option value="private">{% trans 'Private' %}</option>
@@ -232,21 +514,21 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="edit_address" class="form-label">{% trans 'Address' %}:</label>
+                        <label for="edit_address" class="form-label">{% trans 'Address' %}</label>
                         <textarea class="form-control" id="edit_address" name="address" rows="2" placeholder="{% trans 'Enter full address for map functionality' %}"></textarea>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_latitude" class="form-label">{% trans 'Latitude' %}:</label>
+                                <label for="edit_latitude" class="form-label">{% trans 'Latitude' %}</label>
                                 <input type="number" step="any" class="form-control" id="edit_latitude" name="latitude" placeholder="33.2232">
                                 <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="edit_longitude" class="form-label">{% trans 'Longitude' %}:</label>
+                                <label for="edit_longitude" class="form-label">{% trans 'Longitude' %}</label>
                                 <input type="number" step="any" class="form-control" id="edit_longitude" name="longitude" placeholder="43.6793">
                                 <small class="form-text text-muted">{% trans 'Use Google Maps to find coordinates' %}</small>
                             </div>
@@ -276,7 +558,7 @@
                     <input type="hidden" id="factory_id_modal" name="factory_id" value="">
                     <input type="hidden" id="device_action" name="action" value="">
                     <div class="form-group">
-                        <label for="device_id_modal">{% trans 'Select Device' %}:</label>
+                        <label for="device_id_modal">{% trans 'Select Device' %}</label>
                         <select id="device_id_modal" name="device_id" class="form-control" required>
                             <!-- Device options will be dynamically populated -->
                         </select>
@@ -291,7 +573,6 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function openEditModal(factoryId, factoryName, group, address, latitude, longitude) {
     document.getElementById('edit_factory_id').value = factoryId;

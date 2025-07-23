@@ -28,36 +28,91 @@
     </div>
 
     <div class="container my-4">
+        <!-- Device Selection Header -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-info" id="deviceInfo">
+                    <i class="bi bi-cpu me-2"></i>
+                    <strong>Factory:</strong> {{ factory.name }} | 
+                    <strong>Selected Device:</strong> 
+                    <span id="selectedDeviceName">
+                        {% if selected_device_id == 'all' %}
+                            All Devices
+                        {% else %}
+                            {% for device in devices %}
+                                {% if device.id == selected_device_id %}
+                                    {{ device.name }}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Power Status Section (Super Admin Only) -->
+        {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-lightning-charge me-2"></i>
+                            Power Status Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="powerStatusContainer">
+                            <div class="col-12 text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading power status...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Control Buttons Section -->
         <div class="row mb-4">
             <div class="col-6 col-md-2 mb-2">
+                <label for="datePicker" class="form-label small mb-1">Date:</label>
                 <input type="date" id="datePicker" class="form-control" onchange="refreshCharts()" value="{{ selected_date|date:'Y-m-d' }}" />
             </div>
             <div class="col-6 col-md-2 mb-2">
-                <button id="dateRangeBtn" class="btn btn-warning w-100" onclick="openDateRangeModal();">
-                    <i class="fas fa-calendar-alt me-2"></i>Get Value
-                </button>
+                <label for="deviceSelector" class="form-label small mb-1">Device:</label>
+                <select id="deviceSelector" class="form-control" onchange="refreshCharts()">
+                    <option value="all" {% if selected_device_id == 'all' %}selected{% endif %}>All Devices</option>
+                    {% for device in devices %}
+                        <option value="{{ device.id }}" {% if selected_device_id == device.id %}selected{% endif %}>{{ device.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
             <div class="col-6 col-md-2 mb-2">
+                <button id="dateRangeBtn" class="btn btn-warning w-100" onclick="openDateRangeModal();">
+                    <i class="bi bi-calendar-range me-2"></i>Get Value
+                </button>
+            </div>
+
+            <div class="col-6 col-md-2 mb-2">
                 <button id="backToDashboard" class="btn btn-primary w-100" onclick="window.location.href='/dashboard';">
-                    <i class="fas fa-tachometer-alt me-2"></i>العودة إلى لوحة التحكم
+                    <i class="bi bi-speedometer2 me-2"></i>العودة إلى لوحة التحكم
                 </button>
             </div>
             <div class="col-6 col-md-2 mb-2">
                 <button id="downloadPDF" class="btn btn-success w-100" onclick="generatePDF();">
-                    <i class="fas fa-file-pdf me-2"></i>تحميل PDF
+                    <i class="bi bi-file-pdf me-2"></i>تحميل PDF
                 </button>
             </div>
             <div class="col-6 col-md-2 mb-2">
                 <button id="refreshData" class="btn btn-info w-100" onclick="refreshCharts();">
-                    <i class="fas fa-sync-alt me-2"></i>تحديث البيانات
+                    <i class="bi bi-arrow-clockwise me-2"></i>تحديث البيانات
                 </button>
             </div>
-            <div class="col-6 col-md-2 mb-2">
-                <button id="calculateTotalBtn" class="btn btn-secondary w-100" onclick="calculateDateRangeTotal();">
-                    <i class="fas fa-calculator me-2"></i>Calculate Total
-                </button>
-            </div>
+
         </div>
 
         <!-- Factory Image Section -->
@@ -75,7 +130,7 @@
                 <div class="card text-white bg-success mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي يومي</span>
-                        <i class="fas fa-calendar-day"></i>
+                        <i class="bi bi-calendar-day"></i>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-daily">{{ factory.daily_total }}</h5>
@@ -86,7 +141,7 @@
                 <div class="card text-white bg-secondary mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي أسبوعي</span>
-                        <i class="fas fa-calendar-week"></i>
+                        <i class="bi bi-calendar-week"></i>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-week">{{ factory.weekly_total }}</h5>
@@ -97,7 +152,7 @@
                 <div class="card text-white bg-info mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي شهري</span>
-                        <i class="fas fa-calendar-alt"></i>
+                        <i class="bi bi-calendar-month"></i>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-month">{{ factory.monthly_total }}</h5>
@@ -111,7 +166,7 @@
                 <div class="card text-white bg-warning mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي سنوي حالي</span>
-                        <i class="fas fa-calendar-check"></i>
+                        <i class="bi bi-calendar-check"></i>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-year">{{ factory.yearly_total }}</h5>
@@ -122,7 +177,7 @@
                 <div class="card text-white bg-danger mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي سنوي سابق</span>
-                        <i class="fas fa-calendar-minus"></i>
+                        <i class="bi bi-calendar-minus"></i>
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-previous">{{ yearly_previous }}</h5>
@@ -171,7 +226,7 @@
                                 <td>{{ batch.yield_rate|floatformat:1 }}%</td>
                                 <td>
                                     <a href="{{ batch.detail_url }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-eye"></i> View Details
+                                        <i class="bi bi-eye"></i> View Details
                                     </a>
                                 </td>
                             </tr>
@@ -249,7 +304,7 @@
         <div class="card w-100" style="max-width: 800px;">
             <div class="card-header bg-gradient-primary text-white">
                 <h5 class="card-title mb-0 text-center">
-                    <i class="fas fa-chart-line me-2"></i>Production Timeline
+                    <i class="bi bi-graph-up me-2"></i>Production Timeline
                 </h5>
             </div>
             <div class="card-body">
@@ -284,11 +339,11 @@
                     <div class="text-center mt-4">
                         <div class="batch-info">
                             <div class="batch-goal mb-3">
-                                <i class="fas fa-bullseye me-2"></i>
+                                <i class="bi bi-bullseye me-2"></i>
                                 <span class="fw-bold fs-5">Batchdoel: {{ factory.batch_goal|default:800 }} ton flour</span>
                             </div>
                             <div class="batch-progress">
-                                <i class="fas fa-chart-bar me-2"></i>
+                                <i class="bi bi-bar-chart me-2"></i>
                                 <span class="text-muted">Huidige voortgang: <span id="currentFlour" class="fw-bold text-primary fs-5">0</span> ton (<span id="currentPercent" class="fw-bold text-success fs-5">0</span>%)</span>
                             </div>
                         </div>
@@ -526,6 +581,37 @@ function animateValue(element, start, end, duration, formatter) {
         /* border-radius: 8px; */
         /* margin-bottom: 20px; */
     }
+    
+    /* Device selector styling */
+    #deviceSelector {
+        border: 2px solid #007bff;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    #deviceSelector:focus {
+        border-color: #0056b3;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    /* Spinning animation for Bootstrap Icons */
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
     .card {
         transition: transform 0.2s;
     }
@@ -727,8 +813,247 @@ function animateValue(element, start, end, duration, formatter) {
 <!-- Required JavaScript -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Font Awesome replaced with Bootstrap Icons (already loaded in base template) -->
 <script src="{% static 'js/view_statistics.js' %}"></script>
+
+<!-- Date Range Modal -->
+<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeModalLabel">Select Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" required>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Info:</strong> Select a date range to view production data between these dates.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="getDateRangeData()">Get Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Results Modal -->
+<div class="modal fade" id="dateRangeResultsModal" tabindex="-1" aria-labelledby="dateRangeResultsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dateRangeResultsModalLabel">Date Range Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h6>Date Range</h6>
+                                <h4 id="dateRangeDisplay">-</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h6>Total Production</h6>
+                                <h4 id="totalProductionDisplay">-</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="dateRangeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Production (Pieces)</th>
+                                    <th>Production (Tons)</th>
+                                    <th>Cumulative (Pieces)</th>
+                                    <th>Cumulative (Tons)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dateRangeTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="exportDateRangeData()">Export Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Date Range Modal Functions
+function openDateRangeModal() {
+    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+    modal.show();
+}
+
+function getDateRangeData() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const deviceId = document.getElementById('deviceSelector') ? document.getElementById('deviceSelector').value : 'all';
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates.');
+        return;
+    }
+    
+    if (new Date(startDate) > new Date(endDate)) {
+        alert('Start date cannot be after end date.');
+        return;
+    }
+    
+    // Close the modal
+    const dateRangeModal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
+    dateRangeModal.hide();
+    
+    // Show loading
+    showLoading();
+    
+    // Fetch data for the date range
+    const apiUrl = deviceId === 'all' 
+        ? `/api/chart_data/?factory_id={{ factory.id }}&start_date=${startDate}&end_date=${endDate}`
+        : `/api/device-chart-data/{{ factory.id }}/?start_date=${startDate}&end_date=${endDate}&device_id=${deviceId}`;
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            displayDateRangeResults(startDate, endDate, data);
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error fetching date range data:', error);
+            alert('Error fetching data. Please try again.');
+        });
+}
+
+function displayDateRangeResults(startDate, endDate, data) {
+    // Calculate total production (pieces)
+    let totalProductionPieces = 0;
+    const dailyData = data.daily_data || [];
+    
+    dailyData.forEach(day => {
+        totalProductionPieces += day;
+    });
+    
+    // Convert to tons (1 piece = 50 kg = 0.05 tons)
+    const totalProductionTons = totalProductionPieces * 0.05;
+    
+    // Update display
+    document.getElementById('dateRangeDisplay').textContent = `${startDate} to ${endDate}`;
+    document.getElementById('totalProductionDisplay').textContent = `${totalProductionPieces.toFixed(0)} pieces (${totalProductionTons.toFixed(2)} tons)`;
+    
+    // Populate table
+    const tableBody = document.getElementById('dateRangeTableBody');
+    tableBody.innerHTML = '';
+    
+    let cumulativePieces = 0;
+    dailyData.forEach((productionPieces, index) => {
+        cumulativePieces += productionPieces;
+        const productionTons = productionPieces * 0.05;
+        const cumulativeTons = cumulativePieces * 0.05;
+        
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + index);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${date.toISOString().split('T')[0]}</td>
+            <td>${productionPieces.toFixed(0)}</td>
+            <td>${productionTons.toFixed(2)}</td>
+            <td>${cumulativePieces.toFixed(0)}</td>
+            <td>${cumulativeTons.toFixed(2)}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // Show results modal
+    const resultsModal = new bootstrap.Modal(document.getElementById('dateRangeResultsModal'));
+    resultsModal.show();
+}
+
+function showLoading() {
+    // You can implement a loading spinner here
+    document.getElementById('dateRangeBtn').innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Loading...';
+    document.getElementById('dateRangeBtn').disabled = true;
+}
+
+function hideLoading() {
+    document.getElementById('dateRangeBtn').innerHTML = '<i class="bi bi-calendar-range me-2"></i>Get Value';
+    document.getElementById('dateRangeBtn').disabled = false;
+}
+
+function exportDateRangeData() {
+    // Get the table data
+    const table = document.getElementById('dateRangeTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    if (rows.length === 0) {
+        alert('No data to export.');
+        return;
+    }
+    
+    // Prepare data for Excel
+    const excelData = [
+        ['Date', 'Production (Pieces)', 'Production (Tons)', 'Cumulative (Pieces)', 'Cumulative (Tons)']
+    ];
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = Array.from(cells).map(cell => cell.textContent.trim());
+        excelData.push(rowData);
+    });
+    
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+    
+    // Set column widths
+    const colWidths = [
+        { wch: 12 }, // Date
+        { wch: 18 }, // Production (Pieces)
+        { wch: 18 }, // Production (Tons)
+        { wch: 20 }, // Cumulative (Pieces)
+        { wch: 20 }  // Cumulative (Tons)
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Production Data');
+    
+    // Get date range and device name for filename
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay').textContent;
+    const deviceName = document.getElementById('selectedDeviceName').textContent;
+    const filename = `production_data_${deviceName}_${dateRangeDisplay.replace(/\s/g, '_')}.xlsx`;
+    
+    // Generate and download Excel file
+    XLSX.writeFile(wb, filename);
+}
+</script>
 
 <script>
     // Update current date and time
@@ -759,10 +1084,11 @@ function animateValue(element, start, end, duration, formatter) {
         const targetProgress = Math.max(yearlyTotal, 1000); // Use yearly total or 1000 as target
         const progressPercentage = Math.min((currentProgress / targetProgress) * 100, 100);
         
-        // Update gauge needle
+        // Update gauge needle (with null checks)
         const gaugeNeedle = document.getElementById('gaugeNeedle');
         const gaugeValue = document.getElementById('gaugeValue');
         
+        if (gaugeNeedle && gaugeValue) {
         // Calculate needle rotation (0-180 degrees)
         const needleRotation = (progressPercentage / 100) * 180;
         
@@ -783,12 +1109,18 @@ function animateValue(element, start, end, duration, formatter) {
             gaugeNeedle.style.transform = `translateX(-50%) rotate(${currentRotation}deg)`;
             gaugeValue.textContent = `${(currentRotation / 180 * 100).toFixed(1)}%`;
         }, animationDuration / animationSteps);
+        }
         
-        // Update stats
-        document.getElementById('dailyTotal').textContent = dailyTotal;
-        document.getElementById('weeklyTotal').textContent = weeklyTotal;
-        document.getElementById('monthlyTotal').textContent = monthlyTotal;
-        document.getElementById('yearlyTotal').textContent = yearlyTotal;
+        // Update stats (with null checks)
+        const dailyTotalEl = document.getElementById('dailyTotal');
+        const weeklyTotalEl = document.getElementById('weeklyTotal');
+        const monthlyTotalEl = document.getElementById('monthlyTotal');
+        const yearlyTotalEl = document.getElementById('yearlyTotal');
+        
+        if (dailyTotalEl) dailyTotalEl.textContent = dailyTotal;
+        if (weeklyTotalEl) weeklyTotalEl.textContent = weeklyTotal;
+        if (monthlyTotalEl) monthlyTotalEl.textContent = monthlyTotal;
+        if (yearlyTotalEl) yearlyTotalEl.textContent = yearlyTotal;
     }
     
     function updateMilestones(targetProgress, currentProgress) {
@@ -847,7 +1179,7 @@ function animateValue(element, start, end, duration, formatter) {
         // Show loading message
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'position-fixed top-50 start-50 translate-middle bg-white p-1 rounded shadow';
-        loadingDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> جاري إنشاء PDF...</div>';
+        loadingDiv.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise spin"></i> جاري إنشاء PDF...</div>';
         document.body.appendChild(loadingDiv);
 
         html2pdf().set(opt).from(element).save().then(() => {
@@ -1197,7 +1529,256 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Power Status Functions (Super Admin Only)
+        {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
+        function loadPowerStatus() {
+            const factoryId = {{ factory.id }};
+            
+            fetch(`/api/power-status/${factoryId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Power status error:', data.error);
+                        return;
+                    }
+                    
+                    updatePowerStatusDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error loading power status:', error);
+                });
+        }
+
+        function updatePowerStatusDisplay(data) {
+            const container = document.getElementById('powerStatusContainer');
+            
+            if (!container) return;
+            
+            const { summary, devices } = data;
+            
+            // Create summary cards
+            const summaryHTML = `
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                            <h4 class="mt-2">${summary.devices_with_power}</h4>
+                            <p class="mb-0">Devices with Power</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-exclamation-triangle fs-1"></i>
+                            <h4 class="mt-2">${summary.devices_without_power}</h4>
+                            <p class="mb-0">Devices without Power</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cpu fs-1"></i>
+                            <h4 class="mt-2">${summary.total_devices}</h4>
+                            <p class="mb-0">Total Devices</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-lightning fs-1"></i>
+                            <h4 class="mt-2">${summary.recent_events_24h}</h4>
+                            <p class="mb-0">Events (24h)</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create device status cards
+            const deviceHTML = devices.map(device => `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card ${device.has_power ? 'border-success' : 'border-danger'}">
+                        <div class="card-header ${device.has_power ? 'bg-success' : 'bg-danger'} text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${device.device_name}</h6>
+                                <span class="badge ${device.has_power ? 'bg-light text-success' : 'bg-light text-danger'}">
+                                    ${device.has_power ? 'POWER ON' : 'POWER OFF'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">AIN1 Value:</small><br>
+                                    <strong>${device.ain1_value !== null ? device.ain1_value.toFixed(2) : 'N/A'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Last Check:</small><br>
+                                    <strong>${device.last_check ? new Date(device.last_check).toLocaleString() : 'N/A'}</strong>
+                                </div>
+                            </div>
+                            ${device.power_loss_detected_at ? `
+                                <div class="mt-2">
+                                    <small class="text-muted">Power Lost:</small><br>
+                                    <strong class="text-danger">${new Date(device.power_loss_detected_at).toLocaleString()}</strong>
+                                </div>
+                            ` : ''}
+                            ${device.production_during_power_loss ? `
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">⚠️ Production without Power</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = summaryHTML + deviceHTML;
+        }
+
+        // Auto-refresh power status every 5 minutes
+        setInterval(loadPowerStatus, 5 * 60 * 1000);
+
+        // Load power status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPowerStatus();
+        });
+        {% endif %}
 </script>
+
+<!-- Power Management Section (Super Admin Only) -->
+{% if is_superuser and power_management_data %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    Power Management Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Power Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.uptime_percentage|floatformat:1 }}%</h3>
+                                <p class="mb-0">System Uptime</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.avg_power_consumption|floatformat:1 }} kW</h3>
+                                <p class="mb-0">Avg Power Consumption</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.power_efficiency_score|floatformat:1 }}/100</h3>
+                                <p class="mb-0">Efficiency Score</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>€{{ power_management_data.energy_cost_savings|floatformat:0 }}</h3>
+                                <p class="mb-0">Monthly Savings</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Status Table -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Device Power Status</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Device</th>
+                                        <th>Status</th>
+                                        <th>Power Value</th>
+                                        <th>Last Check</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in power_management_data.power_statuses %}
+                                    <tr>
+                                        <td>{{ status.device__name }}</td>
+                                        <td>
+                                            {% if status.has_power %}
+                                                <span class="badge bg-success">Power ON</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Power OFF</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ status.ain1_value|default:"N/A" }}</td>
+                                        <td>{{ status.last_power_check|date:"M d, H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Recent Power Events</h6>
+                        <div class="list-group list-group-flush">
+                            {% for event in power_management_data.recent_power_events %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ event.device__name }}</strong><br>
+                                        <small class="text-muted">{{ event.get_event_type_display }}</small>
+                                    </div>
+                                    <span class="badge bg-{{ event.severity }}">
+                                        {{ event.get_severity_display }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ event.created_at|date:"M d, H:i" }}</small>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted">
+                                No recent power events
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Management Actions -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'power_dashboard' %}" class="btn btn-primary">
+                                <i class="bi bi-dashboard me-1"></i>
+                                Power Dashboard
+                            </a>
+                            <a href="{% url 'power_analytics' %}" class="btn btn-info">
+                                <i class="bi bi-graph-up me-1"></i>
+                                Power Analytics
+                            </a>
+                            <a href="{% url 'power_events_list' %}" class="btn btn-warning">
+                                <i class="bi bi-list me-1"></i>
+                                Power Events
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 <script>
 // Add this to your existing JavaScript
 function formatDate(dateString) {
@@ -1234,7 +1815,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${batch.yield_rate.toFixed(1)}%</td>
                 <td>
                     <a href="${batch.detail_url}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-eye"></i> View Details
+                        <i class="bi bi-eye"></i> View Details
                     </a>
                 </td>
             </tr>
@@ -1244,186 +1825,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Date Range Modal -->
-<div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="dateRangeModalLabel">Select Date Range</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="startDate" class="form-label">Start Date</label>
-                        <input type="date" class="form-control" id="startDate" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="endDate" class="form-label">End Date</label>
-                        <input type="date" class="form-control" id="endDate" required>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Info:</strong> Select a date range to calculate the total production between these dates.
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="calculateDateRangeTotal()">Calculate Total</button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Date Range Results Modal -->
-<div class="modal fade" id="dateRangeResultsModal" tabindex="-1" aria-labelledby="dateRangeResultsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="dateRangeResultsModalLabel">Date Range Results</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-primary text-white">
-                            <div class="card-body text-center">
-                                <h6>Date Range</h6>
-                                <h4 id="dateRangeDisplay">-</h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card bg-success text-white">
-                            <div class="card-body text-center">
-                                <h6>Total Production</h6>
-                                <h4 id="totalProductionDisplay">-</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="table-responsive">
-                        <table class="table table-striped" id="dateRangeTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Production</th>
-                                    <th>Cumulative</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dateRangeTableBody">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" onclick="exportDateRangeData()">Export Data</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Date Range Modal Functions
-function openDateRangeModal() {
-    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
-    modal.show();
-}
-
-function calculateDateRangeTotal() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    
-    if (!startDate || !endDate) {
-        alert('Please select both start and end dates.');
-        return;
-    }
-    
-    if (new Date(startDate) > new Date(endDate)) {
-        alert('Start date cannot be after end date.');
-        return;
-    }
-    
-    // Close the date range modal
-    const dateRangeModal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
-    dateRangeModal.hide();
-    
-    // Show loading
-    showLoading();
-    
-    // Fetch data for the date range
-    fetch(`/api/chart_data/?factory_id={{ factory.id }}&start_date=${startDate}&end_date=${endDate}`)
-        .then(response => response.json())
-        .then(data => {
-            hideLoading();
-            displayDateRangeResults(startDate, endDate, data);
-        })
-        .catch(error => {
-            hideLoading();
-            console.error('Error fetching date range data:', error);
-            alert('Error fetching data. Please try again.');
-        });
-}
-
-function displayDateRangeResults(startDate, endDate, data) {
-    // Calculate total production
-    let totalProduction = 0;
-    const dailyData = data.daily_data || [];
-    
-    dailyData.forEach(day => {
-        totalProduction += day;
-    });
-    
-    // Update display
-    document.getElementById('dateRangeDisplay').textContent = `${startDate} to ${endDate}`;
-    document.getElementById('totalProductionDisplay').textContent = `${totalProduction.toFixed(2)} tons`;
-    
-    // Populate table
-    const tableBody = document.getElementById('dateRangeTableBody');
-    tableBody.innerHTML = '';
-    
-    let cumulative = 0;
-    dailyData.forEach((production, index) => {
-        cumulative += production;
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + index);
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${date.toISOString().split('T')[0]}</td>
-            <td>${production.toFixed(2)} tons</td>
-            <td>${cumulative.toFixed(2)} tons</td>
-        `;
-        tableBody.appendChild(row);
-    });
-    
-    // Show results modal
-    const resultsModal = new bootstrap.Modal(document.getElementById('dateRangeResultsModal'));
-    resultsModal.show();
-}
-
-function showLoading() {
-    // You can implement a loading spinner here
-    document.getElementById('calculateTotalBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
-    document.getElementById('calculateTotalBtn').disabled = true;
-}
-
-function hideLoading() {
-    document.getElementById('calculateTotalBtn').innerHTML = '<i class="fas fa-calculator me-2"></i>Calculate Total';
-    document.getElementById('calculateTotalBtn').disabled = false;
-}
-
-function exportDateRangeData() {
-    // Implement export functionality
-    alert('Export functionality will be implemented here.');
-}
-</script>
 
 <!--     <script>
         document.addEventListener('DOMContentLoaded', function() {
