@@ -11,3 +11,4 @@ msal
 cryptography
 qrcode
 pyotp
+django-two-factor-auth
