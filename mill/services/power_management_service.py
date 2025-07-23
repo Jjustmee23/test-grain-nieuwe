@@ -30,7 +30,7 @@ class PowerManagementService:
                 defaults={'power_threshold': 0.0}
             )
             
-            # Update power status
+            # Update power status based on ain1_value
             status_changed = power_status.update_power_status(ain1_value)
             
             # Check for production without power
@@ -56,6 +56,134 @@ class PowerManagementService:
                 
         except Exception as e:
             logger.error(f"Error processing power data for device {raw_data.device.id}: {str(e)}")
+    
+    def update_power_status_from_database(self, device=None):
+        """Update power status for all devices or a specific device based on latest ain1_value data"""
+        try:
+            if device:
+                devices = [device]
+            else:
+                # Get all devices that belong to factories
+                devices = Device.objects.filter(factory__isnull=False)
+            
+            updated_count = 0
+            
+            for device in devices:
+                try:
+                    # Get the latest RawData entry for this device
+                    latest_raw_data = RawData.objects.filter(
+                        device=device,
+                        ain1_value__isnull=False
+                    ).order_by('-timestamp').first()
+                    
+                    if latest_raw_data and latest_raw_data.ain1_value is not None:
+                        # Get or create power status
+                        power_status, created = DevicePowerStatus.objects.get_or_create(
+                            device=device,
+                            defaults={'power_threshold': 0.0}
+                        )
+                        
+                        # Update power status based on ain1_value
+                        # According to user: everything above 0 is power, 0 or below is no power
+                        # 0.0001 is also power
+                        previous_has_power = power_status.has_power
+                        power_status.ain1_value = latest_raw_data.ain1_value
+                        power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                        
+                        # Determine if device has power (anything > 0 is power)
+                        power_status.has_power = latest_raw_data.ain1_value > 0
+                        
+                        # Handle power loss
+                        if not power_status.has_power and previous_has_power:
+                            power_status.power_loss_detected_at = latest_raw_data.timestamp or timezone.now()
+                            power_status.power_restored_at = None
+                            
+                            # Create power loss event
+                            self._handle_power_loss(device, latest_raw_data.ain1_value, latest_raw_data)
+                            
+                        # Handle power restoration
+                        elif power_status.has_power and not previous_has_power:
+                            power_status.power_restored_at = latest_raw_data.timestamp or timezone.now()
+                            
+                            # Create power restore event
+                            self._handle_power_restore(device, latest_raw_data.ain1_value, latest_raw_data)
+                        
+                        power_status.save()
+                        updated_count += 1
+                        
+                        logger.info(f"Updated power status for device {device.name}: ain1_value={latest_raw_data.ain1_value}, has_power={power_status.has_power}")
+                    
+                except Exception as e:
+                    logger.error(f"Error updating power status for device {device.name}: {str(e)}")
+                    continue
+            
+            logger.info(f"Updated power status for {updated_count} devices")
+            return updated_count
+            
+        except Exception as e:
+            logger.error(f"Error in update_power_status_from_database: {str(e)}")
+            return 0
+    
+    def get_power_consumption_data(self, device, days=30):
+        """Get power consumption data for a device over the specified period"""
+        try:
+            end_date = timezone.now()
+            start_date = end_date - timezone.timedelta(days=days)
+            
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__gte=start_date,
+                timestamp__lte=end_date,
+                ain1_value__isnull=False
+            ).order_by('timestamp')
+            
+            power_data = []
+            for data in raw_data:
+                power_data.append({
+                    'timestamp': data.timestamp,
+                    'ain1_value': data.ain1_value,
+                    'has_power': data.ain1_value > 0
+                })
+            
+            return power_data
+            
+        except Exception as e:
+            logger.error(f"Error getting power consumption data for device {device.name}: {str(e)}")
+            return []
+    
+    def calculate_power_statistics(self, device, days=30):
+        """Calculate power statistics for a device"""
+        try:
+            power_data = self.get_power_consumption_data(device, days)
+            
+            if not power_data:
+                return {
+                    'avg_power': 0,
+                    'max_power': 0,
+                    'min_power': 0,
+                    'total_readings': 0,
+                    'power_on_time': 0,
+                    'power_off_time': 0,
+                    'uptime_percentage': 0
+                }
+            
+            power_values = [data['ain1_value'] for data in power_data]
+            power_on_readings = len([data for data in power_data if data['has_power']])
+            total_readings = len(power_data)
+            
+            return {
+                'avg_power': sum(power_values) / len(power_values) if power_values else 0,
+                'max_power': max(power_values) if power_values else 0,
+                'min_power': min(power_values) if power_values else 0,
+                'total_readings': total_readings,
+                'power_on_time': power_on_readings,
+                'power_off_time': total_readings - power_on_readings,
+                'uptime_percentage': (power_on_readings / total_readings * 100) if total_readings > 0 else 0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating power statistics for device {device.name}: {str(e)}")
+            return {}
     
     def _handle_power_loss(self, device, ain1_value, raw_data):
         """Handle power loss event"""
@@ -284,40 +412,33 @@ class PowerManagementService:
         """Send power loss email notification"""
         try:
             subject = f"Power Loss Alert - Device {device.name}"
+            
             message = f"""
-            Power Loss Alert
-            
-            Device: {device.name}
-            Factory: {device.factory.name if device.factory else 'Unknown'}
-            Time: {event.created_at}
-            AIN1 Value: {event.ain1_value}
-            
-            The device has lost power. Please check the device and electrical connections.
-            
-            This is an automated alert from the Mill Management System.
+Power Loss Alert
+
+Device: {device.name}
+Factory: {device.factory.name if device.factory else 'Unknown'}
+AIN1 Value: {event.ain1_value}
+Time: {event.created_at}
+
+The device has lost power. Please check the device and electrical connections.
+
+This is an automated alert from the Mill Application Power Management System.
             """
             
             # Send email
-            success = self.email_service.send_email(
+            self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
                 message=message,
-                email_type='system_alert'
+                user=user
             )
             
-            if success:
-                event.email_sent = True
-                event.save()
-                
-                # Log email
-                EmailHistory.objects.create(
-                    user=user,
-                    subject=subject,
-                    message=message,
-                    email_type='system_alert',
-                    status='sent'
-                )
-                
+            event.email_sent = True
+            event.save()
+            
+            logger.info(f"Power loss email sent to {user.email}")
+            
         except Exception as e:
             logger.error(f"Error sending power loss email to {user.email}: {str(e)}")
     
@@ -325,40 +446,33 @@ class PowerManagementService:
         """Send power restore email notification"""
         try:
             subject = f"Power Restored - Device {device.name}"
+            
             message = f"""
-            Power Restored
-            
-            Device: {device.name}
-            Factory: {device.factory.name if device.factory else 'Unknown'}
-            Time: {event.created_at}
-            AIN1 Value: {event.ain1_value}
-            
-            Power has been restored to the device.
-            
-            This is an automated alert from the Mill Management System.
+Power Restored
+
+Device: {device.name}
+Factory: {device.factory.name if device.factory else 'Unknown'}
+AIN1 Value: {event.ain1_value}
+Time: {event.created_at}
+
+Power has been restored to the device.
+
+This is an automated alert from the Mill Application Power Management System.
             """
             
             # Send email
-            success = self.email_service.send_email(
+            self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
                 message=message,
-                email_type='system_alert'
+                user=user
             )
             
-            if success:
-                event.email_sent = True
-                event.save()
-                
-                # Log email
-                EmailHistory.objects.create(
-                    user=user,
-                    subject=subject,
-                    message=message,
-                    email_type='system_alert',
-                    status='sent'
-                )
-                
+            event.email_sent = True
+            event.save()
+            
+            logger.info(f"Power restore email sent to {user.email}")
+            
         except Exception as e:
             logger.error(f"Error sending power restore email to {user.email}: {str(e)}")
     
@@ -366,49 +480,36 @@ class PowerManagementService:
         """Send production without power email notification"""
         try:
             subject = f"CRITICAL: Production Without Power - Device {device.name}"
+            
             message = f"""
-            CRITICAL SYSTEM ALERT
-            
-            Device: {device.name}
-            Factory: {device.factory.name if device.factory else 'Unknown'}
-            Time: {event.created_at}
-            AIN1 Value: {event.ain1_value}
-            
-            CRITICAL ISSUE: The device is showing production activity without power.
-            This indicates a serious system malfunction that requires immediate attention.
-            
-            Possible causes:
-            - Sensor malfunction
-            - Data corruption
-            - System tampering
-            - Hardware failure
-            
-            Please investigate immediately.
-            
-            This is an automated alert from the Mill Management System.
+CRITICAL SYSTEM ALERT
+
+Device: {device.name}
+Factory: {device.factory.name if device.factory else 'Unknown'}
+AIN1 Value: {event.ain1_value}
+Time: {event.created_at}
+
+CRITICAL ISSUE: The device is showing production activity without power.
+This indicates a serious system malfunction that requires immediate attention.
+
+Please investigate this issue immediately.
+
+This is an automated alert from the Mill Application Power Management System.
             """
             
             # Send email
-            success = self.email_service.send_email(
+            self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
                 message=message,
-                email_type='system_alert'
+                user=user
             )
             
-            if success:
-                event.email_sent = True
-                event.save()
-                
-                # Log email
-                EmailHistory.objects.create(
-                    user=user,
-                    subject=subject,
-                    message=message,
-                    email_type='system_alert',
-                    status='sent'
-                )
-                
+            event.email_sent = True
+            event.save()
+            
+            logger.info(f"Production without power email sent to {user.email}")
+            
         except Exception as e:
             logger.error(f"Error sending production without power email to {user.email}: {str(e)}")
     
@@ -420,9 +521,12 @@ class PowerManagementService:
             return None
     
     def get_active_power_events(self, device=None):
-        """Get active (unresolved) power events"""
+        """Get active (unresolved) power events - only for devices with factories"""
         try:
-            queryset = PowerEvent.objects.filter(is_resolved=False)
+            queryset = PowerEvent.objects.filter(
+                is_resolved=False,
+                device__factory__isnull=False
+            )
             if device:
                 queryset = queryset.filter(device=device)
             return queryset
@@ -440,10 +544,16 @@ class PowerManagementService:
                 is_resolved=False
             ).count()
             
-            # Get power status summary
-            total_devices = Device.objects.count()
-            devices_with_power = DevicePowerStatus.objects.filter(has_power=True).count()
-            devices_without_power = DevicePowerStatus.objects.filter(has_power=False).count()
+            # Get power status summary - only devices with factories
+            total_devices = Device.objects.filter(factory__isnull=False).count()
+            devices_with_power = DevicePowerStatus.objects.filter(
+                device__factory__isnull=False, 
+                has_power=True
+            ).count()
+            devices_without_power = DevicePowerStatus.objects.filter(
+                device__factory__isnull=False, 
+                has_power=False
+            ).count()
             
             return {
                 'total_events': total_events,

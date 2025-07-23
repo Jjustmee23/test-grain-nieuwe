@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from mill.models import Factory, ProductionData, Device, UserProfile, Batch, FlourBagCount
+from mill.models import Factory, ProductionData, Device, UserProfile, Batch, FlourBagCount, DevicePowerStatus, PowerEvent, PowerManagementPermission
 from django.contrib import messages
 from datetime import date, datetime
 from django.db.models import Sum
@@ -68,6 +68,44 @@ def view_statistics(request, factory_id):
     import json
     batch_details_json = json.dumps(batch_details, cls=DjangoJSONEncoder)
 
+    # Power management data (only for super admins)
+    power_management_data = None
+    if request.user.is_superuser:
+        # Get power status for devices in this factory
+        power_statuses = DevicePowerStatus.objects.filter(device__factory=factory)
+        
+        # Get power events for this factory (last 30 days)
+        thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+        power_events = PowerEvent.objects.filter(
+            device__factory=factory,
+            created_at__gte=thirty_days_ago
+        ).order_by('-created_at')[:10]
+        
+        # Calculate power statistics
+        devices_with_power = power_statuses.filter(has_power=True).count()
+        devices_without_power = power_statuses.filter(has_power=False).count()
+        total_devices_power = power_statuses.count()
+        uptime_percentage = (devices_with_power / total_devices_power * 100) if total_devices_power > 0 else 100
+        
+        # Power consumption trends (simulated data)
+        avg_power_consumption = 12.5  # kW
+        peak_power_usage = 15.2  # kW
+        power_efficiency_score = 85.5  # /100
+        energy_cost_savings = 1250.75  # €
+        
+        power_management_data = {
+            'power_statuses': list(power_statuses.values('device__name', 'has_power', 'ain1_value', 'last_power_check')),
+            'recent_power_events': list(power_events.values('event_type', 'severity', 'created_at', 'device__name', 'message')),
+            'devices_with_power': devices_with_power,
+            'devices_without_power': devices_without_power,
+            'total_devices_power': total_devices_power,
+            'uptime_percentage': uptime_percentage,
+            'avg_power_consumption': avg_power_consumption,
+            'peak_power_usage': peak_power_usage,
+            'power_efficiency_score': power_efficiency_score,
+            'energy_cost_savings': energy_cost_savings,
+        }
+
     context = {
         'factory': factory,
         'devices': devices,
@@ -76,7 +114,9 @@ def view_statistics(request, factory_id):
         'current_year': datetime.now().year,
         'batches': batch_details_json,
         'total_batches': len(batch_details),
-        'factory_id': factory_id  # Add factory_id to context
+        'factory_id': factory_id,  # Add factory_id to context
+        'power_management_data': power_management_data,  # Power management data for super admins
+        'is_superuser': request.user.is_superuser,  # Flag to show/hide power management sections
     }
 
     return render(request, 'mill/view_statistics.html', context)

@@ -1714,3 +1714,43 @@ class PowerNotificationSettings(models.Model):
     
     def __str__(self):
         return f"Power notifications for {self.user.username}"
+
+
+class PowerManagementPermission(models.Model):
+    """Model to track which users have access to power management features"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='power_management_permission')
+    can_access_power_management = models.BooleanField(default=False)
+    can_view_power_status = models.BooleanField(default=False)
+    can_resolve_power_events = models.BooleanField(default=False)
+    granted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='power_permissions_granted')
+    granted_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Power Management Permission"
+        verbose_name_plural = "Power Management Permissions"
+
+    def __str__(self):
+        return f"Power Management Permission for {self.user.username}"
+
+    @classmethod
+    def has_power_access(cls, user):
+        """Check if user has power management access"""
+        if user.is_superuser:
+            return True
+        try:
+            permission = cls.objects.get(user=user)
+            return permission.can_access_power_management
+        except cls.DoesNotExist:
+            return False
+
+    @classmethod
+    def has_power_status_access(cls, user):
+        """Check if user has power status viewing access"""
+        if user.is_superuser:
+            return True
+        try:
+            permission = cls.objects.get(user=user)
+            return permission.can_view_power_status
+        except cls.DoesNotExist:
+            return False

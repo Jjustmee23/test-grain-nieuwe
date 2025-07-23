@@ -51,7 +51,7 @@
         </div>
         
         <!-- Power Status Section (Super Admin Only) -->
-        {% if user.is_superuser %}
+        {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
@@ -1531,123 +1531,254 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Power Status Functions (Super Admin Only)
-{% if user.is_superuser %}
-function loadPowerStatus() {
-    const factoryId = {{ factory.id }};
-    
-    fetch(`/api/power-status/${factoryId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Power status error:', data.error);
-                return;
-            }
+        {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
+        function loadPowerStatus() {
+            const factoryId = {{ factory.id }};
             
-            updatePowerStatusDisplay(data);
-        })
-        .catch(error => {
-            console.error('Error loading power status:', error);
+            fetch(`/api/power-status/${factoryId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Power status error:', data.error);
+                        return;
+                    }
+                    
+                    updatePowerStatusDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error loading power status:', error);
+                });
+        }
+
+        function updatePowerStatusDisplay(data) {
+            const container = document.getElementById('powerStatusContainer');
+            
+            if (!container) return;
+            
+            const { summary, devices } = data;
+            
+            // Create summary cards
+            const summaryHTML = `
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                            <h4 class="mt-2">${summary.devices_with_power}</h4>
+                            <p class="mb-0">Devices with Power</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-exclamation-triangle fs-1"></i>
+                            <h4 class="mt-2">${summary.devices_without_power}</h4>
+                            <p class="mb-0">Devices without Power</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-cpu fs-1"></i>
+                            <h4 class="mt-2">${summary.total_devices}</h4>
+                            <p class="mb-0">Total Devices</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="bi bi-lightning fs-1"></i>
+                            <h4 class="mt-2">${summary.recent_events_24h}</h4>
+                            <p class="mb-0">Events (24h)</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create device status cards
+            const deviceHTML = devices.map(device => `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card ${device.has_power ? 'border-success' : 'border-danger'}">
+                        <div class="card-header ${device.has_power ? 'bg-success' : 'bg-danger'} text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${device.device_name}</h6>
+                                <span class="badge ${device.has_power ? 'bg-light text-success' : 'bg-light text-danger'}">
+                                    ${device.has_power ? 'POWER ON' : 'POWER OFF'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">AIN1 Value:</small><br>
+                                    <strong>${device.ain1_value !== null ? device.ain1_value.toFixed(2) : 'N/A'}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Last Check:</small><br>
+                                    <strong>${device.last_check ? new Date(device.last_check).toLocaleString() : 'N/A'}</strong>
+                                </div>
+                            </div>
+                            ${device.power_loss_detected_at ? `
+                                <div class="mt-2">
+                                    <small class="text-muted">Power Lost:</small><br>
+                                    <strong class="text-danger">${new Date(device.power_loss_detected_at).toLocaleString()}</strong>
+                                </div>
+                            ` : ''}
+                            ${device.production_during_power_loss ? `
+                                <div class="mt-2">
+                                    <span class="badge bg-danger">⚠️ Production without Power</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = summaryHTML + deviceHTML;
+        }
+
+        // Auto-refresh power status every 5 minutes
+        setInterval(loadPowerStatus, 5 * 60 * 1000);
+
+        // Load power status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPowerStatus();
         });
-}
-
-function updatePowerStatusDisplay(data) {
-    const container = document.getElementById('powerStatusContainer');
-    
-    if (!container) return;
-    
-    const { summary, devices } = data;
-    
-    // Create summary cards
-    const summaryHTML = `
-        <div class="col-md-3 mb-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <i class="bi bi-check-circle fs-1"></i>
-                    <h4 class="mt-2">${summary.devices_with_power}</h4>
-                    <p class="mb-0">Devices with Power</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <i class="bi bi-exclamation-triangle fs-1"></i>
-                    <h4 class="mt-2">${summary.devices_without_power}</h4>
-                    <p class="mb-0">Devices without Power</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <i class="bi bi-cpu fs-1"></i>
-                    <h4 class="mt-2">${summary.total_devices}</h4>
-                    <p class="mb-0">Total Devices</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <i class="bi bi-lightning fs-1"></i>
-                    <h4 class="mt-2">${summary.recent_events_24h}</h4>
-                    <p class="mb-0">Events (24h)</p>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Create device status cards
-    const deviceHTML = devices.map(device => `
-        <div class="col-md-6 col-lg-4 mb-3">
-            <div class="card ${device.has_power ? 'border-success' : 'border-danger'}">
-                <div class="card-header ${device.has_power ? 'bg-success' : 'bg-danger'} text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">${device.device_name}</h6>
-                        <span class="badge ${device.has_power ? 'bg-light text-success' : 'bg-light text-danger'}">
-                            ${device.has_power ? 'POWER ON' : 'POWER OFF'}
-                        </span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <small class="text-muted">AIN1 Value:</small><br>
-                            <strong>${device.ain1_value !== null ? device.ain1_value.toFixed(2) : 'N/A'}</strong>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">Last Check:</small><br>
-                            <strong>${device.last_check ? new Date(device.last_check).toLocaleString() : 'N/A'}</strong>
-                        </div>
-                    </div>
-                    ${device.power_loss_detected_at ? `
-                        <div class="mt-2">
-                            <small class="text-muted">Power Lost:</small><br>
-                            <strong class="text-danger">${new Date(device.power_loss_detected_at).toLocaleString()}</strong>
-                        </div>
-                    ` : ''}
-                    ${device.production_during_power_loss ? `
-                        <div class="mt-2">
-                            <span class="badge bg-danger">⚠️ Production without Power</span>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    `).join('');
-    
-    container.innerHTML = summaryHTML + deviceHTML;
-}
-
-// Auto-refresh power status every 5 minutes
-setInterval(loadPowerStatus, 5 * 60 * 1000);
-
-// Load power status on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadPowerStatus();
-});
-{% endif %}
+        {% endif %}
 </script>
+
+<!-- Power Management Section (Super Admin Only) -->
+{% if is_superuser and power_management_data %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    Power Management Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Power Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.uptime_percentage|floatformat:1 }}%</h3>
+                                <p class="mb-0">System Uptime</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.avg_power_consumption|floatformat:1 }} kW</h3>
+                                <p class="mb-0">Avg Power Consumption</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ power_management_data.power_efficiency_score|floatformat:1 }}/100</h3>
+                                <p class="mb-0">Efficiency Score</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>€{{ power_management_data.energy_cost_savings|floatformat:0 }}</h3>
+                                <p class="mb-0">Monthly Savings</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Status Table -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Device Power Status</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Device</th>
+                                        <th>Status</th>
+                                        <th>Power Value</th>
+                                        <th>Last Check</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in power_management_data.power_statuses %}
+                                    <tr>
+                                        <td>{{ status.device__name }}</td>
+                                        <td>
+                                            {% if status.has_power %}
+                                                <span class="badge bg-success">Power ON</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Power OFF</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ status.ain1_value|default:"N/A" }}</td>
+                                        <td>{{ status.last_power_check|date:"M d, H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Recent Power Events</h6>
+                        <div class="list-group list-group-flush">
+                            {% for event in power_management_data.recent_power_events %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ event.device__name }}</strong><br>
+                                        <small class="text-muted">{{ event.get_event_type_display }}</small>
+                                    </div>
+                                    <span class="badge bg-{{ event.severity }}">
+                                        {{ event.get_severity_display }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ event.created_at|date:"M d, H:i" }}</small>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-muted">
+                                No recent power events
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Power Management Actions -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'power_dashboard' %}" class="btn btn-primary">
+                                <i class="bi bi-dashboard me-1"></i>
+                                Power Dashboard
+                            </a>
+                            <a href="{% url 'power_analytics' %}" class="btn btn-info">
+                                <i class="bi bi-graph-up me-1"></i>
+                                Power Analytics
+                            </a>
+                            <a href="{% url 'power_events_list' %}" class="btn btn-warning">
+                                <i class="bi bi-list me-1"></i>
+                                Power Events
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 <script>
 // Add this to your existing JavaScript
 function formatDate(dateString) {
