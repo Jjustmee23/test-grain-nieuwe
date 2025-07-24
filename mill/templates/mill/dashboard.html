@@ -265,10 +265,10 @@
                             <!-- Factory status indicators -->
                             <div class="factory-status-indicators mt-2">
                                 <div class="d-flex justify-content-end">
-                                    <span class="me-3" title="Power Status">
-                                        <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
-                                        <small class="text-dark fw-bold">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
-                                    </span>
+                                                            <span class="me-3" title="Power Status">
+                            <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
+                            <small class="fw-bold {% if factory.status_info.power_status %}text-success{% else %}text-danger{% endif %}">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
+                        </span>
                                     <span title="Door Status">
                                         <i class="bi {% if factory.status_info.door_status %}bi-door-open text-warning{% else %}bi-door-closed text-success{% endif %}"></i>
                                         <small class="text-dark fw-bold">Door: {% if factory.status_info.door_status %}Open{% else %}Closed{% endif %}</small>

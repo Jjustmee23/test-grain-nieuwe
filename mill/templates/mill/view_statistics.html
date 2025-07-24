@@ -55,11 +55,19 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-gradient-primary text-white">
+                    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-lightning-charge me-2"></i>
                             Power Status Overview
                         </h5>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'factory_power_events' factory.id %}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-lightning-charge me-1"></i>Power Events
+                            </a>
+                            <a href="{% url 'factory_power_analytics' factory.id %}" class="btn btn-info btn-sm">
+                                <i class="bi bi-graph-up me-1"></i>Power Analytics
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row" id="powerStatusContainer">
@@ -1598,12 +1606,20 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             // Create device status cards
-            const deviceHTML = devices.map(device => `
+            const deviceHTML = devices.map(device => {
+                return `
                 <div class="col-md-6 col-lg-4 mb-3">
-                    <div class="card ${device.has_power ? 'border-success' : 'border-danger'}">
+                    <div class="card ${device.has_power ? 'border-success' : 'border-danger'} device-power-card" 
+                         style="cursor: pointer; transition: transform 0.2s ease;" 
+                         onclick="window.location.href='/device-power-status/${device.device_id}/'"
+                         onmouseover="this.style.transform='scale(1.02)'" 
+                         onmouseout="this.style.transform='scale(1)'">
                         <div class="card-header ${device.has_power ? 'bg-success' : 'bg-danger'} text-white">
                             <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">${device.device_name}</h6>
+                                <h6 class="mb-0">
+                                    <i class="bi bi-cpu me-2"></i>
+                                    ${device.device_name}
+                                </h6>
                                 <span class="badge ${device.has_power ? 'bg-light text-success' : 'bg-light text-danger'}">
                                     ${device.has_power ? 'POWER ON' : 'POWER OFF'}
                                 </span>
@@ -1631,10 +1647,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <span class="badge bg-danger">⚠️ Production without Power</span>
                                 </div>
                             ` : ''}
+                            <div class="mt-3 text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-arrow-right-circle me-1"></i>
+                                    Click to view detailed power status
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
             
             container.innerHTML = summaryHTML + deviceHTML;
         }

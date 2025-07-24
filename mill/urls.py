@@ -39,6 +39,11 @@ urlpatterns = [
     path('power-notification-settings/', power_management_views.power_notification_settings, name='power_notification_settings'),
     path('power-analytics/', power_management_views.power_analytics, name='power_analytics'),
     path('api/power-status/<int:factory_id>/', power_management_views.power_status_api, name='power_status_api'),
+    path('sync-counter-data/', power_management_views.sync_counter_data, name='sync_counter_data'),
+    
+    # Factory-specific power management URLs
+    path('factory/<int:factory_id>/power-events/', power_management_views.factory_power_events, name='factory_power_events'),
+    path('factory/<int:factory_id>/power-analytics/', power_management_views.factory_power_analytics, name='factory_power_analytics'),
     
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics-dashboard'),

@@ -36,6 +36,14 @@ class Factory(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, help_text="Latitude coordinate")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, help_text="Longitude coordinate")
     
+    # Factory responsible users
+    responsible_users = models.ManyToManyField(
+        User, 
+        blank=True, 
+        related_name='responsible_factories',
+        help_text="Users responsible for this factory (will receive notifications)"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -76,42 +76,86 @@ class PowerManagementService:
                         ain1_value__isnull=False
                     ).order_by('-timestamp').first()
                     
-                    if latest_raw_data and latest_raw_data.ain1_value is not None:
-                        # Get or create power status
-                        power_status, created = DevicePowerStatus.objects.get_or_create(
-                            device=device,
-                            defaults={'power_threshold': 0.0}
-                        )
+                    # Get or create power status
+                    power_status, created = DevicePowerStatus.objects.get_or_create(
+                        device=device,
+                        defaults={'power_threshold': 0.0}
+                    )
+                    
+                    # Check if device is offline (no data for more than 10 minutes)
+                    offline_threshold = timezone.now() - timezone.timedelta(minutes=10)
+                    is_offline = False
+                    
+                    if latest_raw_data:
+                        # Check if data is older than 10 minutes
+                        if latest_raw_data.timestamp and latest_raw_data.timestamp < offline_threshold:
+                            is_offline = True
+                            power_status.has_power = False
+                            power_status.ain1_value = 0.0
+                            power_status.last_power_check = latest_raw_data.timestamp
+                            
+                            # Handle offline status
+                            if not power_status.power_loss_detected_at:
+                                power_status.power_loss_detected_at = offline_threshold
+                                power_status.power_restored_at = None
+                                
+                                # Create offline event
+                                self._handle_device_offline(device, latest_raw_data)
+                            
+                            power_status.save()
+                            updated_count += 1
+                            logger.info(f"Device {device.name} marked as offline (no data for >10 minutes)")
+                            continue
                         
-                        # Update power status based on ain1_value
-                        # According to user: everything above 0 is power, 0 or below is no power
-                        # 0.0001 is also power
-                        previous_has_power = power_status.has_power
-                        power_status.ain1_value = latest_raw_data.ain1_value
-                        power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                        # Device is online, process power status
+                        if latest_raw_data.ain1_value is not None:
+                            previous_has_power = power_status.has_power
+                            power_status.ain1_value = latest_raw_data.ain1_value
+                            power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                            
+                            # Determine if device has power (anything > 0 is power)
+                            # According to user: everything above 0 is power, 0 or below is no power
+                            # 0.0001 is also power
+                            if latest_raw_data.ain1_value is not None:
+                                power_status.has_power = latest_raw_data.ain1_value > 0
+                            else:
+                                power_status.has_power = False
+                            
+                            # Handle power loss
+                            if not power_status.has_power and previous_has_power:
+                                power_status.power_loss_detected_at = latest_raw_data.timestamp or timezone.now()
+                                power_status.power_restored_at = None
+                                
+                                # Create power loss event
+                                self._handle_power_loss(device, latest_raw_data.ain1_value, latest_raw_data)
+                                
+                            # Handle power restoration
+                            elif power_status.has_power and not previous_has_power:
+                                power_status.power_restored_at = latest_raw_data.timestamp or timezone.now()
+                                
+                                # Create power restore event
+                                self._handle_power_restore(device, latest_raw_data.ain1_value, latest_raw_data)
+                            
+                            power_status.save()
+                            updated_count += 1
+                            
+                            logger.info(f"Updated power status for device {device.name}: ain1_value={latest_raw_data.ain1_value}, has_power={power_status.has_power}")
+                    else:
+                        # No data at all - mark as offline
+                        power_status.has_power = False
+                        power_status.ain1_value = 0.0
+                        power_status.last_power_check = timezone.now()
                         
-                        # Determine if device has power (anything > 0 is power)
-                        power_status.has_power = latest_raw_data.ain1_value > 0
-                        
-                        # Handle power loss
-                        if not power_status.has_power and previous_has_power:
-                            power_status.power_loss_detected_at = latest_raw_data.timestamp or timezone.now()
+                        if not power_status.power_loss_detected_at:
+                            power_status.power_loss_detected_at = timezone.now()
                             power_status.power_restored_at = None
                             
-                            # Create power loss event
-                            self._handle_power_loss(device, latest_raw_data.ain1_value, latest_raw_data)
-                            
-                        # Handle power restoration
-                        elif power_status.has_power and not previous_has_power:
-                            power_status.power_restored_at = latest_raw_data.timestamp or timezone.now()
-                            
-                            # Create power restore event
-                            self._handle_power_restore(device, latest_raw_data.ain1_value, latest_raw_data)
+                            # Create offline event
+                            self._handle_device_offline(device, None)
                         
                         power_status.save()
                         updated_count += 1
-                        
-                        logger.info(f"Updated power status for device {device.name}: ain1_value={latest_raw_data.ain1_value}, has_power={power_status.has_power}")
+                        logger.info(f"Device {device.name} marked as offline (no data available)")
                     
                 except Exception as e:
                     logger.error(f"Error updating power status for device {device.name}: {str(e)}")
@@ -201,8 +245,8 @@ class PowerManagementService:
                 message=f"Power loss detected on device {device.name}. AIN1 value: {ain1_value}"
             )
             
-            # Send notifications
-            self._send_power_loss_notifications(device, event)
+            # Send notifications (temporarily disabled)
+            # self._send_power_loss_notifications(device, event)
             
             logger.info(f"Power loss event created for device {device.id}")
             
@@ -225,13 +269,37 @@ class PowerManagementService:
                 message=f"Power restored on device {device.name}. AIN1 value: {ain1_value}"
             )
             
-            # Send notifications
-            self._send_power_restore_notifications(device, event)
+            # Send notifications (temporarily disabled)
+            # self._send_power_restore_notifications(device, event)
             
             logger.info(f"Power restore event created for device {device.id}")
             
         except Exception as e:
             logger.error(f"Error handling power restore for device {device.id}: {str(e)}")
+    
+    def _handle_device_offline(self, device, raw_data):
+        """Handle device offline event (no data for more than 10 minutes)"""
+        try:
+            # Create power event with low severity and no message
+            event = PowerEvent.objects.create(
+                device=device,
+                event_type='power_loss',
+                severity='low',
+                ain1_value=0.0,
+                counter_1_value=raw_data.counter_1 if raw_data else None,
+                counter_2_value=raw_data.counter_2 if raw_data else None,
+                counter_3_value=raw_data.counter_3 if raw_data else None,
+                counter_4_value=raw_data.counter_4 if raw_data else None,
+                message=""  # No message for offline devices
+            )
+            
+            # Send notifications to factory responsible users
+            self._send_device_offline_notifications(device, event)
+            
+            logger.info(f"Device offline event created for device {device.id}")
+            
+        except Exception as e:
+            logger.error(f"Error handling device offline for device {device.id}: {str(e)}")
     
     def _handle_production_without_power(self, device, ain1_value, raw_data):
         """Handle production without power event"""
@@ -249,7 +317,7 @@ class PowerManagementService:
                 message=f"CRITICAL: Production detected without power on device {device.name}. This indicates a serious system issue."
             )
             
-            # Send notifications to super admins
+            # Send notifications to factory responsible users and super admins
             self._send_production_without_power_notifications(device, event)
             
             logger.warning(f"Production without power event created for device {device.id}")
@@ -339,6 +407,47 @@ class PowerManagementService:
         except Exception as e:
             logger.error(f"Error sending power restore notifications: {str(e)}")
     
+    def _send_device_offline_notifications(self, device, event):
+        """Send device offline notifications to responsible users"""
+        try:
+            # Get notification category
+            category, _ = NotificationCategory.objects.get_or_create(
+                notification_type='device_alert',
+                defaults={
+                    'name': 'Device Alert',
+                    'description': 'Alerts related to device status and power'
+                }
+            )
+            
+            # Get responsible users
+            responsible_users = self._get_responsible_users(device)
+            
+            for user in responsible_users:
+                # Check user preferences
+                settings, _ = PowerNotificationSettings.objects.get_or_create(user=user)
+                
+                if settings.notify_power_loss:
+                    # Create in-app notification
+                    notification = Notification.objects.create(
+                        user=user,
+                        category=category,
+                        title=f"Device Offline - {device.name}",
+                        message=f"Device {device.name} is offline - no data received for more than 10 minutes. This indicates a communication or power issue.",
+                        priority='high',
+                        related_device=device,
+                        link=f'/manage-devices/'
+                    )
+                    
+                    # Send email if enabled
+                    if settings.email_power_loss:
+                        self._send_device_offline_email(user, device, event)
+                    
+                    event.notification_sent = True
+                    event.save()
+                    
+        except Exception as e:
+            logger.error(f"Error sending device offline notifications: {str(e)}")
+    
     def _send_production_without_power_notifications(self, device, event):
         """Send production without power notifications to super admins"""
         try:
@@ -378,21 +487,32 @@ class PowerManagementService:
     def _get_responsible_users(self, device):
         """Get users responsible for a device"""
         try:
-            # Get users directly assigned to this device
-            device_users = User.objects.filter(
-                power_notification_settings__responsible_devices=device
-            )
-            
-            # Get users responsible for the factory
-            factory_users = User.objects.filter(
-                power_notification_settings__responsible_devices__factory=device.factory
-            )
+            # Get factory responsible users
+            factory_users = []
+            if device.factory:
+                factory_users = list(device.factory.responsible_users.all())
             
             # Get super admins
-            super_admins = User.objects.filter(is_superuser=True)
+            super_admins = list(User.objects.filter(is_superuser=True))
+            
+            # Get users with power management permissions
+            power_users = list(PowerManagementPermission.objects.filter(
+                can_access_power_management=True
+            ).values_list('user', flat=True))
+            
+            # Get users with specific device assignments
+            device_users = list(PowerNotificationSettings.objects.filter(
+                responsible_devices=device
+            ).values_list('user', flat=True))
             
             # Combine all users
-            all_users = list(device_users) + list(factory_users) + list(super_admins)
+            all_users = factory_users + super_admins
+            
+            # Add power management users and device users
+            if power_users:
+                all_users.extend(User.objects.filter(id__in=power_users))
+            if device_users:
+                all_users.extend(User.objects.filter(id__in=device_users))
             
             # Remove duplicates while preserving order
             seen = set()
@@ -430,7 +550,8 @@ This is an automated alert from the Mill Application Power Management System.
             self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
-                message=message,
+                html_content=message,
+                text_content=message,
                 user=user
             )
             
@@ -464,7 +585,8 @@ This is an automated alert from the Mill Application Power Management System.
             self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
-                message=message,
+                html_content=message,
+                text_content=message,
                 user=user
             )
             
@@ -476,23 +598,29 @@ This is an automated alert from the Mill Application Power Management System.
         except Exception as e:
             logger.error(f"Error sending power restore email to {user.email}: {str(e)}")
     
-    def _send_production_without_power_email(self, user, device, event):
-        """Send production without power email notification"""
+    def _send_device_offline_email(self, user, device, event):
+        """Send device offline email notification"""
         try:
-            subject = f"CRITICAL: Production Without Power - Device {device.name}"
+            subject = f"Device Offline Alert - {device.name}"
             
             message = f"""
-CRITICAL SYSTEM ALERT
+Device Offline Alert
 
 Device: {device.name}
 Factory: {device.factory.name if device.factory else 'Unknown'}
-AIN1 Value: {event.ain1_value}
 Time: {event.created_at}
 
-CRITICAL ISSUE: The device is showing production activity without power.
-This indicates a serious system malfunction that requires immediate attention.
+The device is offline - no data has been received for more than 10 minutes.
+This indicates a communication or power issue that requires attention.
 
-Please investigate this issue immediately.
+Last Known Data:
+- Power Value (AIN1): {event.ain1_value}
+- Counter 1: {event.counter_1_value}
+- Counter 2: {event.counter_2_value}
+- Counter 3: {event.counter_3_value}
+- Counter 4: {event.counter_4_value}
+
+Please check the device connection and power supply.
 
 This is an automated alert from the Mill Application Power Management System.
             """
@@ -501,7 +629,61 @@ This is an automated alert from the Mill Application Power Management System.
             self.email_service.send_email(
                 to_email=user.email,
                 subject=subject,
-                message=message,
+                html_content=message,
+                text_content=message,
+                user=user
+            )
+            
+            event.email_sent = True
+            event.save()
+            
+            logger.info(f"Device offline email sent to {user.email}")
+            
+        except Exception as e:
+            logger.error(f"Error sending device offline email to {user.email}: {str(e)}")
+    
+    def _send_production_without_power_email(self, user, device, event):
+        """Send production without power email notification"""
+        try:
+            subject = f"CRITICAL: Production Without Power - {device.name}"
+            
+            message = f"""
+CRITICAL ALERT: Production Without Power
+
+Device: {device.name}
+Factory: {device.factory.name if device.factory else 'Unknown'}
+Time: {event.created_at}
+
+CRITICAL: Production has been detected on this device while it has no power.
+This indicates a serious system issue that requires immediate attention.
+
+Power Data:
+- AIN1 Value: {event.ain1_value}
+- Power Status: NO POWER
+
+Production Data:
+- Counter 1: {event.counter_1_value}
+- Counter 2: {event.counter_2_value}
+- Counter 3: {event.counter_3_value}
+- Counter 4: {event.counter_4_value}
+
+This is a critical issue that may indicate:
+1. Sensor malfunction
+2. Data corruption
+3. System tampering
+4. Electrical issues
+
+Please investigate immediately.
+
+This is an automated alert from the Mill Application Power Management System.
+            """
+            
+            # Send email
+            self.email_service.send_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=message,
+                text_content=message,
                 user=user
             )
             
@@ -572,4 +754,98 @@ This is an automated alert from the Mill Application Power Management System.
                 'total_devices': 0,
                 'devices_with_power': 0,
                 'devices_without_power': 0,
+            }
+    
+    def get_device_counter_changes(self, device, hours=24):
+        """Get counter changes for a device in the last N hours"""
+        try:
+            from datetime import timedelta
+            
+            # Get the last N hours of data
+            end_time = timezone.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            # Get raw data for this device in the time range
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__gte=start_time,
+                timestamp__lte=end_time
+            ).order_by('timestamp')
+            
+            if not raw_data.exists():
+                return {
+                    'counter_changes': [],
+                    'production_without_power': [],
+                    'total_bags_produced': 0,
+                    'bags_without_power': 0
+                }
+            
+            counter_changes = []
+            production_without_power = []
+            total_bags_produced = 0
+            bags_without_power = 0
+            
+            # Get the first record as baseline
+            first_record = raw_data.first()
+            previous_counters = {
+                'counter_1': first_record.counter_1 or 0,
+                'counter_2': first_record.counter_2 or 0,
+                'counter_3': first_record.counter_3 or 0,
+                'counter_4': first_record.counter_4 or 0,
+            }
+            
+            for record in raw_data[1:]:  # Skip first record
+                # Calculate changes
+                changes = {}
+                for counter_name in ['counter_1', 'counter_2', 'counter_3', 'counter_4']:
+                    current_value = getattr(record, counter_name) or 0
+                    previous_value = previous_counters[counter_name]
+                    change = current_value - previous_value
+                    
+                    if change > 0:
+                        changes[counter_name] = {
+                            'previous': previous_value,
+                            'current': current_value,
+                            'change': change,
+                            'has_power': record.ain1_value > 0 if record.ain1_value is not None else False
+                        }
+                        
+                        # Track production without power
+                        if record.ain1_value is not None and record.ain1_value <= 0:
+                            production_without_power.append({
+                                'timestamp': record.timestamp,
+                                'counter': counter_name,
+                                'change': change,
+                                'ain1_value': record.ain1_value
+                            })
+                            bags_without_power += change
+                        
+                        total_bags_produced += change
+                    
+                    # Update previous value
+                    previous_counters[counter_name] = current_value
+                
+                if changes:
+                    counter_changes.append({
+                        'timestamp': record.timestamp,
+                        'changes': changes,
+                        'ain1_value': record.ain1_value
+                    })
+            
+            return {
+                'counter_changes': counter_changes,
+                'production_without_power': production_without_power,
+                'total_bags_produced': total_bags_produced,
+                'bags_without_power': bags_without_power,
+                'time_range': f"Last {hours} hours"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting counter changes for device {device.id}: {str(e)}")
+            return {
+                'counter_changes': [],
+                'production_without_power': [],
+                'total_bags_produced': 0,
+                'bags_without_power': 0,
+                'error': str(e)
             } 

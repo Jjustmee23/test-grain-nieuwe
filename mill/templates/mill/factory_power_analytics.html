@@ -1,0 +1,304 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ factory.name }} - Power Analytics{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-graph-up text-primary me-2"></i>
+                Power Analytics - {{ factory.name }}
+            </h2>
+            <p class="text-muted mb-0">Comprehensive power management insights for this factory</p>
+        </div>
+        <div>
+            <a href="{% url 'view_statistics' factory.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Statistics
+            </a>
+            <a href="{% url 'factory_power_events' factory.id %}" class="btn btn-warning ms-2">
+                <i class="bi bi-lightning-charge me-2"></i>Power Events
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ total_devices }}</h4>
+                            <p class="mb-0">Total Devices</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-cpu fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ devices_with_power }}</h4>
+                            <p class="mb-0">Devices with Power</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-lightning-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ devices_without_power }}</h4>
+                            <p class="mb-0">Devices without Power</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-lightning-slash fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ uptime_percentage|floatformat:1 }}%</h4>
+                            <p class="mb-0">Uptime</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-speedometer2 fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Power Consumption Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning-charge me-2"></i>Power Consumption
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-primary mb-1">{{ avg_power_consumption|floatformat:2 }}</h3>
+                                <p class="text-muted mb-0">Avg Consumption (V)</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-warning mb-1">{{ peak_power_usage|floatformat:2 }}</h3>
+                                <p class="text-muted mb-0">Peak Usage (V)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Efficiency Score
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="position-relative d-inline-block">
+                            <svg width="120" height="120" viewBox="0 0 120 120">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#e9ecef" stroke-width="10"/>
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#007bff" stroke-width="10" 
+                                        stroke-dasharray="{{ power_efficiency_score|floatformat:0 }} 100" 
+                                        stroke-dashoffset="25" transform="rotate(-90 60 60)"/>
+                            </svg>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <h3 class="mb-0">{{ power_efficiency_score|floatformat:0 }}%</h3>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2 mb-0">Power Efficiency</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>Events by Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if events_by_type %}
+                        <div class="row">
+                            {% for event_type, count in events_by_type.items %}
+                                {% if count > 0 %}
+                                    <div class="col-6 mb-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-info">{{ event_type|title }}</span>
+                                            <strong>{{ count }}</strong>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No events recorded</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Events by Severity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if events_by_severity %}
+                        <div class="row">
+                            {% for severity, count in events_by_severity.items %}
+                                {% if count > 0 %}
+                                    <div class="col-6 mb-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            {% if severity == 'low' %}
+                                                <span class="badge bg-success">Low</span>
+                                            {% elif severity == 'medium' %}
+                                                <span class="badge bg-warning">Medium</span>
+                                            {% elif severity == 'high' %}
+                                                <span class="badge bg-danger">High</span>
+                                            {% elif severity == 'very_high' %}
+                                                <span class="badge bg-dark">Critical</span>
+                                            {% endif %}
+                                            <strong>{{ count }}</strong>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No events recorded</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trends -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center mb-2">
+                        <i class="bi bi-{% if events_trend_direction == 'up' %}arrow-up-circle text-danger{% else %}arrow-down-circle text-success{% endif %} fs-1"></i>
+                    </div>
+                    <h4 class="mb-1">{{ events_trend_count }}</h4>
+                    <p class="text-muted mb-1">Events (30 days)</p>
+                    <small class="text-{% if events_trend_direction == 'up' %}danger{% else %}success{% endif %}">
+                        {{ events_trend_percentage }}% {{ events_trend_direction }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center mb-2">
+                        <i class="bi bi-{% if consumption_trend_direction == 'up' %}arrow-up-circle text-danger{% else %}arrow-down-circle text-success{% endif %} fs-1"></i>
+                    </div>
+                    <h4 class="mb-1">{{ consumption_trend_value|floatformat:1 }}</h4>
+                    <p class="text-muted mb-1">Consumption Trend</p>
+                    <small class="text-{% if consumption_trend_direction == 'up' %}danger{% else %}success{% endif %}">
+                        {{ consumption_trend_percentage }}% {{ consumption_trend_direction }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center mb-2">
+                        <i class="bi bi-{% if uptime_trend_direction == 'up' %}arrow-up-circle text-success{% else %}arrow-down-circle text-danger{% endif %} fs-1"></i>
+                    </div>
+                    <h4 class="mb-1">{{ uptime_trend_value|floatformat:1 }}%</h4>
+                    <p class="text-muted mb-1">Uptime Trend</p>
+                    <small class="text-{% if uptime_trend_direction == 'up' %}success{% else %}danger{% endif %}">
+                        {{ uptime_trend_percentage }}% {{ uptime_trend_direction }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-center mb-2">
+                        <i class="bi bi-{% if efficiency_trend_direction == 'up' %}arrow-up-circle text-success{% else %}arrow-down-circle text-danger{% endif %} fs-1"></i>
+                    </div>
+                    <h4 class="mb-1">{{ efficiency_trend_value|floatformat:1 }}%</h4>
+                    <p class="text-muted mb-1">Efficiency Trend</p>
+                    <small class="text-{% if efficiency_trend_direction == 'up' %}success{% else %}danger{% endif %}">
+                        {{ efficiency_trend_percentage }}% {{ efficiency_trend_direction }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history me-2"></i>Recent Activity Summary
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <h3 class="text-primary">{{ recent_events }}</h3>
+                    <p class="text-muted">Events in Last 30 Days</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <h3 class="text-success">{{ devices_with_power }}</h3>
+                    <p class="text-muted">Devices Currently Online</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <h3 class="text-warning">{{ avg_power_consumption|floatformat:1 }}</h3>
+                    <p class="text-muted">Average Power (V)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 60 seconds
+setInterval(() => {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %} 

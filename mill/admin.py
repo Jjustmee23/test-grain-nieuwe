@@ -83,11 +83,12 @@ class CityAdmin(admin.ModelAdmin):
 # admin.site.register(Factory)
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'status', 'error','group', 'created_at')
+    list_display = ('name', 'city', 'status', 'error','group', 'responsible_users_count', 'created_at')
     list_filter = ('status', 'error', 'city', 'group')
     search_fields = ('name', 'address')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
+    filter_horizontal = ('responsible_users',)
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'city', 'status', 'error', 'group')
@@ -96,8 +97,16 @@ class FactoryAdmin(admin.ModelAdmin):
             'fields': ('address', 'latitude', 'longitude'),
             'description': 'Add coordinates for map functionality. You can use Google Maps to find coordinates.'
         }),
+        ('Responsible Users', {
+            'fields': ('responsible_users',),
+            'description': 'Users responsible for this factory. They will receive notifications about power issues and other alerts.'
+        }),
     )
     readonly_fields = ('created_at',)
+    
+    def responsible_users_count(self, obj):
+        return obj.responsible_users.count()
+    responsible_users_count.short_description = 'Responsible Users'
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'support_tickets_enabled')
