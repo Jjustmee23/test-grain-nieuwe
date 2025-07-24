@@ -53,6 +53,7 @@ class Factory(models.Model):
 class Device(models.Model):
     id = models.CharField(max_length=30,primary_key=True,unique=True)
     name = models.CharField(max_length=255)
+    serial_number = models.CharField(max_length=100, blank=True, null=True, help_text="Device serial number")
     selected_counter = models.CharField(max_length=50, default='counter_1')
     status = models.BooleanField(default=False)
     factory = models.ForeignKey(Factory, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
@@ -91,7 +92,6 @@ class TransactionData(models.Model):
         ]
     def __str__(self):
         return f"Production Data for {self.device.name} at {self.created_at}"
-from django.db import models
 
 class RawData(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='raw_data')
@@ -115,7 +115,7 @@ class RawData(models.Model):
     ain7_value = models.FloatField(null=True, blank=True)
     ain8_value = models.FloatField(null=True, blank=True)
     start_flag = models.IntegerField(null=True, blank=True)
-    type = models.IntegerField(null=True, blank=True)
+    data_type = models.IntegerField(null=True, blank=True, help_text="Data type identifier")
     length = models.IntegerField(null=True, blank=True)
     version = models.IntegerField(null=True, blank=True)
     end_flag = models.IntegerField(null=True, blank=True)

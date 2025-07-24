@@ -1,7 +1,6 @@
 
 from django.urls import path, include
 from django.contrib import admin
-from .views_new import testmill
 # from mill. import profile_views
 from mill import views, apis
 from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views
@@ -9,7 +8,6 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
-    path('test/', testmill, name='mill'),
 
     # OAuth2 callback URL
     path('auth/callback/', views.auth_callback, name='auth_callback'),
