@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status, allowed_cities, allowed_factories
-from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs, Batch, DevicePowerStatus
+from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs, DoorStatus, Batch, DevicePowerStatus
 from django.db.models import Sum
 from datetime import datetime
 from mill.utils import allowed_cities
@@ -104,14 +104,14 @@ def dashboard(request):
             city_data[key] += value
 
     for factory in factories:
-        # Get the latest unresolved door log for any device in this factory
-        latest_door_log = DoorOpenLogs.objects.filter(
-            device__factory=factory,
-            is_resolved=False
-        ).first()
+        # Get door status for this factory
+        factory_devices = Device.objects.filter(factory=factory)
+        door_statuses = DoorStatus.objects.filter(device__in=factory_devices)
+        
+        # Check if any door is open
+        any_door_open = door_statuses.filter(is_open=True).exists()
         
         # Get real power status from DevicePowerStatus
-        factory_devices = Device.objects.filter(factory=factory)
         power_statuses = DevicePowerStatus.objects.filter(device__in=factory_devices)
         
         # Determine overall factory power status
@@ -125,7 +125,7 @@ def dashboard(request):
         
         factory.status_info = {
             'power_status': factory_has_power,
-            'door_status': latest_door_log is not None  # True if there's an unresolved door log
+            'door_status': any_door_open  # True if any door is open
         }
 
     context = {

@@ -38,6 +38,10 @@ function initializeCharts() {
         return;
     }
     const hourlyCtx = hourlyCanvas.getContext('2d');
+    if (!hourlyCtx) {
+        console.warn('hourlyChart context not available');
+        return;
+    }
     window.hourlyChart = new Chart(hourlyCtx, {
         type: 'bar',
         data: {
@@ -71,6 +75,10 @@ function initializeCharts() {
         return;
     }
     const dailyCtx = dailyCanvas.getContext('2d');
+    if (!dailyCtx) {
+        console.warn('dailyChart context not available');
+        return;
+    }
     window.dailyChart = new Chart(dailyCtx, {
         type: 'bar',
         data: {
@@ -104,6 +112,10 @@ function initializeCharts() {
         return;
     }
     const monthlyCtx = monthlyCanvas.getContext('2d');
+    if (!monthlyCtx) {
+        console.warn('monthlyChart context not available');
+        return;
+    }
     window.monthlyChart = new Chart(monthlyCtx, {
         type: 'line',
         data: {
@@ -139,6 +151,10 @@ function initializeCharts() {
         return;
     }
     const yearlyCtx = yearlyCanvas.getContext('2d');
+    if (!yearlyCtx) {
+        console.warn('yearlyChart context not available');
+        return;
+    }
     window.yearlyChart = new Chart(yearlyCtx, {
         type: 'pie',
         data: {
@@ -237,12 +253,11 @@ function fetchChartData() {
 function updateCommulative(daily_data, weekly_data, monthly_data, yearly_data, previous_data) {
     let daily = document.getElementById('total-daily');
     let weekly = document.getElementById('total-week');
-    let monthly = document.getElementById('total-month');
     let yearly = document.getElementById('total-year');
     let previously = document.getElementById('total-previous');
-    daily.innerHTML = daily_data;
-    weekly.innerHTML = weekly_data;
-    monthly.innerHTML = monthly_data;
-    yearly.innerHTML = yearly_data;
-    previously.innerHTML = previous_data;
+    
+    if (daily) daily.innerHTML = daily_data;
+    if (weekly) weekly.innerHTML = weekly_data;
+    if (yearly) yearly.innerHTML = yearly_data;
+    if (previously) previously.innerHTML = previous_data;
 }

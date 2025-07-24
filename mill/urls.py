@@ -37,11 +37,13 @@ urlpatterns = [
     path('power-notification-settings/', power_management_views.power_notification_settings, name='power_notification_settings'),
     path('power-analytics/', power_management_views.power_analytics, name='power_analytics'),
     path('api/power-status/<int:factory_id>/', power_management_views.power_status_api, name='power_status_api'),
+    path('api/power-data-mqtt/<int:factory_id>/', power_management_views.power_data_mqtt_api, name='power_data_mqtt_api'),
     path('sync-counter-data/', power_management_views.sync_counter_data, name='sync_counter_data'),
     
     # Factory-specific power management URLs
     path('factory/<int:factory_id>/power-events/', power_management_views.factory_power_events, name='factory_power_events'),
     path('factory/<int:factory_id>/power-analytics/', power_management_views.factory_power_analytics, name='factory_power_analytics'),
+    path('factory/<int:factory_id>/power-overview/', power_management_views.factory_power_overview, name='factory_power_overview'),
     
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics-dashboard'),
@@ -101,6 +103,9 @@ urlpatterns = [
 
     path('view-statistics/<int:factory_id>/', views.view_statistics, name='view_statistics'),
     path('api/device-chart-data/<int:factory_id>/', views.get_device_chart_data, name='get_device_chart_data'),
+    path('api/door-status/<int:factory_id>/', views.get_door_status_data, name='get_door_status_data'),
+    path('api/power-status/<int:factory_id>/', views.get_power_status_data, name='get_power_status_data'),
+    path('api/power-data-mqtt/<int:factory_id>/', views.get_power_data_from_mqtt, name='get_power_data_from_mqtt'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
     path('preview-data/', views.preview_data, name='preview_data'),

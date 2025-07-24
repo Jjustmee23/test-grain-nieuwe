@@ -97,19 +97,41 @@
                         </div>
                         <div class="col-md-2">
                             <div class="text-center">
-                                <h4 class="text-danger">{{ power_summary.critical_events|default:0 }}</h4>
+                                <h4 class="text-danger">{{ events_summary.critical_events|default:0 }}</h4>
                                 <p class="text-muted">Critical Events</p>
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="text-center">
-                                {% if power_summary.total_devices > 0 %}
-                                    {% widthratio power_summary.devices_with_power power_summary.total_devices 100 as uptime %}
-                                    <h4 class="text-info">{{ uptime }}%</h4>
-                                {% else %}
-                                    <h4 class="text-muted">0%</h4>
-                                {% endif %}
-                                <p class="text-muted">Uptime</p>
+                                <h4 class="text-info">{{ power_summary.avg_uptime_today|floatformat:1|default:"0.0" }}%</h4>
+                                <p class="text-muted">Avg Uptime Today</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ power_summary.power_events_today|default:0 }}</h4>
+                                <p class="text-muted">Power Events Today</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ power_summary.total_power_consumption|floatformat:2|default:"0.00" }}</h4>
+                                <p class="text-muted">Total Power Consumption</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-warning">{{ events_summary.total_events|default:0 }}</h4>
+                                <p class="text-muted">Total Events (30 days)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-info">{{ events_summary.power_loss_events|default:0 }}</h4>
+                                <p class="text-muted">Power Loss Events</p>
                             </div>
                         </div>
                     </div>

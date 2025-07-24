@@ -9,9 +9,10 @@ from mill.models import (
     Device, PowerEvent, DevicePowerStatus, PowerNotificationSettings,
     Factory, UserProfile, PowerManagementPermission
 )
-from mill.services.power_management_service import PowerManagementService
+from mill.services.unified_power_management_service import UnifiedPowerManagementService
 from mill.services.counter_sync_service import CounterSyncService
 from mill.utils.permmissions_handler_utils import is_allowed_factory
+from mill.models import PowerData
 
 @login_required
 def power_dashboard(request):
@@ -21,30 +22,32 @@ def power_dashboard(request):
         return redirect('dashboard')
     
     try:
-        # Get power management service
-        power_service = PowerManagementService()
+        # Get unified power management service
+        service = UnifiedPowerManagementService()
         
-        # Get summary statistics
-        summary = power_service.get_power_events_summary()
+        # Get power summary
+        power_summary = service.get_device_power_summary()
         
-        # Get active power events
-        active_events = power_service.get_active_power_events()
+        # Get power events summary
+        events_summary = service.get_power_events_summary(days=30)
         
-        # Get devices with power issues
-        devices_with_issues = DevicePowerStatus.objects.filter(has_power=False)
+        # Get power analytics
+        analytics = service.get_power_analytics(days=30)
         
         # Get all factories for super admin
         factories = Factory.objects.all()
         
-        # Paginate active events
-        paginator = Paginator(active_events, 20)
+        # Paginate recent events
+        recent_events = PowerEvent.objects.filter(is_resolved=False).order_by('-created_at')
+        paginator = Paginator(recent_events, 20)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
         context = {
-            'summary': summary,
+            'power_summary': power_summary,
+            'events_summary': events_summary,
+            'analytics': analytics,
             'active_events': page_obj,
-            'devices_with_issues': devices_with_issues,
             'factories': factories,
         }
         
@@ -168,7 +171,7 @@ def device_power_status(request, device_id):
         power_events = PowerEvent.objects.filter(device=device).order_by('-created_at')[:10]
         
         # Get counter changes data
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         hours = int(request.GET.get('hours', 24))
         counter_data = power_service.get_device_counter_changes(device, hours=hours)
         
@@ -253,7 +256,7 @@ def power_analytics(request):
     
     try:
         # Get power management service
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         
         # Get summary statistics
         summary = power_service.get_power_events_summary()
@@ -379,79 +382,43 @@ def power_status_api(request, factory_id):
         # Get factory
         factory = get_object_or_404(Factory, id=factory_id)
         
-        # Get devices for this factory - only devices with factories
-        devices = Device.objects.filter(factory=factory, factory__isnull=False)
+        # Use unified power management service
+        service = UnifiedPowerManagementService()
         
-        # Get power status for each device
-        power_status_data = []
-        for device in devices:
-            power_status = DevicePowerStatus.objects.filter(device=device).first()
-            
-            if power_status:
-                power_status_data.append({
-                    'device_id': device.id,
-                    'device_name': device.name,
-                    'has_power': power_status.has_power,
-                    'ain1_value': power_status.ain1_value,
-                    'last_check': power_status.last_power_check.isoformat() if power_status.last_power_check else None,
-                    'power_loss_detected_at': power_status.power_loss_detected_at.isoformat() if power_status.power_loss_detected_at else None,
-                    'production_during_power_loss': power_status.production_during_power_loss,
-                })
-            else:
-                # Get latest RawData to determine initial power status
-                latest_raw_data = RawData.objects.filter(
-                    device=device,
-                    ain1_value__isnull=False
-                ).order_by('-timestamp').first()
-                
-                has_power = False
-                ain1_value = None
-                last_check = None
-                
-                if latest_raw_data and latest_raw_data.ain1_value is not None:
-                    has_power = latest_raw_data.ain1_value > 0
-                    ain1_value = latest_raw_data.ain1_value
-                    last_check = latest_raw_data.timestamp
-                
-                # Create power status
-                power_status = DevicePowerStatus.objects.create(
-                    device=device,
-                    has_power=has_power,
-                    power_threshold=0.0,
-                    ain1_value=ain1_value,
-                    last_power_check=last_check
-                )
-                power_status_data.append({
-                    'device_id': device.id,
-                    'device_name': device.name,
-                    'has_power': has_power,
-                    'ain1_value': None,
-                    'last_check': None,
-                    'power_loss_detected_at': None,
-                    'production_during_power_loss': False,
-                })
+        # Get power summary for this factory
+        power_summary = service.get_device_power_summary(factory_id=factory_id)
         
-        # Get summary statistics
-        total_devices = len(devices)
-        devices_with_power = sum(1 for status in power_status_data if status['has_power'])
-        devices_without_power = total_devices - devices_with_power
+        # Get power events summary for this factory
+        events_summary = service.get_power_events_summary(factory_id=factory_id, days=1)
         
-        # Get recent power events (last 24 hours)
-        yesterday = timezone.now() - timezone.timedelta(days=1)
-        recent_events = PowerEvent.objects.filter(
-            device__factory=factory,
-            created_at__gte=yesterday
-        ).count()
+        # Convert devices data to expected format
+        devices_data = []
+        for device_data in power_summary['devices_data']:
+            devices_data.append({
+                'device_id': device_data['device_id'],
+                'device_name': device_data['device_name'],
+                'has_power': device_data['has_power'],
+                'ain1_value': device_data['ain1_value'],
+                'last_check': device_data['last_update'].isoformat() if device_data['last_update'] else None,
+                'power_loss_detected_at': device_data['last_power_loss'].isoformat() if device_data['last_power_loss'] else None,
+                'uptime_percentage': device_data['uptime_percentage'],
+                'power_loss_count_today': device_data['power_loss_count_today'],
+                'power_restore_count_today': device_data['power_restore_count_today'],
+            })
         
         return JsonResponse({
             'factory_id': factory_id,
             'factory_name': factory.name,
-            'devices': power_status_data,
+            'devices': devices_data,
             'summary': {
-                'total_devices': total_devices,
-                'devices_with_power': devices_with_power,
-                'devices_without_power': devices_without_power,
-                'recent_events_24h': recent_events,
+                'total_devices': power_summary['total_devices'],
+                'devices_with_power': power_summary['devices_with_power'],
+                'devices_without_power': power_summary['devices_without_power'],
+                'avg_uptime_today': power_summary['avg_uptime_today'],
+                'total_power_consumption': power_summary['total_power_consumption'],
+                'power_events_today': power_summary['power_events_today'],
+                'unresolved_events': power_summary['unresolved_events'],
+                'recent_events_24h': events_summary['total_events'],
             }
         })
         
@@ -554,7 +521,7 @@ def factory_power_analytics(request, factory_id):
         factory = get_object_or_404(Factory, id=factory_id)
         
         # Get power management service
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         
         # Get devices for this factory
         devices = Device.objects.filter(factory=factory)
@@ -625,6 +592,37 @@ def factory_power_analytics(request, factory_id):
         efficiency_trend_direction = 'up'
         efficiency_trend_percentage = 12.1
         
+        # Get factory statistics data (similar to view_statistics)
+        from mill.models import ProductionData
+        from datetime import datetime
+        
+        # Get current date
+        current_date = timezone.now().date()
+        
+        # Calculate factory totals
+        factory_total = {
+            'daily_total': 0,
+            'weekly_total': 0,
+            'monthly_total': 0,
+            'yearly_total': 0
+        }
+        
+        # Get production data for this factory's devices
+        production_data = ProductionData.objects.filter(
+            device__factory=factory,
+            created_at__date=current_date
+        ).select_related('device')
+        
+        # Calculate totals
+        for production in production_data:
+            factory_total['daily_total'] += production.daily_production or 0
+            factory_total['weekly_total'] += production.weekly_production or 0
+            factory_total['monthly_total'] += production.monthly_production or 0
+            factory_total['yearly_total'] += production.yearly_production or 0
+        
+        # Get previous year total (simplified)
+        yearly_previous = 0  # This would need to be calculated from historical data
+        
         context = {
             'factory': factory,
             'total_devices': total_devices,
@@ -649,12 +647,165 @@ def factory_power_analytics(request, factory_id):
             'efficiency_trend_value': efficiency_trend_value,
             'efficiency_trend_direction': efficiency_trend_direction,
             'efficiency_trend_percentage': efficiency_trend_percentage,
+            # Add factory statistics
+            'factory_total': factory_total,
+            'yearly_previous': yearly_previous,
         }
         
         return render(request, 'mill/factory_power_analytics.html', context)
         
     except Exception as e:
         messages.error(request, f'Error loading power analytics: {str(e)}')
+        return redirect('view_statistics', factory_id=factory_id)
+
+@login_required
+def factory_power_overview(request, factory_id):
+    """Power overview for a specific factory - shows all power statistics"""
+    try:
+        # Check permissions
+        if not request.user.is_superuser and not PowerManagementPermission.has_power_status_access(request.user):
+            messages.error(request, 'Access denied. Power management is only available for authorized users.')
+            return redirect('dashboard')
+        
+        # Additional factory access check for non-super users
+        if not request.user.is_superuser:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                if not user_profile.allowed_factories.filter(id=factory_id).exists():
+                    messages.error(request, 'Access denied to this factory.')
+                    return redirect('dashboard')
+            except UserProfile.DoesNotExist:
+                messages.error(request, 'Access denied.')
+                return redirect('dashboard')
+        
+        # Get factory
+        factory = get_object_or_404(Factory, id=factory_id)
+        
+        # Get unified power management service
+        service = UnifiedPowerManagementService()
+        
+        # Get devices for this factory
+        devices = Device.objects.filter(factory=factory)
+        
+        # Get power summary for this factory
+        power_summary = service.get_device_power_summary(factory_id=factory_id)
+        
+        # Get power events summary for this factory
+        events_summary = service.get_power_events_summary(factory_id=factory_id, days=30)
+        
+        # Get power analytics for this factory
+        analytics = service.get_power_analytics(factory_id=factory_id, days=30)
+        
+        # Convert devices data to power status format for template compatibility
+        power_statuses = []
+        
+        # First, try to get data from unified service
+        for device_data in power_summary['devices_data']:
+            # Find the device object
+            device = devices.filter(id=device_data['device_id']).first()
+            if device:
+                power_statuses.append({
+                    'device': device,
+                    'has_power': device_data['has_power'],
+                    'ain1_value': device_data['ain1_value'],
+                    'last_check': device_data['last_update'],
+                    'power_loss_detected_at': device_data['last_power_loss'],
+                    'power_restored_at': device_data['last_power_restore'],
+                    'uptime_percentage': device_data['uptime_percentage'],
+                    'power_loss_count_today': device_data['power_loss_count_today'],
+                    'power_restore_count_today': device_data['power_restore_count_today'],
+                })
+        
+        # If no devices found in power summary, create basic status for all devices
+        if not power_statuses:
+            for device in devices:
+                # Get latest AIN1 value from RawData
+                from mill.models import RawData
+                latest_raw_data = RawData.objects.filter(
+                    device=device,
+                    ain1_value__isnull=False
+                ).order_by('-timestamp').first()
+                
+                ain1_value = latest_raw_data.ain1_value if latest_raw_data else None
+                has_power = ain1_value > 0 if ain1_value is not None else False
+                
+                power_statuses.append({
+                    'device': device,
+                    'has_power': has_power,
+                    'ain1_value': ain1_value,
+                    'last_check': latest_raw_data.timestamp if latest_raw_data else None,
+                    'power_loss_detected_at': None,
+                    'power_restored_at': None,
+                    'uptime_percentage': 100.0,
+                    'power_loss_count_today': 0,
+                    'power_restore_count_today': 0,
+                })
+        
+        # If still no power statuses, create default status for devices without any data
+        if not power_statuses:
+            for device in devices:
+                power_statuses.append({
+                    'device': device,
+                    'has_power': False,
+                    'ain1_value': None,
+                    'last_check': None,
+                    'power_loss_detected_at': None,
+                    'power_restored_at': None,
+                    'uptime_percentage': 0.0,
+                    'power_loss_count_today': 0,
+                    'power_restore_count_today': 0,
+                })
+        
+        # Get recent power events (last 24 hours)
+        twenty_four_hours_ago = timezone.now() - timezone.timedelta(hours=24)
+        recent_events = PowerEvent.objects.filter(
+            device__factory=factory,
+            created_at__gte=twenty_four_hours_ago
+        ).select_related('device').order_by('-created_at')[:10]
+        
+        # Get unresolved power events
+        unresolved_events = PowerEvent.objects.filter(
+            device__factory=factory,
+            is_resolved=False
+        ).select_related('device').order_by('-created_at')[:5]
+        
+        # Ensure we have valid summary data
+        if not power_summary or power_summary['total_devices'] == 0:
+            # Create default summary for factory with no devices
+            power_summary = {
+                'total_devices': devices.count(),
+                'devices_with_power': 0,
+                'devices_without_power': devices.count(),
+                'power_events_today': 0,
+                'unresolved_events': 0,
+                'avg_uptime_today': 0.0,
+                'total_power_consumption': 0.0,
+                'devices_data': []
+            }
+        
+        context = {
+            'factory': factory,
+            'power_summary': power_summary,
+            'events_summary': events_summary,
+            'analytics': analytics,
+            'power_statuses': power_statuses,
+            'recent_events': recent_events,
+            'unresolved_events': unresolved_events,
+            'total_devices': power_summary['total_devices'],
+            'devices_with_power': power_summary['devices_with_power'],
+            'devices_without_power': power_summary['devices_without_power'],
+            'uptime_percentage': power_summary['avg_uptime_today'],
+            'avg_power_consumption': analytics['trends'].get('avg_power_consumption', 0) if analytics['trends'] else 0,
+            'peak_power_usage': analytics['trends'].get('max_power_consumption', 0) if analytics['trends'] else 0,
+            'total_power_consumption': power_summary['total_power_consumption'],
+            'power_events_today': power_summary['power_events_today'],
+            'unresolved_events_count': power_summary['unresolved_events'],
+        }
+        
+        return render(request, 'mill/factory_power_overview.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading factory power overview: {str(e)}')
         return redirect('view_statistics', factory_id=factory_id)
 
 @login_required
@@ -666,7 +817,7 @@ def sync_counter_data(request):
     
     try:
         sync_service = CounterSyncService()
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         
         # Get counter database status
         status = sync_service.get_counter_db_status()
@@ -686,24 +837,26 @@ def sync_counter_data(request):
                 messages.success(request, f'Successfully synced {synced_count} historical records from counter database.')
                 
             elif action == 'update_power':
-                # Update power status
-                updated_count = power_service.update_power_status_from_database()
-                messages.success(request, f'Successfully updated power status for {updated_count} devices.')
+                # Update power status using unified service
+                result = power_service.update_all_devices_power_status()
+                messages.success(request, f'Successfully updated power status: {result["updated_count"]} devices updated, {result["error_count"]} errors.')
                 
             elif action == 'full_sync':
                 # Full sync and power update
                 synced_count = sync_service.sync_latest_data()
-                updated_count = power_service.update_power_status_from_database()
-                messages.success(request, f'Full sync completed: {synced_count} records synced, {updated_count} devices updated.')
+                result = power_service.update_all_devices_power_status()
+                messages.success(request, f'Full sync completed: {synced_count} records synced, {result["updated_count"]} devices updated.')
             
             return redirect('sync_counter_data')
         
         # Get power management summary
-        summary = power_service.get_power_events_summary()
+        power_summary = power_service.get_device_power_summary()
+        events_summary = power_service.get_power_events_summary(days=30)
         
         context = {
             'counter_status': status,
-            'power_summary': summary,
+            'power_summary': power_summary,
+            'events_summary': events_summary,
         }
         
         return render(request, 'mill/sync_counter_data.html', context)
@@ -711,3 +864,95 @@ def sync_counter_data(request):
     except Exception as e:
         messages.error(request, f'Error during data synchronization: {str(e)}')
         return redirect('dashboard') 
+
+@login_required
+def power_data_mqtt_api(request, factory_id):
+    """API endpoint to get unified power management data for devices in a factory"""
+    try:
+        # Check permissions - super admin or authorized users with power status access
+        if not request.user.is_superuser and not PowerManagementPermission.has_power_status_access(request.user):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Additional factory access check for non-super users
+        if not request.user.is_superuser:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                if not user_profile.allowed_factories.filter(id=factory_id).exists():
+                    return JsonResponse({'error': 'Permission denied'}, status=403)
+            except UserProfile.DoesNotExist:
+                return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Get factory
+        factory = get_object_or_404(Factory, id=factory_id)
+        
+        # Get device filter
+        device_id = request.GET.get('device_id', 'all')
+        
+        # Use unified power management service
+        service = UnifiedPowerManagementService()
+        
+        # Get power summary for this factory
+        power_summary = service.get_device_power_summary(factory_id=factory_id)
+        
+        # Get power events summary for this factory
+        events_summary = service.get_power_events_summary(factory_id=factory_id, days=1)
+        
+        # Get recent power events
+        recent_events = service.get_recent_power_events(factory_id=factory_id, limit=5)
+        
+        # Convert devices data to expected format
+        devices_data = []
+        for device_data in power_summary['devices_data']:
+            # Filter by specific device if requested
+            if device_id != 'all' and str(device_data['device_id']) != str(device_id):
+                continue
+                
+            devices_data.append({
+                'device_id': device_data['device_id'],
+                'device_name': device_data['device_name'],
+                'has_power': device_data['has_power'],
+                'ain1_value': device_data['ain1_value'],
+                'last_update': device_data['last_update'].isoformat() if device_data['last_update'] else None,
+                'last_power_loss': device_data['last_power_loss'].isoformat() if device_data['last_power_loss'] else None,
+                'last_power_restore': device_data['last_power_restore'].isoformat() if device_data['last_power_restore'] else None,
+                'uptime_percentage': device_data['uptime_percentage'],
+                'power_loss_count_today': device_data['power_loss_count_today'],
+                'power_restore_count_today': device_data['power_restore_count_today'],
+                'power_threshold': device_data.get('power_threshold', 0.0),
+            })
+        
+        # Convert recent events to expected format
+        events_data = []
+        for event in recent_events:
+            events_data.append({
+                'id': event.id,
+                'device_name': event.device.name,
+                'event_type': event.event_type,
+                'message': event.message,
+                'created_at': event.created_at.isoformat(),
+                'severity': event.severity,
+                'is_resolved': event.is_resolved,
+            })
+        
+        return JsonResponse({
+            'factory_id': factory_id,
+            'factory_name': factory.name,
+            'device_id': device_id,
+            'summary': {
+                'total_devices': power_summary['total_devices'],
+                'devices_with_power': power_summary['devices_with_power'],
+                'devices_without_power': power_summary['devices_without_power'],
+                'avg_uptime_today': power_summary['avg_uptime_today'],
+                'total_power_consumption': power_summary['total_power_consumption'],
+                'power_events_today': power_summary['power_events_today'],
+                'unresolved_events': power_summary['unresolved_events'],
+                'recent_events_24h': events_summary['total_events'],
+            },
+            'devices': devices_data,
+            'recent_events': events_data,
+            'data_source': 'unified_power_management',
+            'timestamp': timezone.now().isoformat(),
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500) 

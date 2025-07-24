@@ -4,6 +4,40 @@
 {% block title %}Mill Statistics{% endblock %}
 
 {% block content %}
+<style>
+.door-indicator {
+    transition: all 0.3s ease;
+}
+
+.door-indicator.open {
+    animation: pulse-red 2s infinite;
+}
+
+.door-indicator.closed {
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse-green {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.card[onclick] {
+    transition: all 0.3s ease;
+}
+
+.card[onclick]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+</style>
 <div class="statistics-page" style="margin: 12px;">
     <!-- Header Section -->
     <!-- <div class="header d-flex justify-content-between align-items-center p-3 bg-light">
@@ -50,39 +84,64 @@
             </div>
         </div>
         
-        <!-- Power Status Section (Super Admin Only) -->
+
+
+        <!-- Refresh Indicator -->
+        <div id="refreshIndicator" class="alert alert-info alert-dismissible fade show" role="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1050;">
+            <i class="bi bi-arrow-clockwise me-2"></i>
+            <strong>Real-time update...</strong> Fetching latest data from devices.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Power Status Box (Clickable) -->
         {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
         <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
+            <div class="col-md-6">
+                <div class="card border-success h-100" style="cursor: pointer; transition: transform 0.2s ease;" 
+                     onclick="window.location.href='{% url 'factory_power_overview' factory.id %}'"
+                     onmouseover="this.style.transform='scale(1.02)'" 
+                     onmouseout="this.style.transform='scale(1)'">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0">
                             <i class="bi bi-lightning-charge me-2"></i>
-                            Power Status Overview
-                        </h5>
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'factory_power_events' factory.id %}" class="btn btn-warning btn-sm">
-                                <i class="bi bi-lightning-charge me-1"></i>Power Events
-                            </a>
-                            <a href="{% url 'factory_power_analytics' factory.id %}" class="btn btn-info btn-sm">
-                                <i class="bi bi-graph-up me-1"></i>Power Analytics
-                            </a>
+                            POWER STATUS
+                        </h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="powerStatusBox">
+                            <div class="spinner-border text-danger" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading power status...</p>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row" id="powerStatusContainer">
-                            <div class="col-12 text-center">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-2">Loading power status...</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success h-100" style="cursor: pointer; transition: transform 0.2s ease;" 
+                     onclick="showDoorHistoryModal()"
+                     onmouseover="this.style.transform='scale(1.02)'" 
+                     onmouseout="this.style.transform='scale(1)'">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-door-closed me-2"></i>
+                            DOOR STATUS
+                        </h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="doorStatusBox">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
+                            <p class="mt-2">Loading door status...</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         {% endif %}
+
+
 
         <!-- Control Buttons Section -->
         <div class="row mb-4">
@@ -92,7 +151,7 @@
             </div>
             <div class="col-6 col-md-2 mb-2">
                 <label for="deviceSelector" class="form-label small mb-1">Device:</label>
-                <select id="deviceSelector" class="form-control" onchange="refreshCharts()">
+                <select id="deviceSelector" class="form-control" onchange="refreshCharts(); updateStatusBoxes();">
                     <option value="all" {% if selected_device_id == 'all' %}selected{% endif %}>All Devices</option>
                     {% for device in devices %}
                         <option value="{{ device.id }}" {% if selected_device_id == device.id %}selected{% endif %}>{{ device.name }}</option>
@@ -134,7 +193,7 @@
 
         <!-- Statistics Cards Section -->
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card text-white bg-success mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي يومي</span>
@@ -145,7 +204,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card text-white bg-secondary mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>إجمالي أسبوعي</span>
@@ -153,17 +212,6 @@
                     </div>
                     <div class="card-body">
                         <h5 class="card-title" id="total-week">{{ factory.weekly_total }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-white bg-info mb-3 shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي شهري</span>
-                        <i class="bi bi-calendar-month"></i>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title" id="total-month">{{ factory.monthly_total }}</h5>
                     </div>
                 </div>
             </div>
@@ -1662,146 +1710,22 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = summaryHTML + deviceHTML;
         }
 
-        // Auto-refresh power status every 5 minutes
-        setInterval(loadPowerStatus, 5 * 60 * 1000);
+        // Auto-refresh power status every 5 minutes - DISABLED
+        // setInterval(loadPowerStatus, 5 * 60 * 1000);
 
         // Load power status on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadPowerStatus();
         });
         {% endif %}
+
+        // Auto-refresh both status boxes every 30 seconds for real-time data - DISABLED
+        // setInterval(function() {
+        //     updateStatusBoxes();
+        // }, 30 * 1000);
 </script>
 
-<!-- Power Management Section (Super Admin Only) -->
-{% if is_superuser and power_management_data %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-lightning-charge me-2"></i>
-                    Power Management Overview
-                </h5>
-            </div>
-            <div class="card-body">
-                <!-- Power Statistics Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card bg-success text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ power_management_data.uptime_percentage|floatformat:1 }}%</h3>
-                                <p class="mb-0">System Uptime</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-info text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ power_management_data.avg_power_consumption|floatformat:1 }} kW</h3>
-                                <p class="mb-0">Avg Power Consumption</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-warning text-white">
-                            <div class="card-body text-center">
-                                <h3>{{ power_management_data.power_efficiency_score|floatformat:1 }}/100</h3>
-                                <p class="mb-0">Efficiency Score</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-success text-white">
-                            <div class="card-body text-center">
-                                <h3>€{{ power_management_data.energy_cost_savings|floatformat:0 }}</h3>
-                                <p class="mb-0">Monthly Savings</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Power Status Table -->
-                <div class="row">
-                    <div class="col-md-8">
-                        <h6>Device Power Status</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Device</th>
-                                        <th>Status</th>
-                                        <th>Power Value</th>
-                                        <th>Last Check</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for status in power_management_data.power_statuses %}
-                                    <tr>
-                                        <td>{{ status.device__name }}</td>
-                                        <td>
-                                            {% if status.has_power %}
-                                                <span class="badge bg-success">Power ON</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">Power OFF</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ status.ain1_value|default:"N/A" }}</td>
-                                        <td>{{ status.last_power_check|date:"M d, H:i" }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <h6>Recent Power Events</h6>
-                        <div class="list-group list-group-flush">
-                            {% for event in power_management_data.recent_power_events %}
-                            <div class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <strong>{{ event.device__name }}</strong><br>
-                                        <small class="text-muted">{{ event.get_event_type_display }}</small>
-                                    </div>
-                                    <span class="badge bg-{{ event.severity }}">
-                                        {{ event.get_severity_display }}
-                                    </span>
-                                </div>
-                                <small class="text-muted">{{ event.created_at|date:"M d, H:i" }}</small>
-                            </div>
-                            {% empty %}
-                            <div class="list-group-item text-muted">
-                                No recent power events
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Power Management Actions -->
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="btn-group" role="group">
-                            <a href="{% url 'power_dashboard' %}" class="btn btn-primary">
-                                <i class="bi bi-dashboard me-1"></i>
-                                Power Dashboard
-                            </a>
-                            <a href="{% url 'power_analytics' %}" class="btn btn-info">
-                                <i class="bi bi-graph-up me-1"></i>
-                                Power Analytics
-                            </a>
-                            <a href="{% url 'power_events_list' %}" class="btn btn-warning">
-                                <i class="bi bi-list me-1"></i>
-                                Power Events
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 <script>
 // Add this to your existing JavaScript
 function formatDate(dateString) {
@@ -1845,33 +1769,446 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
     }
 });
-</script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
 
-<!--     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const labels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
-    const data = Array(24).fill(0).map(() => Math.floor(Math.random() * 100));
-    const ctx = document.getElementById('hourlyChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Hourly Production',
-                data: data,
-                backgroundColor: 'rgba(255, 99, 132, 0.6)',
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
+// Load power status box on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load power status box
+    {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
+    loadPowerStatusBox();
+    {% endif %}
+    
+    // Load door status box
+    loadDoorStatusBox();
 });
-</script> -->
-{% endblock %}
+
+// Power Status Box Functions
+{% if user.is_superuser or user.power_management_permission.can_view_power_status %}
+function loadPowerStatusBox() {
+    const factoryId = {{ factory.id }};
+    const selectedDeviceId = document.getElementById('deviceSelector').value;
+    updatePowerStatusBoxForDevice(factoryId, selectedDeviceId);
+}
+
+function updatePowerStatusBoxForDevice(deviceId) {
+    const container = document.getElementById('powerStatusBox');
+    const factoryId = {{ factory.id }};
+    const deviceSelector = document.getElementById('deviceSelector');
+    const selectedDeviceName = deviceSelector ? deviceSelector.options[deviceSelector.selectedIndex].text : 'All Devices';
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Updating power status...</p>
+        </div>
+    `;
+    
+    // Fetch power data from unified power management
+    fetch(`/api/power-data-mqtt/${factoryId}/?device_id=${deviceId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Unified power management data received:', data);
+            
+            if (data.error) {
+                console.error('Power data error:', data.error);
+                container.innerHTML = `
+                    <div class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading power data
+                    </div>
+                `;
+                return;
+            }
+            
+            const summary = data.summary;
+            const devices = data.devices;
+            const recentEvents = data.recent_events;
+            
+            console.log('Selected device name:', selectedDeviceName);
+            console.log('Devices data:', devices);
+            console.log('Recent events:', recentEvents);
+            
+            // Find the specific device or first device for display
+            let displayDevice = null;
+            if (deviceId !== 'all' && devices && devices.length > 0) {
+                displayDevice = devices.find(d => d.device_id == deviceId) || devices[0];
+            } else if (devices && devices.length > 0) {
+                displayDevice = devices[0];
+            }
+            
+            console.log('Display device:', displayDevice);
+            console.log('Display device AIN1 value:', displayDevice ? displayDevice.ain1_value : 'No device');
+            console.log('Data source:', data.data_source);
+            
+            // Use unified power management status information
+            let statusText = displayDevice ? (displayDevice.has_power ? 'POWER ON' : 'POWER OFF') : 'POWER ON';
+            let statusClass = displayDevice ? (displayDevice.has_power ? 'text-success' : 'text-danger') : 'text-success';
+            let statusIcon = displayDevice && !displayDevice.has_power ? 'bi-exclamation-triangle' : 'bi-lightning-charge';
+            
+            // Determine border color based on power status
+            let borderClass = 'border-success'; // Green border for power ON
+            if (displayDevice && !displayDevice.has_power) {
+                // Check if there are power losses today
+                if (displayDevice.power_loss_count_today > 0) {
+                    borderClass = 'border-danger'; // Red border for power OFF with counting
+                } else {
+                    borderClass = 'border-warning'; // Orange border for power OFF
+                }
+            }
+            
+            // Update power status card border color
+            const powerStatusCard = container.closest('.card');
+            if (powerStatusCard) {
+                powerStatusCard.className = `card ${borderClass} h-100`;
+            }
+            
+            const deviceName = deviceId === 'all' ? selectedDeviceName : (displayDevice ? displayDevice.device_name : selectedDeviceName);
+            const lastCheck = displayDevice && displayDevice.last_update ? new Date(displayDevice.last_update).toLocaleString() : 'N/A';
+            const ain1Value = displayDevice ? (displayDevice.ain1_value !== null && displayDevice.ain1_value !== undefined ? 
+                (typeof displayDevice.ain1_value === 'number' ? displayDevice.ain1_value.toFixed(2) : parseFloat(displayDevice.ain1_value).toFixed(2)) : '0.00') : '0.00';
+            
+            // Build status display
+            let statusHtml = `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi ${statusIcon} fs-1 ${statusClass} me-3"></i>
+                            <div>
+                                <h4 class="mb-0 ${statusClass}">${statusText}</h4>
+                                <small class="text-muted">Last updated: ${new Date().toLocaleString()}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <p class="mb-1"><strong>Device:</strong> ${deviceName}</p>
+                        <p class="mb-1"><strong>Last Update:</strong> ${lastCheck}</p>
+                        <p class="mb-1"><strong>AIN1 Value:</strong> ${ain1Value}</p>
+                        ${displayDevice && displayDevice.power_loss_count_today > 0 ? `<p class="mb-1 text-warning"><strong>Power Losses Today:</strong> ${displayDevice.power_loss_count_today}</p>` : ''}
+                        ${displayDevice && displayDevice.power_restore_count_today > 0 ? `<p class="mb-1 text-success"><strong>Power Restores Today:</strong> ${displayDevice.power_restore_count_today}</p>` : ''}
+                        ${displayDevice && displayDevice.uptime_percentage < 100 ? `<p class="mb-1 text-info"><strong>Uptime Today:</strong> ${displayDevice.uptime_percentage.toFixed(1)}%</p>` : ''}
+                        ${displayDevice && displayDevice.last_power_loss ? `<p class="mb-1 text-danger"><strong>Last Power Loss:</strong> ${new Date(displayDevice.last_power_loss).toLocaleString()}</p>` : ''}
+                        ${displayDevice && displayDevice.last_power_restore ? `<p class="mb-1 text-success"><strong>Last Power Restore:</strong> ${new Date(displayDevice.last_power_restore).toLocaleString()}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Add recent events if available
+            if (recentEvents && recentEvents.length > 0) {
+                statusHtml += `
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="text-muted">Recent Power Events:</h6>
+                            <div class="list-group list-group-flush">
+                `;
+                
+                recentEvents.slice(0, 3).forEach(event => {
+                    const eventClass = event.event_type === 'power_loss' ? 'text-danger' : 'text-success';
+                    const eventIcon = event.event_type === 'power_loss' ? 'bi-exclamation-triangle' : 'bi-check-circle';
+                    
+                    statusHtml += `
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <i class="bi ${eventIcon} ${eventClass} me-2"></i>
+                                <small>${event.device_name}: ${event.message}</small>
+                            </div>
+                            <small class="text-muted">${new Date(event.created_at).toLocaleString()}</small>
+                        </div>
+                    `;
+                });
+                
+                statusHtml += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add summary statistics
+            statusHtml += `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Total Devices</small>
+                                    <strong>${summary.total_devices || 0}</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">With Power</small>
+                                    <strong class="text-success">${summary.devices_with_power || 0}</strong>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <small class="text-muted d-block">Avg Uptime</small>
+                                    <strong>${summary.avg_uptime_today ? summary.avg_uptime_today.toFixed(1) : '0.0'}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = statusHtml;
+        })
+        .catch(error => {
+            console.error('Error fetching power data:', error);
+            container.innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error loading power data
+                </div>
+            `;
+        });
+}
+
+// Door Status Box Functions
+function loadDoorStatusBox() {
+    updateStatusBoxes();
+}
+
+function updateStatusBoxes() {
+    const selectedDeviceId = document.getElementById('deviceSelector').value;
+    const factoryId = {{ factory.id }};
+    
+    // Show refresh indicator
+    showRefreshIndicator();
+    
+    // Update door status box
+    updateDoorStatusBoxForDevice(factoryId, selectedDeviceId);
+    
+    // Update power status box
+    updatePowerStatusBoxForDevice(selectedDeviceId);
+}
+
+// Initialize power status update
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial update
+    updatePowerStatusBoxForDevice('all');
+    
+    // Set up periodic updates every 30 seconds - DISABLED
+    // setInterval(() => {
+    //     const selectedDeviceId = document.getElementById('deviceSelector').value;
+    //     updatePowerStatusBoxForDevice(selectedDeviceId);
+    // }, 30000);
+});
+
+function showRefreshIndicator() {
+    // Add a small refresh indicator to the page
+    const indicator = document.getElementById('refreshIndicator');
+    if (indicator) {
+        indicator.style.display = 'block';
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 2000);
+    }
+}
+
+function updateDoorStatusBoxForDevice(factoryId, deviceId) {
+    const container = document.getElementById('doorStatusBox');
+    
+    if (!container) return;
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading door status...</p>
+        </div>
+    `;
+    
+    fetch(`/api/door-status/${factoryId}/?device_id=${deviceId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Door status error:', data.error);
+                container.innerHTML = `
+                    <div class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading door status
+                    </div>
+                `;
+                return;
+            }
+            
+            updateDoorStatusBox(data, deviceId);
+        })
+        .catch(error => {
+            console.error('Error loading door status:', error);
+            container.innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error loading door status
+                </div>
+            `;
+        });
+}
+
+function updateDoorStatusBox(data, deviceId) {
+    const container = document.getElementById('doorStatusBox');
+    const doorStatusCard = container.closest('.card');
+    
+    if (!container) return;
+    
+    const { door_statuses, total_doors, open_doors, closed_doors } = data;
+    const selectedDeviceName = deviceId === 'all' ? 'All Devices' : 
+        Array.from(document.getElementById('deviceSelector').options)
+            .find(option => option.value === deviceId)?.text || 'Selected Device';
+    
+    let statusText = 'ALL CLOSED';
+    let statusClass = 'text-success';
+    let statusIcon = 'bi-door-closed';
+    let borderClass = 'border-success'; // Green border for closed doors
+    
+    if (open_doors > 0) {
+        statusText = `${open_doors} OPEN`;
+        statusClass = 'text-danger';
+        statusIcon = 'bi-door-open';
+        borderClass = 'border-danger'; // Red border for open doors
+    }
+    
+    // Update card border color
+    if (doorStatusCard) {
+        doorStatusCard.className = `card ${borderClass} h-100`;
+    }
+    
+    container.innerHTML = `
+        <div class="mb-3">
+            <h4 class="${statusClass}">
+                <i class="bi ${statusIcon} me-2"></i>
+                ${statusText}
+            </h4>
+        </div>
+        <div class="row text-start">
+            <div class="col-12">
+                <p class="mb-1"><strong>Device:</strong> ${selectedDeviceName}</p>
+                <p class="mb-1"><strong>Total Doors:</strong> ${total_doors}</p>
+                <p class="mb-1"><strong>Closed:</strong> ${closed_doors}</p>
+                <p class="mb-1"><strong>Open:</strong> ${open_doors}</p>
+            </div>
+        </div>
+        <div class="mt-3">
+            <small class="text-muted">
+                <i class="bi bi-clock-history me-1"></i>
+                Click to view door history
+            </small>
+            <br>
+            <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>
+                Last updated: <span id="doorLastUpdated">${new Date().toLocaleString()}</span>
+            </small>
+        </div>
+    `;
+}
+
+
+{% endif %}
+
+// Door History Modal Functions
+function showDoorHistoryModal() {
+    // Create modal for door history
+    const modalHtml = `
+        <div class="modal fade" id="doorHistoryModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-clock-history me-2"></i>
+                            Door History - {{ factory.name }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="doorHistoryContent">
+                            <div class="text-center">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading door history...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('doorHistoryModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('doorHistoryModal'));
+    modal.show();
+    
+    // Load door history data
+    loadDoorHistory();
+}
+
+function loadDoorHistory() {
+    const content = document.getElementById('doorHistoryContent');
+    
+    fetch(`/api/door-status/{{ factory_id }}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                content.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading door history: ${data.error}
+                    </div>
+                `;
+                return;
+            }
+            
+            const recentLogs = data.recent_logs || [];
+            
+            if (recentLogs.length === 0) {
+                content.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No door events found for this factory
+                    </div>
+                `;
+                return;
+            }
+            
+            // Take only the last 10 events
+            const last10Events = recentLogs.slice(0, 10);
+            
+            const logsHtml = last10Events.map(log => `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Device:</strong> ${log.device_name}</p>
+                                <p class="mb-1"><strong>Time:</strong> ${formatDate(log.timestamp)}</p>
+                                <p class="mb-1"><strong>DIN Data:</strong> ${log.din_data || 'N/A'}</p>
+                                <p class="mb-0"><strong>Input Index:</strong> ${log.door_input_index}</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="badge ${log.is_resolved ? 'bg-success' : 'bg-warning'}">
+                                    ${log.is_resolved ? 'Resolved' : 'Open'}
+                                </span>
+                                ${log.resolved_by ? `<p class="mb-0 mt-1"><small>Resolved by: ${log.resolved_by}</small></p>` : ''}
+                                ${log.resolved_at ? `<p class="mb-0"><small>Resolved at: ${formatDate(log.resolved_at)}</small></p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            content.innerHTML = `
