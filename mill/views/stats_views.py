@@ -31,16 +31,18 @@ def view_statistics(request, factory_id):
 
     # Get devices for this factory
     devices = Device.objects.filter(factory=factory).order_by('name')
+    device_count = devices.count()
     
     # Get selected device from query parameters
     selected_device_id = request.GET.get('device_id', 'all')
     
     # Auto-select device logic: if only one device, select it; if multiple devices, default to 'all'
-    if not selected_device_id or selected_device_id == 'all':
-        if devices.count() == 1:
-            selected_device_id = str(devices.first().id)
-        else:
-            selected_device_id = 'all'
+    if device_count == 1:
+        # If only one device, always select it
+        selected_device_id = str(devices.first().id)
+    elif not selected_device_id or selected_device_id == 'all':
+        # If multiple devices and no specific device selected, default to 'all'
+        selected_device_id = 'all'
 
     # Get batches for this specific factory only
     batches = Batch.objects.filter(
@@ -95,6 +97,7 @@ def view_statistics(request, factory_id):
     context = {
         'factory': factory,
         'devices': devices,
+        'device_count': device_count,
         'selected_device_id': selected_device_id,
         'selected_date': timezone.now().date(),
         'current_year': datetime.now().year,

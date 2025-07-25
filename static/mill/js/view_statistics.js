@@ -17,14 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const deviceSelector = document.getElementById('deviceSelector');
     if (deviceSelector) {
         const deviceOptions = deviceSelector.options;
-        const deviceCount = deviceOptions.length - 1; // Subtract 1 for "All Devices" option
+        const deviceCount = deviceOptions.length;
         
-        if (deviceCount === 1) {
-            // If only one device, select it automatically
+        // Check if "All Devices" option exists (indicates multiple devices)
+        const hasAllDevicesOption = Array.from(deviceOptions).some(option => option.value === 'all');
+        
+        if (!hasAllDevicesOption && deviceCount === 1) {
+            // If only one device (no "All Devices" option), it's already selected
+            console.log('Single device detected, auto-selected');
+        } else if (hasAllDevicesOption && deviceCount === 2) {
+            // If "All Devices" + 1 device, select the device automatically
             deviceSelector.value = deviceOptions[1].value; // Index 1 is the first actual device
+            console.log('Single device with "All Devices" option, auto-selecting device');
         } else {
             // If multiple devices, default to 'all'
             deviceSelector.value = 'all';
+            console.log('Multiple devices detected, defaulting to "All Devices"');
         }
     }
     
