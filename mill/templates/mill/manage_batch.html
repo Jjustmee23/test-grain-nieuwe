@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}{% trans "Manage Batches" %}{% endblock %}
 
@@ -7,9 +8,9 @@
 <div class="container-fluid py-4">
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Batch Management</h2>
+        <h2>{% trans "Batch Management" %}</h2>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBatchModal">
-            <i class="fas fa-plus"></i> Create New Batch
+            <i class="fas fa-plus"></i> {% trans "Create New Batch" %}
         </button>
     </div>
 
@@ -18,28 +19,28 @@
         <div class="card-body">
             <form id="filterForm" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Factory</label>
+                    <label class="form-label">{% trans "Factory" %}</label>
                     <select class="form-select" name="factory">
-                        <option value="">All Factories</option>
+                        <option value="">{% trans "All Factories" %}</option>
                         {% for factory in factories %}
                         <option value="{{ factory.id }}">{{ factory.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Status</label>
+                    <label class="form-label">{% trans "Status" %}</label>
                     <select class="form-select" name="status">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
+                        <option value="">{% trans "All Status" %}</option>
+                        <option value="active">{% trans "Active" %}</option>
+                        <option value="completed">{% trans "Completed" %}</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Date Range</label>
+                    <label class="form-label">{% trans "Date Range" %}</label>
                     <input type="date" class="form-control" name="date_range">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-secondary">Apply Filters</button>
+                    <button type="submit" class="btn btn-secondary">{% trans "Apply Filters" %}</button>
                 </div>
             </form>
         </div>
@@ -52,14 +53,14 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Batch Number</th>
-                            <th>Factory</th>
-                            <th>Wheat Amount (tons)</th>
-                            <th>Expected Output</th>
-                            <th>Actual Output</th>
-                            <th>Progress</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th>{% trans "Batch Number" %}</th>
+                            <th>{% trans "Factory" %}</th>
+                            <th>{% trans "Wheat Amount (tons)" %}</th>
+                            <th>{% trans "Expected Output" %}</th>
+                            <th>{% trans "Actual Output" %}</th>
+                            <th>{% trans "Progress" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Actions" %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,7 +109,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">No batches found</td>
+                            <td colspan="8" class="text-center">{% trans "No batches found" %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -123,7 +124,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create New Batch</h5>
+                <h5 class="modal-title">{% trans "Create New Batch" %}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="createBatchForm" method="POST">
@@ -131,11 +132,11 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Batch Number</label>
+                            <label class="form-label">{% trans "Batch Number" %}</label>
                             <input type="text" class="form-control" name="batch_number" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Factory</label>
+                            <label class="form-label">{% trans "Factory" %}</label>
                             <select class="form-select" name="factory" required>
                                 {% for factory in factories %}
                                 <option value="{{ factory.id }}">{{ factory.name }}</option>
@@ -143,24 +144,24 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Wheat Amount (tons)</label>
+                            <label class="form-label">{% trans "Wheat Amount (tons)" %}</label>
                             <input type="number" class="form-control" name="wheat_amount" 
                                    step="0.01" min="0" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Waste Factor (%)</label>
+                            <label class="form-label">{% trans "Waste Factor (%)" %}</label>
                             <input type="number" class="form-control" name="waste_factor" 
                                    value="20" min="0" max="100" step="0.1">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Start Date</label>
+                            <label class="form-label">{% trans "Start Date" %}</label>
                             <input type="datetime-local" class="form-control" name="start_date" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Batch</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-primary">{% trans "Create Batch" %}</button>
                 </div>
             </form>
         </div>
