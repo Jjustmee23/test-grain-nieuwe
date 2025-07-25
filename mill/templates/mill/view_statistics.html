@@ -2008,8 +2008,12 @@ function updateStatusBoxes() {
 
 // Initialize power status update
 document.addEventListener('DOMContentLoaded', function() {
-    // Initial update
-    updatePowerStatusBoxForDevice('all');
+    // Get the current selected device from the selector
+    const deviceSelector = document.getElementById('deviceSelector');
+    const selectedDeviceId = deviceSelector ? deviceSelector.value : 'all';
+    
+    // Initial update with the selected device
+    updatePowerStatusBoxForDevice(selectedDeviceId);
     
     // Set up periodic updates every 30 seconds - DISABLED
     // setInterval(() => {

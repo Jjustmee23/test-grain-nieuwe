@@ -338,6 +338,38 @@ msgstr ""
 msgid "Commercial"
 msgstr ""
 
+#: mill/templates/mill/dashboard.html:225
+msgid "Filter by Power Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:228
+msgid "All Power Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:233
+msgid "Power ON"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:238
+msgid "Power OFF"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:243
+msgid "Filter by Door Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:246
+msgid "All Door Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:251
+msgid "Door Open"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:256
+msgid "Door Closed"
+msgstr ""
+
 #: mill/templates/mill/dashboard.html:240
 msgid "Daily Total"
 msgstr ""

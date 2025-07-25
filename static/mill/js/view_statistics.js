@@ -12,6 +12,22 @@ const initialHourlyData = [];
 document.addEventListener('DOMContentLoaded', () => {
     factoryId = document.getElementById('factoryId').value;
     initializeCharts();
+    
+    // Auto-select device logic: if only one device, select it; if multiple devices, default to 'all'
+    const deviceSelector = document.getElementById('deviceSelector');
+    if (deviceSelector) {
+        const deviceOptions = deviceSelector.options;
+        const deviceCount = deviceOptions.length - 1; // Subtract 1 for "All Devices" option
+        
+        if (deviceCount === 1) {
+            // If only one device, select it automatically
+            deviceSelector.value = deviceOptions[1].value; // Index 1 is the first actual device
+        } else {
+            // If multiple devices, default to 'all'
+            deviceSelector.value = 'all';
+        }
+    }
+    
     fetchChartData();
 });
 

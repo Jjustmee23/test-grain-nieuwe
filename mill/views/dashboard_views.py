@@ -22,6 +22,9 @@ def dashboard(request):
     # Read cities & date from query
     selected_cities_param = request.GET.get('cities')
     selected_date_str = request.GET.get('date', current_datetime.strftime('%Y-%m-%d'))
+    selected_sector = request.GET.get('sector', '')
+    selected_power_status = request.GET.get('power_status', '')
+    selected_door_status = request.GET.get('door_status', '')
 
     # Handle multiple city selection
     selected_city_ids = []
@@ -56,6 +59,10 @@ def dashboard(request):
 
     # Filter factories for selected cities
     factories =  allowed_factories(request).filter(city_id__in=selected_city_ids)
+    
+    # Apply sector filter
+    if selected_sector:
+        factories = factories.filter(group=selected_sector)
 
     # Query Devices with select_related to reduce queries
     devices = Device.objects.filter(factory__in=factories).select_related('factory')
@@ -127,11 +134,28 @@ def dashboard(request):
             'power_status': factory_has_power,
             'door_status': any_door_open  # True if any door is open
         }
+    
+    # Apply power status filter
+    if selected_power_status:
+        if selected_power_status == 'power_on':
+            factories = [f for f in factories if f.status_info['power_status']]
+        elif selected_power_status == 'power_off':
+            factories = [f for f in factories if not f.status_info['power_status']]
+    
+    # Apply door status filter
+    if selected_door_status:
+        if selected_door_status == 'door_open':
+            factories = [f for f in factories if f.status_info['door_status']]
+        elif selected_door_status == 'door_closed':
+            factories = [f for f in factories if not f.status_info['door_status']]
 
     context = {
         'cities': cities,
         'factories': factories,
         'selected_city_ids': selected_city_ids,
+        'selected_sector': selected_sector,
+        'selected_power_status': selected_power_status,
+        'selected_door_status': selected_door_status,
         'current_date': selected_date,
         'city_data': city_data,
         'is_public': request.user.groups.filter(name='Public').exists(),
