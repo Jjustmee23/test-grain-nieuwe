@@ -1,0 +1,88 @@
+{% load i18n %}
+{% load static %}
+
+<div class="language-switcher" style="position: fixed; top: 10px; right: 10px; z-index: 1000;">
+    <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            {% if current_language == 'ar' %}
+                🇸🇦 العربية
+            {% elif current_language == 'en' %}
+                🇺🇸 English
+            {% else %}
+                🌐 Language
+            {% endif %}
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="languageDropdown">
+            {% for lang_code, lang_name in available_languages %}
+                <li>
+                    <form method="POST" action="{% url 'set_language' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="language" value="{{ lang_code }}">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="dropdown-item {% if current_language == lang_code %}active{% endif %}">
+                            {% if lang_code == 'ar' %}
+                                🇸🇦 {{ lang_name }}
+                            {% elif lang_code == 'en' %}
+                                🇺🇸 {{ lang_name }}
+                            {% else %}
+                                {{ lang_name }}
+                            {% endif %}
+                        </button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<style>
+.language-switcher {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.language-switcher .btn {
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.language-switcher .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.language-switcher .dropdown-menu {
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: none;
+    padding: 8px 0;
+}
+
+.language-switcher .dropdown-item {
+    padding: 10px 20px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.language-switcher .dropdown-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.language-switcher .dropdown-item.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* RTL Support */
+[dir="rtl"] .language-switcher {
+    right: auto;
+    left: 10px;
+}
+
+[dir="rtl"] .language-switcher .dropdown-item:hover {
+    transform: translateX(-5px);
+}
+</style> 

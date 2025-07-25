@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 
-{% block title %}Power Analytics{% endblock %}
+{% block title %}{% trans "Power Analytics" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -301,7 +301,7 @@
     <div class="page-header">
         <h1 class="page-title">
             <i class="bi bi-graph-up me-3"></i>
-            Power Analytics
+            {% trans "Power Analytics" %}
         </h1>
         <p class="page-subtitle">
             Comprehensive analysis of power consumption, efficiency, and trends

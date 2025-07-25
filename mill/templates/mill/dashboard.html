@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Dashboard - Mill Management System{% endblock %}
+{% block title %}{% trans "Dashboard" %} - {% trans "Mill Management System" %}{% endblock %}
 {% block extra_head %}
 <style>
     .city-selector {
@@ -309,7 +309,7 @@
                             <div class="factory-header">
                                 <h5 class="mb-0">{{ factory.name }}</h5>
                                 <span class="status-badge {% if factory.status %}status-active{% else %}status-inactive{% endif %}">
-                                    {% if factory.status %}Active{% else %}Inactive{% endif %}
+                                    {% if factory.status %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
                                 </span>
                             </div>
                             <!-- Factory status indicators -->
@@ -317,11 +317,11 @@
                                 <div class="d-flex justify-content-end">
                                                             <span class="me-3" title="Power Status">
                             <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
-                            <small class="fw-bold {% if factory.status_info.power_status %}text-success{% else %}text-danger{% endif %}">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
+                            <small class="fw-bold {% if factory.status_info.power_status %}text-success{% else %}text-danger{% endif %}">{% trans "Power:" %} {% if factory.status_info.power_status %}{% trans "On" %}{% else %}{% trans "Off" %}{% endif %}</small>
                         </span>
                                     <span title="Door Status">
                                         <i class="bi {% if factory.status_info.door_status %}bi-door-open text-warning{% else %}bi-door-closed text-success{% endif %}"></i>
-                                        <small class="text-dark fw-bold">Door: {% if factory.status_info.door_status %}Open{% else %}Closed{% endif %}</small>
+                                        <small class="text-dark fw-bold">{% trans "Door:" %} {% if factory.status_info.door_status %}{% trans "Open" %}{% else %}{% trans "Closed" %}{% endif %}</small>
                                     </span>
                                 </div>
                             </div>

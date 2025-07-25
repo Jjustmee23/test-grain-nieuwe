@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 
-{% block title %}Power Management Dashboard{% endblock %}
+{% block title %}{% trans "Power Management Dashboard" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -360,10 +360,10 @@
     <div class="dashboard-header">
         <h1 class="dashboard-title">
             <i class="bi bi-lightning-charge me-3"></i>
-            Power Management Dashboard
+                            {% trans "Power Management Dashboard" %}
         </h1>
         <p class="dashboard-subtitle">
-            Monitor device power status and manage power-related events
+            {% trans "Monitor device power status and manage power-related events" %}
         </p>
     </div>
 

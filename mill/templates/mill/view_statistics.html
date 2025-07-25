@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Mill Statistics{% endblock %}
+{% block title %}{% trans "Mill Statistics" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -954,7 +954,7 @@ function animateValue(element, start, end, duration, formatter) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success" onclick="exportDateRangeData()">Export Data</button>
+                <button type="button" class="btn btn-success" onclick="exportDateRangeData()">{% trans "Export Data" %}</button>
             </div>
         </div>
     </div>

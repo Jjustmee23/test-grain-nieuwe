@@ -3,10 +3,16 @@ from django.urls import path, include
 from django.contrib import admin
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views, language_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    # Language switching URLs
+    path('set-language/', language_views.set_language, name='set_language'),
+    path('ajax-set-language/', language_views.ajax_set_language, name='ajax_set_language'),
+    path('get-current-language/', language_views.get_current_language, name='get_current_language'),
+    path('language-test/', language_views.language_test, name='language_test'),
+    
     path('manage-admin/', views.manage_admin_view, name='manage_admin'),
 
     # OAuth2 callback URL
