@@ -10,16 +10,16 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'logout' %}">{% trans "Logout" %}</a>
                     </li>
                     {% if not user.groups.all.0.name == 'Public' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                        <a class="nav-link" href="{% url 'admin' %}">{% trans "Admin" %}</a>
                     </li>
                     {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'manage_profile' %}">{% trans "Manage Profile" %}</a>
                     </li>

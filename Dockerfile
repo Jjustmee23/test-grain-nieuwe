@@ -28,7 +28,7 @@ COPY . /app
 RUN mkdir -p /app/staticfiles
 
     # Compile translations
-# RUN python manage.py compilemessages
+RUN python manage.py compilemessages
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
