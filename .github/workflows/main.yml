@@ -31,7 +31,7 @@ jobs:
             
             # Check if this is the first deployment
             if [ ! -d .git ]; then
-              git clone https://syedwastil:${{secrets.REPO_ACCESS_TOKEN}}@github.com/syedwastil/project-mill-application.git .
+              git clone https://github.com/Jjustmee23/mill-management-system.git .
             else
               git pull origin main
             fi
