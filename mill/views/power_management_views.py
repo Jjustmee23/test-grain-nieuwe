@@ -802,6 +802,8 @@ def factory_power_overview(request, factory_id):
             'unresolved_events_count': power_summary['unresolved_events'],
         }
         
+
+        
         return render(request, 'mill/factory_power_overview.html', context)
         
     except Exception as e:

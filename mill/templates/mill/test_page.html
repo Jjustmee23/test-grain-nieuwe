@@ -1,0 +1,481 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}MQTT Monitor - Device Status{% endblock %}
+
+{% block content %}
+<style>
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: white;
+        border-bottom: 2px solid #dee2e6;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: #343a40;
+    }
+    
+    .table-responsive {
+        max-height: calc(100vh - 300px);
+        overflow-y: auto;
+    }
+    
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    .status-active { background-color: #28a745; }
+    .status-offline { background-color: #dc3545; }
+    
+    .real-time-update {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+</style>
+
+<div class="container-fluid my-4">
+    <!-- Sticky Header -->
+    <div class="sticky-header">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-wifi me-2"></i>
+                        MQTT Monitor - Device Status
+                    </h1>
+                    <div class="btn-group">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-outline-success" onclick="toggleAutoRefresh()">
+                            <i class="bi bi-play-circle me-1"></i><span id="autoRefreshText">Auto Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-clock me-1"></i>
+                    Last updated: <span id="lastUpdateTime">{{ current_time|date:"M d, H:i:s" }}</span> | 
+                    <i class="bi bi-info-circle me-1"></i>
+                    Real-time MQTT data updates | 
+                    <i class="bi bi-database me-1"></i>
+                    Raw MQTT Monitor: counter.mqtt_data + testdb.mill_device
+                </p>
+            </div>
+        </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_devices }}</h4>
+                            <p class="card-text">Total Devices</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-cpu fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ truly_active_devices }}</h4>
+                            <p class="card-text">Active (10min)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-wifi fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ offline_devices }}</h4>
+                            <p class="card-text">Offline</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-wifi-off fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ enabled_devices }}</h4>
+                            <p class="card-text">Enabled</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ recent_data_count }}</h4>
+                            <p class="card-text">Recent Data</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock-history fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ total_data_count }}</h4>
+                            <p class="card-text">Total Records</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-storage fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Monitor -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Device Monitor - Raw MQTT Data (Latest from counter.mqtt_data)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark sticky-table-header">
+                                <tr>
+                                    <th>Device ID</th>
+                                    <th>Device Name</th>
+                                    <th>Status</th>
+                                    <th>Enabled</th>
+                                    <th>Last Update</th>
+                                    <th>AIN1 (Power)</th>
+                                    <th>AIN2</th>
+                                    <th>AIN3</th>
+                                    <th>AIN4</th>
+                                    <th>Counter 1 (Raw)</th>
+                                    <th>Counter 2 (Raw)</th>
+                                    <th>Counter 3 (Raw)</th>
+                                    <th>Counter 4 (Raw)</th>
+                                    <th>DIN</th>
+                                    <th>Mobile Signal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for device in device_data %}
+                                <tr class="{% if device.status == 'active' %}table-success{% elif device.status == 'offline' %}table-danger{% endif %}" data-device-id="{{ device.device_id }}">
+                                    <td>
+                                        <span class="status-indicator status-{{ device.status }}"></span>
+                                        <code>{{ device.device_id }}</code>
+                                    </td>
+                                    <td>
+                                        {% if device.device_name %}
+                                            <strong>{{ device.device_name }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">No name assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.status == 'active' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-wifi me-1"></i>Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-wifi-off me-1"></i>Offline
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.is_enabled %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check me-1"></i>Yes
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x me-1"></i>No
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.timestamp %}
+                                            <div class="timestamp-cell">{{ device.timestamp|date:"M d, H:i:s" }}</div>
+                                            {% if device.time_since_update %}
+                                                <small class="text-muted time-since-update">{{ device.time_since_update|timesince }} ago</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.ain1_value is not None %}
+                                            <span class="badge bg-info">{{ device.ain1_value|floatformat:3 }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.ain2_value is not None %}
+                                            <small>{{ device.ain2_value|floatformat:2 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.ain3_value is not None %}
+                                            <small>{{ device.ain3_value|floatformat:2 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.ain4_value is not None %}
+                                            <small>{{ device.ain4_value|floatformat:2 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.counter_1 is not None %}
+                                            <code class="text-primary">{{ device.counter_1 }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.counter_2 is not None %}
+                                            <code class="text-primary">{{ device.counter_2 }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.counter_3 is not None %}
+                                            <code class="text-primary">{{ device.counter_3 }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.counter_4 is not None %}
+                                            <code class="text-primary">{{ device.counter_4 }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.din is not None %}
+                                            <span class="badge bg-secondary">{{ device.din }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.mobile_signal is not None %}
+                                            <span class="badge bg-secondary">{{ device.mobile_signal }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="15" class="text-center text-muted">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        No devices found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let autoRefreshInterval;
+    let isAutoRefreshEnabled = true;
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    function startAutoRefresh() {
+        autoRefreshInterval = setInterval(function() {
+            updateDeviceData();
+        }, 30000); // 30 seconds
+    }
+    
+    function stopAutoRefresh() {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+    }
+    
+    function toggleAutoRefresh() {
+        if (isAutoRefreshEnabled) {
+            stopAutoRefresh();
+            isAutoRefreshEnabled = false;
+            document.getElementById('autoRefreshText').textContent = 'Start Auto Refresh';
+            document.querySelector('button[onclick="toggleAutoRefresh()"]').classList.remove('btn-outline-success');
+            document.querySelector('button[onclick="toggleAutoRefresh()"]').classList.add('btn-outline-warning');
+        } else {
+            startAutoRefresh();
+            isAutoRefreshEnabled = true;
+            document.getElementById('autoRefreshText').textContent = 'Stop Auto Refresh';
+            document.querySelector('button[onclick="toggleAutoRefresh()"]').classList.remove('btn-outline-warning');
+            document.querySelector('button[onclick="toggleAutoRefresh()"]').classList.add('btn-outline-success');
+        }
+    }
+    
+    // Update device data via AJAX
+    function updateDeviceData() {
+        fetch('/test/ajax_update/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateDeviceTable(data.devices);
+                    updateStatistics(data.statistics);
+                    updateLastUpdateTime();
+                }
+            })
+            .catch(error => {
+                console.error('Error updating device data:', error);
+            });
+    }
+    
+    function updateDeviceTable(devices) {
+        devices.forEach(device => {
+            const row = document.querySelector(`tr[data-device-id="${device.device_id}"]`);
+            if (row) {
+                // Update timestamp
+                const timestampCell = row.querySelector('.timestamp-cell');
+                if (timestampCell && device.timestamp) {
+                    timestampCell.textContent = device.timestamp;
+                    timestampCell.classList.add('real-time-update');
+                    setTimeout(() => timestampCell.classList.remove('real-time-update'), 2000);
+                }
+                
+                // Update time since update
+                const timeSinceCell = row.querySelector('.time-since-update');
+                if (timeSinceCell && device.time_since_update) {
+                    timeSinceCell.textContent = device.time_since_update + ' ago';
+                }
+                
+                // Update AIN values
+                const ain1Cell = row.querySelector('td:nth-child(6) span');
+                if (ain1Cell && device.ain1_value !== null) {
+                    ain1Cell.textContent = parseFloat(device.ain1_value).toFixed(3);
+                    ain1Cell.classList.add('real-time-update');
+                    setTimeout(() => ain1Cell.classList.remove('real-time-update'), 2000);
+                }
+                
+                // Update counter values
+                const counter1Cell = row.querySelector('td:nth-child(10) code');
+                if (counter1Cell && device.counter_1 !== null) {
+                    counter1Cell.textContent = device.counter_1;
+                    counter1Cell.classList.add('real-time-update');
+                    setTimeout(() => counter1Cell.classList.remove('real-time-update'), 2000);
+                }
+                
+                // Update status indicator
+                const statusIndicator = row.querySelector('.status-indicator');
+                if (statusIndicator) {
+                    statusIndicator.className = `status-indicator status-${device.status}`;
+                }
+                
+                // Update row class
+                row.className = `table-${device.status === 'active' ? 'success' : 'danger'}`;
+            }
+        });
+    }
+    
+    function updateStatistics(statistics) {
+        // Update statistics cards
+        document.querySelector('.card.bg-success .card-title').textContent = statistics.truly_active_devices;
+        document.querySelector('.card.bg-danger .card-title').textContent = statistics.offline_devices;
+        document.querySelector('.card.bg-warning .card-title').textContent = statistics.recent_data_count;
+        document.querySelector('.card.bg-secondary .card-title').textContent = statistics.total_data_count;
+    }
+    
+    function updateLastUpdateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('lastUpdateTime').textContent = timeString;
+    }
+    
+    // Start auto-refresh on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        startAutoRefresh();
+        
+        // Update time since update every minute
+        setInterval(function() {
+            document.querySelectorAll('.time-since-update').forEach(function(element) {
+                // This would need server-side calculation for accurate times
+                // For now, just update the display
+            });
+        }, 60000);
+    });
+</script>
+{% endblock %} 

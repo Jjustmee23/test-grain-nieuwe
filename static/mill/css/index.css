@@ -41,8 +41,45 @@ body {
     position: sticky;
     top: 0;
     width: 100%;
-    z-index: 1000;
+    z-index: 1001;
     height: 150px; /* Explicitly set a height to prevent issues */
+}
+
+/* Navbar Styling */
+.navbar {
+    position: sticky;
+    top: 150px; /* Position below the header */
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.navbar .nav-link {
+    transition: color 0.3s ease, background-color 0.3s ease;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+.navbar .nav-link:hover {
+    background-color: rgba(136, 192, 184, 0.1);
+    color: var(--primary-color) !important;
+}
+
+.navbar .nav-link.active {
+    background-color: var(--primary-color);
+    color: white !important;
+}
+
+.navbar.sticky-top {
+    background-color: rgba(248, 249, 250, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.navbar.scrolled {
+    background-color: rgba(248, 249, 250, 0.98) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(15px);
 }
 
 .header img.logo-left, .header img.logo-right {
@@ -81,6 +118,11 @@ body {
     .header h1 {
         font-size: 24px;
     }
+    
+    /* Adjust navbar position for mobile */
+    .navbar {
+        top: 100px; /* Match the mobile header height */
+    }
 }
 
 /* Filters Section */
@@ -92,7 +134,7 @@ body {
     padding: 10px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     position: sticky;
-    top: 150px; /* Match this to the exact height of the header */
+    top: 206px; /* Position below header (150px) + navbar (56px) */
     z-index: 999;
     width: 100%; /* Ensure it spans the entire width */
 }

@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from mill.models import City, Factory, ProductionData, Batch, TransactionData
+from mill.models import City, Factory, ProductionData, Batch, TransactionData, Device
 
 from django.contrib.auth.decorators import user_passes_test
 from django.core.exceptions import PermissionDenied
@@ -297,34 +297,52 @@ def calculate_chart_data(date, factory_id):
 
 def calculate_date_range_data(factory_id, start_date, end_date):
     """
-    Calculate production data for a specific date range
+    Calculate production data for a specific date range using ProductionData
     """
     start_date = datetime.strptime(start_date, '%Y-%m-%d') if isinstance(start_date, str) else start_date
     end_date = datetime.strptime(end_date, '%Y-%m-%d') if isinstance(end_date, str) else end_date
     
-    # Get production data for the date range
-    production_data = ProductionData.objects.filter(
-        device__factory_id=factory_id,
-        created_at__date__range=[start_date.date(), end_date.date()]
-    ).order_by('created_at')
+    print(f"DEBUG: calculate_date_range_data called for factory {factory_id}, dates: {start_date} to {end_date}")
     
-    # Create daily data dictionary
+    # Get devices for this factory
+    devices = Device.objects.filter(factory_id=factory_id)
+    print(f"DEBUG: Found {devices.count()} devices for factory {factory_id}")
+    
+    # Create daily data dictionary for ONLY the requested date range
     daily_data = {}
     current_date = start_date.date()
     while current_date <= end_date.date():
         daily_data[current_date.strftime('%Y-%m-%d')] = 0
         current_date += timedelta(days=1)
     
-    # Fill in actual production data
-    for data in production_data:
-        date_str = data.created_at.strftime('%Y-%m-%d')
-        if date_str in daily_data:
-            daily_data[date_str] = data.daily_production
+    # For each device, get ProductionData for the date range
+    for device in devices:
+        print(f"DEBUG: Processing device {device.name} ({device.id})")
+        
+        # Get ProductionData for this device within the date range
+        # We'll get the latest ProductionData record for each day in the range
+        for date_str in daily_data.keys():
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+            # Get the latest ProductionData for this device up to this date
+            production_data = ProductionData.objects.filter(
+                device=device,
+                created_at__date__lte=target_date
+            ).order_by('-created_at').first()
+            
+            if production_data:
+                print(f"DEBUG: Device {device.name} - Date {date_str}: Daily production = {production_data.daily_production}")
+                daily_data[date_str] += production_data.daily_production or 0
+            else:
+                print(f"DEBUG: Device {device.name} - Date {date_str}: No ProductionData found")
     
     # Calculate totals
     total_production = sum(daily_data.values())
     daily_labels = list(daily_data.keys())
     daily_values = list(daily_data.values())
+    
+    print(f"DEBUG: Calculated total production: {total_production}")
+    print(f"DEBUG: Daily values: {daily_values}")
     
     return {
         'daily_labels': daily_labels,

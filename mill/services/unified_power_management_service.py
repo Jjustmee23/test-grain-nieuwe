@@ -141,8 +141,11 @@ class UnifiedPowerManagementService:
             total_uptime += uptime_percentage
             device_count += 1
             
-            total_consumption = power_data.total_power_consumption_today if power_data else 0.0
-            summary['total_power_consumption'] += total_consumption
+            # Calculate total power consumption from all devices
+            if power_data and power_data.ain1_value is not None:
+                # Use current AIN1 value as power consumption in kW
+                total_consumption = power_data.ain1_value
+                summary['total_power_consumption'] += total_consumption
             
             power_events = (power_data.power_loss_count_today if power_data else 0) + (power_data.power_restore_count_today if power_data else 0)
             summary['power_events_today'] += power_events
@@ -151,6 +154,14 @@ class UnifiedPowerManagementService:
         
         if device_count > 0:
             summary['avg_uptime_today'] = total_uptime / device_count
+        
+        # Get power events for today
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_events = PowerEvent.objects.filter(
+            device__in=devices,
+            created_at__gte=today_start
+        ).count()
+        summary['power_events_today'] = today_events
         
         # Get unresolved power events
         summary['unresolved_events'] = PowerEvent.objects.filter(
@@ -318,9 +329,12 @@ class UnifiedPowerManagementService:
         )
         
         if power_data.exists():
+            # Get current power values for analytics
+            current_power_values = [pd.ain1_value for pd in power_data if pd.ain1_value is not None]
+            
             analytics['trends'] = {
-                'avg_power_consumption': power_data.aggregate(Avg('ain1_value'))['ain1_value__avg'] or 0,
-                'max_power_consumption': power_data.aggregate(Max('ain1_value'))['ain1_value__max'] or 0,
+                'avg_power_consumption': sum(current_power_values) / len(current_power_values) if current_power_values else 0,
+                'max_power_consumption': max(current_power_values) if current_power_values else 0,
                 'total_power_losses': power_data.aggregate(Count('power_loss_count_today'))['power_loss_count_today__count'] or 0,
                 'total_power_restores': power_data.aggregate(Count('power_restore_count_today'))['power_restore_count_today__count'] or 0,
             }

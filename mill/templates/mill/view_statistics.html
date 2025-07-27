@@ -204,7 +204,7 @@
                         <i class="bi bi-calendar-day"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-daily">{{ factory.daily_total }}</h5>
+                        <h5 class="card-title" id="total-daily">{{ daily_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -215,7 +215,7 @@
                         <i class="bi bi-calendar-week"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-week">{{ factory.weekly_total }}</h5>
+                        <h5 class="card-title" id="total-week">{{ weekly_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -229,7 +229,7 @@
                         <i class="bi bi-calendar-check"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-year">{{ factory.yearly_total }}</h5>
+                        <h5 class="card-title" id="total-year">{{ yearly_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -240,7 +240,7 @@
                         <i class="bi bi-calendar-minus"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-previous">{{ yearly_previous }}</h5>
+                        <h5 class="card-title" id="total-previous">{{ yearly_previous|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -1139,10 +1139,10 @@ function exportDateRangeData() {
     
     // Modern Gauge Progress Bar Animation
     function updateProductionProgress() {
-        const dailyTotal = {{ factory.daily_total|default:0 }};
-        const weeklyTotal = {{ factory.weekly_total|default:0 }};
-        const monthlyTotal = {{ factory.monthly_total|default:0 }};
-        const yearlyTotal = {{ factory.yearly_total|default:0 }};
+        const dailyTotal = {{ daily_total|default:0 }};
+        const weeklyTotal = {{ weekly_total|default:0 }};
+        const monthlyTotal = {{ monthly_total|default:0 }};
+        const yearlyTotal = {{ yearly_total|default:0 }};
         
         // Use daily total as current progress, yearly total as target
         const currentProgress = dailyTotal;
@@ -1919,61 +1919,18 @@ function updatePowerStatusBoxForDevice(deviceId) {
                 </div>
             `;
             
-            // Add recent events if available
-            if (recentEvents && recentEvents.length > 0) {
-                statusHtml += `
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6 class="text-muted">Recent Power Events:</h6>
-                            <div class="list-group list-group-flush">
-                `;
-                
-                recentEvents.slice(0, 3).forEach(event => {
-                    const eventClass = event.event_type === 'power_loss' ? 'text-danger' : 'text-success';
-                    const eventIcon = event.event_type === 'power_loss' ? 'bi-exclamation-triangle' : 'bi-check-circle';
-                    
-                    statusHtml += `
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
-                            <div>
-                                <i class="bi ${eventIcon} ${eventClass} me-2"></i>
-                                <small>${event.device_name}: ${event.message}</small>
-                            </div>
-                            <small class="text-muted">${new Date(event.created_at).toLocaleString()}</small>
-                        </div>
-                    `;
-                });
-                
-                statusHtml += `
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
+            // Recent events removed - click on the box to view power overview page
             
-            // Add summary statistics
+            // Summary statistics removed - click on the box to view power overview page
+            
+            // Add click instruction
             statusHtml += `
                 <div class="row mt-3">
                     <div class="col-12">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Total Devices</small>
-                                    <strong>${summary.total_devices || 0}</strong>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">With Power</small>
-                                    <strong class="text-success">${summary.devices_with_power || 0}</strong>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="border rounded p-2">
-                                    <small class="text-muted d-block">Avg Uptime</small>
-                                    <strong>${summary.avg_uptime_today ? summary.avg_uptime_today.toFixed(1) : '0.0'}%</strong>
-                                </div>
-                            </div>
-                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-arrow-right-circle me-1"></i>
+                            Click to view power overview
+                        </small>
                     </div>
                 </div>
             `;
@@ -2153,16 +2110,38 @@ function showDoorHistoryModal() {
     // Create modal for door history
     const modalHtml = `
         <div class="modal fade" id="doorHistoryModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">
-                            <i class="bi bi-clock-history me-2"></i>
+                            <i class="bi bi-door-open me-2"></i>
                             Door History - {{ factory.name }}
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Current Door Status</h6>
+                                        <div id="currentDoorStatus">
+                                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Today's Summary</h6>
+                                        <div id="doorSummary">
+                                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div id="doorHistoryContent">
                             <div class="text-center">
                                 <div class="spinner-border" role="status">
@@ -2171,6 +2150,12 @@ function showDoorHistoryModal() {
                                 <p class="mt-2">Loading door history...</p>
                             </div>
                         </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="refreshDoorHistory()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2196,8 +2181,10 @@ function showDoorHistoryModal() {
 
 function loadDoorHistory() {
     const content = document.getElementById('doorHistoryContent');
+    const currentStatus = document.getElementById('currentDoorStatus');
+    const summary = document.getElementById('doorSummary');
     
-    fetch(`/api/door-status/{{ factory_id }}/`)
+    fetch(`/api/door-status/{{ factory.id }}/`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -2210,7 +2197,38 @@ function loadDoorHistory() {
                 return;
             }
             
-            const recentLogs = data.recent_logs || [];
+            const { door_statuses, total_doors, open_doors, closed_doors, recent_logs } = data;
+            
+            // Update current status
+            if (currentStatus) {
+                const statusText = open_doors > 0 ? `${open_doors} OPEN` : 'ALL CLOSED';
+                const statusClass = open_doors > 0 ? 'text-danger' : 'text-success';
+                const statusIcon = open_doors > 0 ? 'bi-door-open' : 'bi-door-closed';
+                
+                currentStatus.innerHTML = `
+                    <h4 class="${statusClass}">
+                        <i class="bi ${statusIcon} me-2"></i>
+                        ${statusText}
+                    </h4>
+                    <p class="mb-0">Total Doors: ${total_doors}</p>
+                `;
+            }
+            
+            // Update summary
+            if (summary) {
+                const today = new Date().toDateString();
+                const todayEvents = recent_logs ? recent_logs.filter(log => 
+                    new Date(log.timestamp).toDateString() === today
+                ) : [];
+                
+                summary.innerHTML = `
+                    <h4 class="text-primary">${todayEvents.length}</h4>
+                    <p class="mb-0">Events Today</p>
+                    <small class="text-muted">Open: ${open_doors} | Closed: ${closed_doors}</small>
+                `;
+            }
+            
+            const recentLogs = recent_logs || [];
             
             if (recentLogs.length === 0) {
                 content.innerHTML = `
@@ -2222,32 +2240,48 @@ function loadDoorHistory() {
                 return;
             }
             
-            // Take only the last 10 events
-            const last10Events = recentLogs.slice(0, 10);
+            // Take only the last 20 events
+            const last20Events = recentLogs.slice(0, 20);
             
-            const logsHtml = last10Events.map(log => `
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Device:</strong> ${log.device_name}</p>
-                                <p class="mb-1"><strong>Time:</strong> ${formatDate(log.timestamp)}</p>
-                                <p class="mb-1"><strong>DIN Data:</strong> ${log.din_data || 'N/A'}</p>
-                                <p class="mb-0"><strong>Input Index:</strong> ${log.door_input_index}</p>
+            const logsHtml = last20Events.map(log => {
+                const eventDate = new Date(log.timestamp);
+                const isToday = eventDate.toDateString() === new Date().toDateString();
+                const timeAgo = getTimeAgo(eventDate);
+                
+                return `
+                <div class="card mb-2 border-${log.is_resolved ? 'success' : 'warning'}">
+                    <div class="card-body py-2">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <strong>${log.device_name || 'Unknown Device'}</strong>
+                                <br>
+                                <small class="text-muted">${isToday ? timeAgo : eventDate.toLocaleDateString()}</small>
                             </div>
-                            <div class="col-md-6 text-end">
+                            <div class="col-md-3">
+                                <small class="text-muted">DIN Data:</small><br>
+                                <strong>${log.din_data || 'N/A'}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Input Index:</small><br>
+                                <strong>${log.door_input_index || 'N/A'}</strong>
+                            </div>
+                            <div class="col-md-3 text-end">
                                 <span class="badge ${log.is_resolved ? 'bg-success' : 'bg-warning'}">
                                     ${log.is_resolved ? 'Resolved' : 'Open'}
                                 </span>
-                                ${log.resolved_by ? `<p class="mb-0 mt-1"><small>Resolved by: ${log.resolved_by}</small></p>` : ''}
-                                ${log.resolved_at ? `<p class="mb-0"><small>Resolved at: ${formatDate(log.resolved_at)}</small></p>` : ''}
+                                ${log.resolved_by ? `<br><small class="text-muted">by ${log.resolved_by}</small>` : ''}
                             </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
             
             content.innerHTML = `
+                <h6 class="mb-3">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Recent Door Events (Last 20)
+                </h6>
                 <div class="door-history-list">
                     ${logsHtml}
                 </div>
@@ -2262,6 +2296,20 @@ function loadDoorHistory() {
                 </div>
             `;
         });
+}
+
+function refreshDoorHistory() {
+    loadDoorHistory();
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
 }
 
 function formatDate(dateString) {

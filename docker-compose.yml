@@ -22,6 +22,27 @@ services:
       - static_volume:/app/staticfiles
     restart: unless-stopped
 
+  raw-data-sync:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=45.154.238.114
+      - DB_PORT=5433
+      - DB_NAME=testdb
+      - DB_USER=testuser
+      - DB_PASSWORD=testpassword
+      - DJANGO_DISABLE_MIGRATIONS=False
+      - DJANGO_SETTINGS_MODULE=config.settings
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: python manage.py raw_data_sync_daemon --interval 300 --log-level INFO
+    profiles:
+      - sync
+
   postgres:
     image: postgres:17
     container_name: app_postgres
