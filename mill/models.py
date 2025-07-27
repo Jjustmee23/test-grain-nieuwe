@@ -2118,7 +2118,25 @@ class PowerData(models.Model):
                         self.peak_power_consumption_today = self.ain1_value
                     
                     # Update total consumption (assuming 5-minute intervals)
-                    self.total_power_consumption_today += self.ain1_value * (5/60)  # 5 minutes in hours
+                    # Convert AIN1 value from kW to kWh for 5-minute period
+                    power_kwh = self.ain1_value * (5/60)  # 5 minutes in hours
+                    self.total_power_consumption_today += power_kwh
+                    
+                    # Update average power consumption
+                    # Calculate average based on number of updates today
+                    if self.last_mqtt_update and self.last_mqtt_update.date() == now.date():
+                        # If it's the same day, increment the count and recalculate average
+                        if not hasattr(self, '_update_count_today'):
+                            self._update_count_today = 1
+                        else:
+                            self._update_count_today += 1
+                        
+                        # Calculate running average
+                        self.avg_power_consumption_today = self.total_power_consumption_today / self._update_count_today
+                    else:
+                        # New day, reset counters
+                        self.avg_power_consumption_today = self.ain1_value
+                        self._update_count_today = 1
                 
                 # Reset daily counters at midnight
                 if self.last_mqtt_update and self.last_mqtt_update.date() < now.date():
@@ -2183,3 +2201,62 @@ class PowerData(models.Model):
             uptime = total_time - self.total_power_loss_time_week
             return (uptime.total_seconds() / total_time.total_seconds()) * 100
         return 100.0
+
+class RawDataCounter(models.Model):
+    """
+    Model for raw_data table in counter database (exact copy of mqtt_data)
+    """
+    id = models.IntegerField(primary_key=True)
+    counter_id = models.CharField(max_length=50)
+    timestamp = models.DateTimeField(null=True, blank=True)
+    mobile_signal = models.IntegerField(null=True, blank=True)
+    dout_enabled = models.CharField(max_length=50, null=True, blank=True)
+    dout = models.CharField(max_length=50, null=True, blank=True)
+    di_mode = models.CharField(max_length=50, null=True, blank=True)
+    din = models.CharField(max_length=50, null=True, blank=True)
+    counter_1 = models.IntegerField(null=True, blank=True)
+    counter_2 = models.IntegerField(null=True, blank=True)
+    counter_3 = models.IntegerField(null=True, blank=True)
+    counter_4 = models.IntegerField(null=True, blank=True)
+    ain_mode = models.CharField(max_length=50, null=True, blank=True)
+    ain1_value = models.FloatField(null=True, blank=True)
+    ain2_value = models.FloatField(null=True, blank=True)
+    ain3_value = models.FloatField(null=True, blank=True)
+    ain4_value = models.FloatField(null=True, blank=True)
+    ain5_value = models.FloatField(null=True, blank=True)
+    ain6_value = models.FloatField(null=True, blank=True)
+    ain7_value = models.FloatField(null=True, blank=True)
+    ain8_value = models.FloatField(null=True, blank=True)
+    start_flag = models.IntegerField(null=True, blank=True)
+    type = models.IntegerField(null=True, blank=True)
+    length = models.IntegerField(null=True, blank=True)
+    version = models.IntegerField(null=True, blank=True)
+    end_flag = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        managed = False  # Don't create migrations for this model
+        db_table = 'raw_data'
+        app_label = 'mill'
+
+    def __str__(self):
+        return f"RawData {self.counter_id} - {self.timestamp}"
+
+    @classmethod
+    def get_latest_by_device(cls, device_id):
+        """Get the latest raw data for a specific device"""
+        return cls.objects.using('default').filter(counter_id=device_id).order_by('-timestamp').first()
+
+    @classmethod
+    def get_data_by_date_range(cls, device_id, start_date, end_date):
+        """Get raw data for a device within a date range"""
+        return cls.objects.using('default').filter(
+            counter_id=device_id,
+            timestamp__range=[start_date, end_date]
+        ).order_by('timestamp')
+
+    @classmethod
+    def get_counter_values(cls, device_id, counter_field='counter_2'):
+        """Get counter values for a device"""
+        return cls.objects.using('default').filter(
+            counter_id=device_id
+        ).values('timestamp', counter_field).order_by('timestamp')

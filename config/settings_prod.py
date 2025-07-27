@@ -13,6 +13,14 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD','testpassword'),
         'HOST': os.getenv('DB_HOST', '45.154.238.114'),
         'PORT': os.getenv('DB_PORT', '5433'),
+    },
+    'counter': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'counter',
+        'USER': 'root',
+        'PASSWORD': 'testpassword',
+        'HOST': os.getenv('DB_HOST', '45.154.238.114'),
+        'PORT': '5432',
     }
 }
 

@@ -72,6 +72,35 @@
                     }
                 });
             }
+            
+            // Enhanced sticky navbar functionality
+            var navbar = document.querySelector('.navbar');
+            var header = document.querySelector('.header');
+            
+            if (navbar && header) {
+                var headerHeight = header.offsetHeight;
+                var lastScrollTop = 0;
+                
+                window.addEventListener('scroll', function() {
+                    var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    // Add shadow and background blur when scrolling
+                    if (scrollTop > headerHeight) {
+                        navbar.classList.add('scrolled');
+                    } else {
+                        navbar.classList.remove('scrolled');
+                    }
+                    
+                    // Hide/show navbar on scroll (optional - uncomment if desired)
+                    // if (scrollTop > lastScrollTop && scrollTop > 100) {
+                    //     navbar.style.transform = 'translateY(-100%)';
+                    // } else {
+                    //     navbar.style.transform = 'translateY(0)';
+                    // }
+                    
+                    lastScrollTop = scrollTop;
+                });
+            }
         });
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

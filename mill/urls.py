@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.contrib import admin
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views, language_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views, language_views, test_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -213,6 +213,10 @@ urlpatterns = [
     # Factory Map URLs
     path('factory-map/', factory_map_views.factory_map, name='factory_map'),
     path('api/factory-map-data/', factory_map_views.factory_map_data, name='factory_map_data'),
+
+    # Test Page URL
+    path('test/', test_views.test_page, name='test_page'),
+    path('test/ajax_update/', test_views.ajax_update, name='ajax_update'),
 
 ]
 

@@ -19,7 +19,7 @@ The application is configured to:
 - ✅ **Allow**: Updating existing records
 - ❌ **Block**: Creating new tables
 - ❌ **Block**: Modifying table structures
-- ❌ **Block**: Running migrations
+- ❌ **Block**: Running migrationss
 
 ## 🚀 How to Start the Application
 

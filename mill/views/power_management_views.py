@@ -9,9 +9,8 @@ from mill.models import (
     Device, PowerEvent, DevicePowerStatus, PowerNotificationSettings,
     Factory, UserProfile, PowerManagementPermission
 )
-from mill.services.power_management_service import PowerManagementService
-from mill.services.counter_sync_service import CounterSyncService
 from mill.services.unified_power_management_service import UnifiedPowerManagementService
+from mill.services.counter_sync_service import CounterSyncService
 from mill.utils.permmissions_handler_utils import is_allowed_factory
 from mill.models import PowerData
 
@@ -23,8 +22,8 @@ def power_dashboard(request):
         return redirect('dashboard')
     
     try:
-        # Get power management service
-        service = PowerManagementService()
+        # Get unified power management service
+        service = UnifiedPowerManagementService()
         
         # Get power summary
         power_summary = service.get_device_power_summary()
@@ -172,7 +171,7 @@ def device_power_status(request, device_id):
         power_events = PowerEvent.objects.filter(device=device).order_by('-created_at')[:10]
         
         # Get counter changes data
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         hours = int(request.GET.get('hours', 24))
         counter_data = power_service.get_device_counter_changes(device, hours=hours)
         
@@ -257,7 +256,7 @@ def power_analytics(request):
     
     try:
         # Get power management service
-        power_service = PowerManagementService()
+        power_service = UnifiedPowerManagementService()
         
         # Get summary statistics
         summary = power_service.get_power_events_summary()
@@ -802,6 +801,8 @@ def factory_power_overview(request, factory_id):
             'power_events_today': power_summary['power_events_today'],
             'unresolved_events_count': power_summary['unresolved_events'],
         }
+        
+
         
         return render(request, 'mill/factory_power_overview.html', context)
         
