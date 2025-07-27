@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
             if [ ! -d .git ]; then
               git clone https://syedwastil:${{secrets.REPO_ACCESS_TOKEN}}@github.com/syedwastil/project-mill-application.git .
             else
-              git pull origin master
+              git pull origin main
             fi
             
             

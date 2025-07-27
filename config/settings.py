@@ -210,3 +210,13 @@ LOGOUT_REDIRECT_URL = '/'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
+
+# Counter Database Configuration
+DATABASES['counter_db'] = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'counter',
+    'USER': 'root',
+    'PASSWORD': 'testpassword',
+    'HOST': 'localhost',
+    'PORT': '5432',
+}
