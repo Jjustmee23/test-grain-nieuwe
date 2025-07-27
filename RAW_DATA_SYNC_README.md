@@ -26,7 +26,7 @@ This system automatically synchronizes data from the `mqtt_data` table in the co
 
 - **`raw-data-sync`**: Docker service running the sync daemon
 - **`web`**: Main Django application
-- **`postgres`**: PostgreSQL database
+- **`postgres`**: PostgreSQL databaseqsdqsdqsdqsd
 
 ## Quick Start
 
