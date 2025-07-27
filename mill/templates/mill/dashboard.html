@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Dashboard - Mill Management System{% endblock %}
+{% block title %}{% trans "Dashboard" %} - {% trans "Mill Management System" %}{% endblock %}
 {% block extra_head %}
 <style>
     .city-selector {
@@ -169,27 +169,77 @@
                         <label class="form-label fw-bold">{% trans "Filter by Sector" %}</label>
                         <div class="sector-selector">
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="sector" id="sectorAll" {% if not selected_sector %}checked{% endif %} value="" onchange="updateSector(this.value)">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorAll" {% if not selected_sector %}checked{% endif %} value="" onchange="updateFilters()">
                                 <label class="form-check-label" for="sectorAll">
                                     {% trans "All Sectors" %}
                                 </label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="sector" id="sectorPrivate" {% if selected_sector == 'private' %}checked{% endif %} value="private" onchange="updateSector(this.value)">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorPrivate" {% if selected_sector == 'private' %}checked{% endif %} value="private" onchange="updateFilters()">
                                 <label class="form-check-label" for="sectorPrivate">
                                     {% trans "Private" %}
                                 </label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="sector" id="sectorGovernment" {% if selected_sector == 'government' %}checked{% endif %} value="government" onchange="updateSector(this.value)">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorGovernment" {% if selected_sector == 'government' %}checked{% endif %} value="government" onchange="updateFilters()">
                                 <label class="form-check-label" for="sectorGovernment">
                                     {% trans "Government" %}
                                 </label>
                             </div>
                             <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="sector" id="sectorCommercial" {% if selected_sector == 'commercial' %}checked{% endif %} value="commercial" onchange="updateSector(this.value)">
+                                <input class="form-check-input" type="radio" name="sector" id="sectorCommercial" {% if selected_sector == 'commercial' %}checked{% endif %} value="commercial" onchange="updateFilters()">
                                 <label class="form-check-label" for="sectorCommercial">
                                     {% trans "Commercial" %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Power Status Filters -->
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">{% trans "Filter by Power Status" %}</label>
+                        <div class="power-status-selector">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="power_status" id="powerAll" {% if not selected_power_status %}checked{% endif %} value="" onchange="updateFilters()">
+                                <label class="form-check-label" for="powerAll">
+                                    {% trans "All Power Status" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="power_status" id="powerOn" {% if selected_power_status == 'power_on' %}checked{% endif %} value="power_on" onchange="updateFilters()">
+                                <label class="form-check-label" for="powerOn">
+                                    <i class="bi bi-lightning-charge text-success me-1"></i>{% trans "Power ON" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="power_status" id="powerOff" {% if selected_power_status == 'power_off' %}checked{% endif %} value="power_off" onchange="updateFilters()">
+                                <label class="form-check-label" for="powerOff">
+                                    <i class="bi bi-lightning-charge text-danger me-1"></i>{% trans "Power OFF" %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Door Status Filters -->
+                    <div class="form-group mb-3">
+                        <label class="form-label fw-bold">{% trans "Filter by Door Status" %}</label>
+                        <div class="door-status-selector">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="door_status" id="doorAll" {% if not selected_door_status %}checked{% endif %} value="" onchange="updateFilters()">
+                                <label class="form-check-label" for="doorAll">
+                                    {% trans "All Door Status" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="door_status" id="doorOpen" {% if selected_door_status == 'door_open' %}checked{% endif %} value="door_open" onchange="updateFilters()">
+                                <label class="form-check-label" for="doorOpen">
+                                    <i class="bi bi-door-open text-warning me-1"></i>{% trans "Door Open" %}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="door_status" id="doorClosed" {% if selected_door_status == 'door_closed' %}checked{% endif %} value="door_closed" onchange="updateFilters()">
+                                <label class="form-check-label" for="doorClosed">
+                                    <i class="bi bi-door-closed text-success me-1"></i>{% trans "Door Closed" %}
                                 </label>
                             </div>
                         </div>
@@ -259,19 +309,19 @@
                             <div class="factory-header">
                                 <h5 class="mb-0">{{ factory.name }}</h5>
                                 <span class="status-badge {% if factory.status %}status-active{% else %}status-inactive{% endif %}">
-                                    {% if factory.status %}Active{% else %}Inactive{% endif %}
+                                    {% if factory.status %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
                                 </span>
                             </div>
                             <!-- Factory status indicators -->
                             <div class="factory-status-indicators mt-2">
                                 <div class="d-flex justify-content-end">
-                                    <span class="me-3" title="Power Status">
-                                        <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
-                                        <small class="text-dark fw-bold">Power: {% if factory.status_info.power_status %}On{% else %}Off{% endif %}</small>
-                                    </span>
+                                                            <span class="me-3" title="Power Status">
+                            <i class="bi {% if factory.status_info.power_status %}bi-lightning-fill text-success{% else %}bi-lightning-slash text-danger{% endif %}"></i>
+                            <small class="fw-bold {% if factory.status_info.power_status %}text-success{% else %}text-danger{% endif %}">{% trans "Power:" %} {% if factory.status_info.power_status %}{% trans "On" %}{% else %}{% trans "Off" %}{% endif %}</small>
+                        </span>
                                     <span title="Door Status">
                                         <i class="bi {% if factory.status_info.door_status %}bi-door-open text-warning{% else %}bi-door-closed text-success{% endif %}"></i>
-                                        <small class="text-dark fw-bold">Door: {% if factory.status_info.door_status %}Open{% else %}Closed{% endif %}</small>
+                                        <small class="text-dark fw-bold">{% trans "Door:" %} {% if factory.status_info.door_status %}{% trans "Open" %}{% else %}{% trans "Closed" %}{% endif %}</small>
                                     </span>
                                 </div>
                             </div>
@@ -384,6 +434,8 @@
             const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
             const datePicker = document.getElementById('dashboardDatePicker');
             const selectedSector = document.querySelector('input[name="sector"]:checked').value;
+            const selectedPowerStatus = document.querySelector('input[name="power_status"]:checked').value;
+            const selectedDoorStatus = document.querySelector('input[name="door_status"]:checked').value;
             let selectedCities = [];
             let url = '/dashboard';
 
@@ -412,6 +464,16 @@
             // Preserve the sector filter if one is selected
             if (selectedSector) {
                 url += (url.includes('?') ? '&' : '?') + 'sector=' + selectedSector;
+            }
+
+            // Preserve the power status filter if one is selected
+            if (selectedPowerStatus) {
+                url += (url.includes('?') ? '&' : '?') + 'power_status=' + selectedPowerStatus;
+            }
+
+            // Preserve the door status filter if one is selected
+            if (selectedDoorStatus) {
+                url += (url.includes('?') ? '&' : '?') + 'door_status=' + selectedDoorStatus;
             }
 
             window.location.href = url;
@@ -496,10 +558,13 @@
             window.location.href = '/view-statistics/?factory=' + factoryId;
         }
     
-        function updateSector(sectorValue) {
+        function updateFilters() {
             const selectAllCheckbox = document.getElementById('selectAllCities');
             const cityCheckboxes = document.querySelectorAll('.city-checkbox:checked');
             const datePicker = document.getElementById('dashboardDatePicker');
+            const selectedSector = document.querySelector('input[name="sector"]:checked').value;
+            const selectedPowerStatus = document.querySelector('input[name="power_status"]:checked').value;
+            const selectedDoorStatus = document.querySelector('input[name="door_status"]:checked').value;
             let selectedCities = [];
             let url = '/dashboard';
     
@@ -521,8 +586,18 @@
             }
     
             // Add sector parameter if it's not empty
-            if (sectorValue) {
-                url += (url.includes('?') ? '&' : '?') + 'sector=' + sectorValue;
+            if (selectedSector) {
+                url += (url.includes('?') ? '&' : '?') + 'sector=' + selectedSector;
+            }
+    
+            // Add power status parameter if it's not empty
+            if (selectedPowerStatus) {
+                url += (url.includes('?') ? '&' : '?') + 'power_status=' + selectedPowerStatus;
+            }
+    
+            // Add door status parameter if it's not empty
+            if (selectedDoorStatus) {
+                url += (url.includes('?') ? '&' : '?') + 'door_status=' + selectedDoorStatus;
             }
     
             window.location.href = url;

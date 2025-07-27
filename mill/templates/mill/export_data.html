@@ -2,14 +2,14 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Export Data{% endblock %}
+{% block title %}{% trans "Export Data" %}{% endblock %}
 
 {% block content %}
 <!-- Main Content -->
 <div class="container my-4">
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Export Data</h4>
+                            <h4 class="mb-0">{% trans "Export Data" %}</h4>
         </div>
         <div class="card-body">
             <form id="exportForm" method="post" action="{% url 'export_data' %}">
@@ -87,7 +87,7 @@
                 <div class="row">
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary" id="exportButton">
-                            <i class="fas fa-download me-2"></i><span id="exportButtonText">Export Data</span>
+                            <i class="fas fa-download me-2"></i><span id="exportButtonText">{% trans "Export Data" %}</span>
                         </button>
                     </div>
                 </div>

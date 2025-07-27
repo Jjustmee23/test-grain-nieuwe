@@ -1,0 +1,680 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-17 11:08+0000\n"
+"PO-Revision-Date: 2025-07-25 14:14+0000\n"
+"Last-Translator: System Administrator <admin@example.com>\n"
+"Language-Team: Arabic <ar@li.org>\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: mill/forms.py:105 mill/templates/mill/contact.html:162
+#: mill/templates/mill/contact.html:273
+msgid "Your Name"
+msgstr "اسمك"
+
+#: mill/forms.py:111 mill/templates/mill/contact.html:277
+msgid "Your Email"
+msgstr "بريدك الإلكتروني"
+
+#: mill/forms.py:117
+msgid "Your Phone Number (Optional)"
+msgstr "رقم هاتفك (اختياري)"
+
+#: mill/forms.py:128 mill/templates/mill/contact.html:207
+#: mill/templates/mill/contact.html:281
+msgid "Subject"
+msgstr "الموضوع"
+
+#: mill/forms.py:134
+msgid "Your Message"
+msgstr "رسالتك"
+
+#: mill/forms.py:157
+msgid "Optional - Enter your phone number for urgent matters"
+msgstr "اختياري - أدخل رقم هاتفك للمسائل العاجلة"
+
+#: mill/forms.py:158
+msgid "Select the urgency level of your ticket"
+msgstr "اختر مستوى الأولوية لتذكرة الدعم"
+
+#: mill/forms.py:161
+msgid "Type of Issue"
+msgstr "نوع المشكلة"
+
+#: mill/forms.py:162
+msgid "Urgency Level"
+msgstr "مستوى الأولوية"
+
+#: mill/templates/mill/admin-old.html:6 mill/templates/mill/admin-old.html:153
+#: mill/templates/mill/admin.html:13 mill/templates/mill/manage_admin.html:6
+#: mill/templates/mill/manage_admin.html:152
+msgid "Admin Dashboard"
+msgstr "لوحة تحكم المدير"
+
+#: mill/templates/mill/admin-old.html:171 mill/templates/mill/admin.html:18
+#: mill/templates/mill/manage_admin.html:167
+msgid "New devices detected!"
+msgstr "تم اكتشاف أجهزة جديدة!"
+
+#: mill/templates/mill/admin-old.html:176 mill/templates/mill/admin.html:23
+#: mill/templates/mill/manage_admin.html:176
+msgid "Link to Factory"
+msgstr "ربط بالمصنع"
+
+#: mill/templates/mill/admin-old.html:184 mill/templates/mill/admin.html:31
+#: mill/templates/mill/manage_admin.html:184
+msgid "Go to Dashboard"
+msgstr "الذهاب إلى لوحة التحكم"
+
+#: mill/templates/mill/admin-old.html:188 mill/templates/mill/admin.html:39
+#: mill/templates/mill/manage_admin.html:188
+#: mill/templates/mill/manage_city.html:13
+msgid "Manage Cities"
+msgstr "إدارة المدن"
+
+#: mill/templates/mill/admin-old.html:189 mill/templates/mill/admin.html:41
+#: mill/templates/mill/manage_admin.html:189
+#: mill/templates/mill/manage_factory.html:15
+msgid "Manage Factories"
+msgstr "إدارة المصانع"
+
+#: mill/templates/mill/admin-old.html:192 mill/templates/mill/admin.html:49
+#: mill/templates/mill/manage_admin.html:192
+#: mill/templates/mill/manage_devices.html:14
+msgid "Manage Devices"
+msgstr "إدارة الأجهزة"
+
+#: mill/templates/mill/admin-old.html:194 mill/templates/mill/admin.html:50
+#: mill/templates/mill/manage_admin.html:193
+#: mill/templates/mill/super_admin.html:19
+msgid "Super Admin Dashboard"
+msgstr "لوحة تحكم المدير المتفوق"
+
+#: mill/templates/mill/navbar.html:12 mill/templates/mill/power_analytics.html:320
+#: mill/templates/mill/power_events_list.html:414
+msgid "Dashboard"
+msgstr "لوحة التحكم"
+
+#: mill/templates/mill/navbar.html:44 mill/templates/mill/export_data.html:11
+#: mill/templates/mill/export_data.html:89
+msgid "Export Data"
+msgstr "تصدير البيانات"
+
+#: mill/templates/mill/navbar.html:48 mill/templates/mill/factory_map.html:3
+msgid "Factory Map"
+msgstr "خريطة المصانع"
+
+#: mill/templates/mill/navbar.html:52
+msgid "Support Tickets"
+msgstr "تذاكر الدعم"
+
+#: mill/templates/mill/navbar.html:56
+msgid "Power Management"
+msgstr "إدارة الطاقة"
+
+#: mill/templates/mill/navbar.html:60 mill/templates/mill/notifications/notification_list.html:6
+msgid "Notifications"
+msgstr "الإشعارات"
+
+#: mill/templates/mill/navbar.html:64
+msgid "Manage Profile"
+msgstr "إدارة الملف الشخصي"
+
+#: mill/templates/mill/navbar.html:68
+msgid "Admin"
+msgstr "المدير"
+
+#: mill/templates/mill/navbar.html:72
+msgid "Logout"
+msgstr "تسجيل الخروج"
+
+#: mill/templates/mill/dashboard.html:113
+msgid "Monitor and manage mill production metrics"
+msgstr "مراقبة وإدارة مقاييس إنتاج المطاحن"
+
+#: mill/templates/mill/dashboard.html:125
+msgid "Filter Options"
+msgstr "خيارات التصفية"
+
+#: mill/templates/mill/dashboard.html:130
+msgid "Select Cities"
+msgstr "اختر المدن"
+
+#: mill/templates/mill/dashboard.html:137
+msgid "All Cities"
+msgstr "جميع المدن"
+
+#: mill/templates/mill/dashboard.html:144
+msgid "Unselect All Cities"
+msgstr "إلغاء تحديد جميع المدن"
+
+#: mill/templates/mill/dashboard.html:155
+msgid "Filter by Sector"
+msgstr "تصفية حسب القطاع"
+
+#: mill/templates/mill/dashboard.html:160
+msgid "All Sectors"
+msgstr "جميع القطاعات"
+
+#: mill/templates/mill/dashboard.html:165
+msgid "Private"
+msgstr "خاص"
+
+#: mill/templates/mill/dashboard.html:170
+msgid "Government"
+msgstr "حكومي"
+
+#: mill/templates/mill/dashboard.html:175
+msgid "Commercial"
+msgstr "تجاري"
+
+#: mill/templates/mill/dashboard.html:180
+msgid "Filter by Power Status"
+msgstr "تصفية حسب حالة الطاقة"
+
+#: mill/templates/mill/dashboard.html:185
+msgid "All Power Status"
+msgstr "جميع حالات الطاقة"
+
+#: mill/templates/mill/dashboard.html:190
+msgid "Power ON"
+msgstr "الطاقة تعمل"
+
+#: mill/templates/mill/dashboard.html:195
+msgid "Power OFF"
+msgstr "الطاقة متوقفة"
+
+#: mill/templates/mill/dashboard.html:200
+msgid "Filter by Door Status"
+msgstr "تصفية حسب حالة الباب"
+
+#: mill/templates/mill/dashboard.html:205
+msgid "All Door Status"
+msgstr "جميع حالات الأبواب"
+
+#: mill/templates/mill/dashboard.html:210
+msgid "Door Open"
+msgstr "الباب مفتوح"
+
+#: mill/templates/mill/dashboard.html:215
+msgid "Door Closed"
+msgstr "الباب مغلق"
+
+#: mill/templates/mill/dashboard.html:220
+msgid "Yearly Total"
+msgstr "المجموع السنوي"
+
+#: mill/templates/mill/dashboard.html:225
+msgid "Monthly Total"
+msgstr "المجموع الشهري"
+
+#: mill/templates/mill/dashboard.html:230
+msgid "Weekly Total"
+msgstr "المجموع الأسبوعي"
+
+#: mill/templates/mill/dashboard.html:235
+msgid "Daily Total"
+msgstr "المجموع اليومي"
+
+#: mill/templates/mill/dashboard.html:240
+msgid "Factories"
+msgstr "المصانع"
+
+#: mill/templates/mill/dashboard.html:245
+msgid "Active"
+msgstr "نشط"
+
+#: mill/templates/mill/dashboard.html:250
+msgid "Door"
+msgstr "الباب"
+
+#: mill/templates/mill/dashboard.html:255
+msgid "Power"
+msgstr "الطاقة"
+
+#: mill/templates/mill/dashboard.html:260
+msgid "On"
+msgstr "تعمل"
+
+#: mill/templates/mill/dashboard.html:265
+msgid "Off"
+msgstr "متوقفة"
+
+#: mill/templates/mill/dashboard.html:270
+msgid "Open"
+msgstr "مفتوح"
+
+#: mill/templates/mill/dashboard.html:275
+msgid "Closed"
+msgstr "مغلق"
+
+#: mill/templates/mill/dashboard.html:280
+msgid "Weekly"
+msgstr "أسبوعي"
+
+#: mill/templates/mill/dashboard.html:285
+msgid "Daily"
+msgstr "يومي"
+
+#: mill/templates/mill/dashboard.html:290
+msgid "Yearly"
+msgstr "سنوي"
+
+#: mill/templates/mill/dashboard.html:295
+msgid "Monthly"
+msgstr "شهري"
+
+#: mill/templates/mill/dashboard.html:300
+msgid "Stop Time"
+msgstr "وقت التوقف"
+
+#: mill/templates/mill/dashboard.html:305
+msgid "Start Time"
+msgstr "وقت البدء"
+
+#: mill/templates/mill/dashboard.html:310 mill/templates/mill/home.html:31
+msgid "View Statistics"
+msgstr "عرض الإحصائيات"
+
+#: mill/templates/mill/dashboard.html:116
+msgid "Date:"
+msgstr "التاريخ:"
+
+#: mill/templates/mill/dashboard.html:315
+msgid "No factories available for the selected cities"
+msgstr "لا توجد مصانع متاحة للمدن المحددة"
+
+#: mill/templates/mill/dashboard.html:320
+msgid "Inactive"
+msgstr "غير نشط"
+
+#: mill/templates/mill/dashboard.html:330
+msgid "Power:"
+msgstr "الطاقة:"
+
+#: mill/templates/mill/dashboard.html:335
+msgid "Door:"
+msgstr "الباب:"
+
+#: mill/templates/mill/power_dashboard.html:362
+msgid "Power Management Dashboard"
+msgstr "لوحة تحكم إدارة الطاقة"
+
+#: mill/templates/mill/power_dashboard.html:365
+msgid "Monitor device power status and manage power-related events"
+msgstr "مراقبة حالة الطاقة للأجهزة وإدارة الأحداث المتعلقة بالطاقة"
+
+#: mill/templates/mill/power_event_detail.html:393
+msgid "Power Dashboard"
+msgstr "لوحة تحكم الطاقة"
+
+#: mill/templates/mill/power_notification_settings.html:452
+#: mill/templates/mill/change_password.html:52
+#: mill/templates/mill/device_power_status.html:534
+msgid "Back to Dashboard"
+msgstr "العودة إلى لوحة التحكم"
+
+#: mill/templates/mill/sync_counter_data.html:12
+msgid "Back to Power Dashboard"
+msgstr "العودة إلى لوحة تحكم الطاقة"
+
+#: mill/templates/mill/notifications/notification_list.html:87
+msgid "You have no notifications."
+msgstr "ليس لديك إشعارات."
+
+#: mill/templates/mill/notification_management.html:85
+msgid "Total Notifications"
+msgstr "إجمالي الإشعارات"
+
+#: mill/templates/mill/notification_management.html:91
+msgid "Unread Notifications"
+msgstr "الإشعارات غير المقروءة"
+
+#: mill/templates/mill/notification_management.html:230
+msgid "Receive In-App Notifications"
+msgstr "استلام الإشعارات داخل التطبيق"
+
+#: mill/templates/mill/notification_management.html:238
+msgid "Receive Email Notifications"
+msgstr "استلام الإشعارات عبر البريد الإلكتروني"
+
+#: mill/templates/mill/my_tickets.html:13
+msgid "My Support Tickets"
+msgstr "تذاكر الدعم الخاصة بي"
+
+#: mill/templates/mill/my_tickets.html:142
+msgid "You haven't submitted any support tickets yet."
+msgstr "لم تقم بإرسال أي تذاكر دعم بعد."
+
+#: mill/templates/mill/contact.html:162
+msgid "Contact Us"
+msgstr "اتصل بنا"
+
+#: mill/templates/mill/contact.html:207
+msgid "Send Message"
+msgstr "إرسال الرسالة"
+
+#: mill/templates/mill/contact.html:273
+msgid "Contact Information"
+msgstr "معلومات الاتصال"
+
+#: mill/templates/mill/contact.html:281
+msgid "Get in Touch"
+msgstr "تواصل معنا"
+
+#: mill/templates/mill/contact.success.html:5
+msgid "Message Sent Successfully"
+msgstr "تم إرسال الرسالة بنجاح"
+
+#: mill/templates/mill/contact.success.html:11
+msgid "Thank you for contacting us!"
+msgstr "شكراً لك على التواصل معنا!"
+
+#: mill/templates/mill/contact.success.html:15
+msgid "We have received your message and will get back to you as soon as possible."
+msgstr "لقد استلمنا رسالتك وسنرد عليك في أقرب وقت ممكن."
+
+#: mill/templates/mill/contact.success.html:19 mill/templates/mill/language_test.html:101
+msgid "Back to Home"
+msgstr "العودة إلى الصفحة الرئيسية"
+
+#: mill/templates/mill/index.html:4
+msgid "Choose Your Sector"
+msgstr "اختر قطاعك"
+
+#: mill/templates/mill/contact.html:269
+msgid "Send us an Email"
+msgstr "أرسل لنا بريد إلكتروني"
+
+#: mill/templates/mill/contact.html:288
+msgid "Send Email"
+msgstr "إرسال البريد الإلكتروني"
+
+#: mill/templates/mill/contact.html:247
+msgid "Submit Ticket"
+msgstr "إرسال التذكرة"
+
+#: mill/templates/mill/contact.html:325
+msgid "Please fill in all required fields."
+msgstr "يرجى ملء جميع الحقول المطلوبة."
+
+#: mill/templates/mill/contact.html:330
+msgid "Your email has been sent successfully! We will respond within 24 hours."
+msgstr "تم إرسال بريدك الإلكتروني بنجاح! سنرد عليك خلال 24 ساعة."
+
+#: mill/templates/mill/view_statistics.html:956
+msgid "Export Data"
+msgstr "تصدير البيانات"
+
+#: mill/templates/mill/login.html:5
+msgid "Login Page"
+msgstr "صفحة تسجيل الدخول"
+
+#: mill/templates/mill/register.html:5
+msgid "Register"
+msgstr "تسجيل"
+
+#: mill/templates/mill/register.html:11
+msgid "Create Account"
+msgstr "إنشاء حساب"
+
+#: mill/templates/mill/register.html:15
+msgid "Please fill in the form below to create your account"
+msgstr "يرجى ملء النموذج أدناه لإنشاء حسابك"
+
+#: mill/templates/mill/register.html:25
+msgid "First Name"
+msgstr "الاسم الأول"
+
+#: mill/templates/mill/register.html:35
+msgid "Last Name"
+msgstr "اسم العائلة"
+
+#: mill/templates/mill/register.html:45
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: mill/templates/mill/register.html:55
+msgid "Confirm Password"
+msgstr "تأكيد كلمة المرور"
+
+#: mill/templates/mill/register.html:65 mill/templates/mill/register.html:71 mill/templates/mill/register.html:73
+msgid "Create Account"
+msgstr "إنشاء حساب"
+
+#: mill/templates/mill/index.html:12 mill/templates/mill/index.html:20 mill/templates/mill/index.html:28
+msgid "Explore"
+msgstr "استكشاف"
+
+#: mill/templates/mill/index.html:10
+msgid "Government"
+msgstr "حكومي"
+
+#: mill/templates/mill/index.html:18
+msgid "Private"
+msgstr "خاص"
+
+#: mill/templates/mill/index.html:26
+msgid "Commercial"
+msgstr "تجاري"
+
+#: mill/templates/mill/register.html:71
+msgid "Already have an account?"
+msgstr "لديك حساب بالفعل؟"
+
+#: mill/templates/mill/register.html:73
+msgid "Sign In"
+msgstr "تسجيل الدخول"
+
+#: mill/templates/mill/contact.success.html:23
+msgid "Send Another Message"
+msgstr "إرسال رسالة أخرى"
+
+#: mill/templates/mill/login.html:5
+msgid "Login"
+msgstr "تسجيل الدخول"
+
+#: mill/templates/mill/login.html:11
+msgid "Welcome Back"
+msgstr "مرحباً بعودتك"
+
+#: mill/templates/mill/login.html:15
+msgid "Please sign in to your account"
+msgstr "يرجى تسجيل الدخول إلى حسابك"
+
+#: mill/templates/mill/login.html:25
+msgid "Username"
+msgstr "اسم المستخدم"
+
+#: mill/templates/mill/login.html:35
+msgid "Password"
+msgstr "كلمة المرور"
+
+#: mill/templates/mill/login.html:45
+msgid "Remember Me"
+msgstr "تذكرني"
+
+#: mill/templates/mill/login.html:51 mill/templates/mill/register.html:73
+msgid "Sign In"
+msgstr "تسجيل الدخول"
+
+#: mill/templates/mill/login.html:57
+msgid "Don't have an account?"
+msgstr "ليس لديك حساب؟"
+
+#: mill/templates/mill/login.html:59
+msgid "Contact your administrator"
+msgstr "تواصل مع مديرك"
+
+#: mill/templates/mill/register.html:5
+msgid "Register"
+msgstr "تسجيل"
+
+#: mill/templates/mill/register.html:11 mill/templates/mill/register.html:65
+msgid "Create Account"
+msgstr "إنشاء حساب"
+
+#: mill/templates/mill/register.html:15
+msgid "Please fill in the form below to create your account"
+msgstr "يرجى ملء النموذج أدناه لإنشاء حسابك"
+
+#: mill/templates/mill/register.html:25
+msgid "First Name"
+msgstr "الاسم الأول"
+
+#: mill/templates/mill/register.html:35
+msgid "Last Name"
+msgstr "اسم العائلة"
+
+#: mill/templates/mill/register.html:45
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: mill/templates/mill/register.html:55
+msgid "Confirm Password"
+msgstr "تأكيد كلمة المرور"
+
+#: mill/templates/mill/register.html:71
+msgid "Already have an account?"
+msgstr "لديك حساب بالفعل؟"
+
+#: mill/templates/mill/index.html:12 mill/templates/mill/index.html:20
+#: mill/templates/mill/index.html:28
+msgid "Explore"
+msgstr "استكشاف"
+
+#: mill/templates/mill/home.html:5
+msgid "Home"
+msgstr "الرئيسية"
+
+#: mill/templates/mill/home.html:11
+msgid "Welcome to Mill Management System"
+msgstr "مرحباً بك في نظام إدارة المطاحن"
+
+#: mill/templates/mill/home.html:15
+msgid "Monitor and manage your mill production efficiently"
+msgstr "راقب وأدر إنتاج مطحنتك بكفاءة"
+
+
+
+#: mill/templates/mill/home.html:37
+msgid "Contact Support"
+msgstr "تواصل مع الدعم"
+
+#: mill/templates/mill/home.html:43
+msgid "About Us"
+msgstr "من نحن"
+
+#: mill/templates/mill/home.html:49
+msgid "Our Services"
+msgstr "خدماتنا"
+
+#: mill/templates/mill/home.html:55
+msgid "Contact"
+msgstr "اتصل بنا"
+
+#: mill/templates/mill/home.html:61
+msgid "Privacy Policy"
+msgstr "سياسة الخصوصية"
+
+#: mill/templates/mill/home.html:67
+msgid "Terms of Service"
+msgstr "شروط الخدمة"
+
+#: mill/templates/mill/home.html:73
+msgid "Copyright"
+msgstr "حقوق النشر"
+
+#: mill/templates/mill/home.html:75
+msgid "All rights reserved."
+msgstr "جميع الحقوق محفوظة."
+
+#: mill/templates/mill/language_test.html:5
+msgid "Language Test Page"
+msgstr "صفحة اختبار اللغة"
+
+#: mill/templates/mill/language_test.html:11
+msgid "Current Language Information"
+msgstr "معلومات اللغة الحالية"
+
+#: mill/templates/mill/language_test.html:15
+msgid "Current Language"
+msgstr "اللغة الحالية"
+
+#: mill/templates/mill/language_test.html:17
+msgid "Language Direction"
+msgstr "اتجاه اللغة"
+
+#: mill/templates/mill/language_test.html:19
+msgid "Is RTL"
+msgstr "من اليمين إلى اليسار"
+
+#: mill/templates/mill/language_test.html:25
+msgid "Available Languages"
+msgstr "اللغات المتاحة"
+
+#: mill/templates/mill/language_test.html:33
+msgid "Current"
+msgstr "الحالي"
+
+#: mill/templates/mill/language_test.html:39
+msgid "Test Translations"
+msgstr "اختبار الترجمات"
+
+#: mill/templates/mill/language_test.html:45
+msgid "Form Elements"
+msgstr "عناصر النموذج"
+
+#: mill/templates/mill/language_test.html:55
+msgid "Enter your name"
+msgstr "أدخل اسمك"
+
+#: mill/templates/mill/language_test.html:61
+msgid "Enter your email"
+msgstr "أدخل بريدك الإلكتروني"
+
+#: mill/templates/mill/language_test.html:67
+msgid "Enter your message"
+msgstr "أدخل رسالتك"
+
+#: mill/templates/mill/language_test.html:73
+msgid "Navigation Elements"
+msgstr "عناصر التنقل"
+
+#: mill/templates/mill/language_test.html:79
+msgid "Buttons"
+msgstr "الأزرار"
+
+#: mill/templates/mill/language_test.html:85
+msgid "RTL Test Content"
+msgstr "محتوى اختبار RTL"
+
+#: mill/templates/mill/language_test.html:89
+msgid "This content is displayed in RTL mode (Right-to-Left)"
+msgstr "يتم عرض هذا المحتوى في وضع RTL (من اليمين إلى اليسار)"
+
+#: mill/templates/mill/language_test.html:91
+msgid "Arabic text flows from right to left, and the interface should be properly aligned for Arabic users."
+msgstr "يتدفق النص العربي من اليمين إلى اليسار، ويجب أن تكون الواجهة محاذاة بشكل صحيح للمستخدمين العرب."
+
+#: mill/templates/mill/language_test.html:93
+msgid "This content is displayed in LTR mode (Left-to-Right)"
+msgstr "يتم عرض هذا المحتوى في وضع LTR (من اليسار إلى اليمين)"
+
+#: mill/templates/mill/language_test.html:95
+msgid "English text flows from left to right, and the interface is aligned for English users."
+msgstr "يتدفق النص الإنجليزي من اليسار إلى اليمين، وتكون الواجهة محاذاة للمستخدمين الإنجليز."
+
+

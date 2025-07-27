@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 
-{% block title %}Power Management Dashboard{% endblock %}
+{% block title %}{% trans "Power Management Dashboard" %}{% endblock %}
 
 {% block content %}
 <style>
@@ -360,36 +360,36 @@
     <div class="dashboard-header">
         <h1 class="dashboard-title">
             <i class="bi bi-lightning-charge me-3"></i>
-            Power Management Dashboard
+                            {% trans "Power Management Dashboard" %}
         </h1>
         <p class="dashboard-subtitle">
-            Monitor device power status and manage power-related events
+            {% trans "Monitor device power status and manage power-related events" %}
         </p>
     </div>
 
     <!-- Statistics Grid -->
     <div class="stats-grid">
-        <div class="stat-card {% if summary.critical_events > 0 %}critical{% elif summary.unresolved_events > 0 %}warning{% else %}success{% endif %}">
+        <div class="stat-card {% if power_summary.unresolved_events > 0 %}critical{% else %}success{% endif %}">
             <div class="stat-icon">
                 <i class="bi bi-exclamation-triangle"></i>
             </div>
-            <div class="stat-number">{{ summary.unresolved_events }}</div>
-            <div class="stat-label">Active Power Events</div>
+            <div class="stat-number">{{ power_summary.unresolved_events }}</div>
+            <div class="stat-label">Unresolved Power Events</div>
         </div>
         
-        <div class="stat-card {% if summary.critical_events > 0 %}critical{% else %}success{% endif %}">
+        <div class="stat-card {% if events_summary.critical_events > 0 %}critical{% else %}success{% endif %}">
             <div class="stat-icon">
                 <i class="bi bi-shield-exclamation"></i>
             </div>
-            <div class="stat-number">{{ summary.critical_events }}</div>
+            <div class="stat-number">{{ events_summary.critical_events }}</div>
             <div class="stat-label">Critical Events</div>
         </div>
         
-        <div class="stat-card {% if devices_with_issues.count > 0 %}warning{% else %}success{% endif %}">
+        <div class="stat-card {% if power_summary.devices_without_power > 0 %}warning{% else %}success{% endif %}">
             <div class="stat-icon">
                 <i class="bi bi-power"></i>
             </div>
-            <div class="stat-number">{{ devices_with_issues.count }}</div>
+            <div class="stat-number">{{ power_summary.devices_without_power }}</div>
             <div class="stat-label">Devices Without Power</div>
         </div>
         
@@ -397,8 +397,24 @@
             <div class="stat-icon">
                 <i class="bi bi-check-circle"></i>
             </div>
-            <div class="stat-number">{{ summary.total_events }}</div>
-            <div class="stat-label">Total Events Tracked</div>
+            <div class="stat-number">{{ power_summary.total_devices }}</div>
+            <div class="stat-label">Total Devices</div>
+        </div>
+        
+        <div class="stat-card {% if power_summary.avg_uptime_today < 95 %}warning{% else %}success{% endif %}">
+            <div class="stat-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="stat-number">{{ power_summary.avg_uptime_today|floatformat:1 }}%</div>
+            <div class="stat-label">Average Uptime Today</div>
+        </div>
+        
+        <div class="stat-card info">
+            <div class="stat-icon">
+                <i class="bi bi-lightning-charge"></i>
+            </div>
+            <div class="stat-number">{{ power_summary.power_events_today }}</div>
+            <div class="stat-label">Power Events Today</div>
         </div>
     </div>
 
@@ -417,6 +433,10 @@
                 <a href="{% url 'power_analytics' %}" class="btn-modern btn-success-modern">
                     <i class="bi bi-graph-up"></i>
                     Analytics
+                </a>
+                <a href="{% url 'sync_counter_data' %}" class="btn-modern btn-warning-modern">
+                    <i class="bi bi-database-sync"></i>
+                    Sync Data
                 </a>
             </div>
         </div>

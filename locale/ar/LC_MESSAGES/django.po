@@ -9,887 +9,1171 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-07-17 11:08+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2025-07-25 14:14+0000\n"
+"Last-Translator: System Administrator <admin@example.com>\n"
+"Language-Team: Arabic <ar@li.org>\n"
+"Language: ar\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
-#: mill/forms.py:105 mill/templates/mill/contact.html:162
+
 #: mill/templates/mill/contact.html:273
 msgid "Your Name"
-msgstr ""
+msgstr "اسمك"
 
 #: mill/forms.py:111 mill/templates/mill/contact.html:277
 msgid "Your Email"
-msgstr ""
+msgstr "بريدك الإلكتروني"
 
 #: mill/forms.py:117
 msgid "Your Phone Number (Optional)"
-msgstr ""
+msgstr "رقم هاتفك (اختياري)"
 
-#: mill/forms.py:128 mill/templates/mill/contact.html:207
-#: mill/templates/mill/contact.html:281
+#: mill/templates/mill/feedback_form.html:55
+#: mill/templates/mill/feedback_list.html:49
 msgid "Subject"
-msgstr ""
+msgstr "الموضوع"
 
 #: mill/forms.py:134
 msgid "Your Message"
-msgstr ""
+msgstr "رسالتك"
 
 #: mill/forms.py:157
 msgid "Optional - Enter your phone number for urgent matters"
-msgstr ""
+msgstr "اختياري - أدخل رقم هاتفك للمسائل العاجلة"
 
 #: mill/forms.py:158
 msgid "Select the urgency level of your ticket"
-msgstr ""
+msgstr "اختر مستوى الأولوية لتذكرة الدعم"
 
 #: mill/forms.py:161
 msgid "Type of Issue"
-msgstr ""
+msgstr "نوع المشكلة"
 
 #: mill/forms.py:162
 msgid "Urgency Level"
-msgstr ""
+msgstr "مستوى الأولوية"
 
-#: mill/templates/mill/404.html:16 mill/templates/mill/404.html:17
-#: mill/templates/mill/admin_confirm_delete.html:18
-#: mill/templates/mill/profile.html:207
-msgid "{{ _("
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:6 mill/templates/mill/admin-old.html:153
-#: mill/templates/mill/admin.html:13 mill/templates/mill/manage_admin.html:6
 #: mill/templates/mill/manage_admin.html:152
 msgid "Admin Dashboard"
-msgstr ""
+msgstr "لوحة تحكم المدير"
 
-#: mill/templates/mill/admin-old.html:171 mill/templates/mill/admin.html:18
 #: mill/templates/mill/manage_admin.html:167
 msgid "New devices detected!"
-msgstr ""
+msgstr "تم اكتشاف أجهزة جديدة!"
 
-#: mill/templates/mill/admin-old.html:176 mill/templates/mill/admin.html:23
 #: mill/templates/mill/manage_admin.html:176
 msgid "Link to Factory"
-msgstr ""
+msgstr "ربط بالمصنع"
 
-#: mill/templates/mill/admin-old.html:184 mill/templates/mill/admin.html:31
 #: mill/templates/mill/manage_admin.html:184
 msgid "Go to Dashboard"
-msgstr ""
+msgstr "الذهاب إلى لوحة التحكم"
 
-#: mill/templates/mill/admin-old.html:188 mill/templates/mill/admin.html:39
-#: mill/templates/mill/manage_admin.html:188
-#: mill/templates/mill/manage_city.html:13
+#: mill/templates/mill/manage_city.html:13 mill/templates/mill/manage_city.html:3
 msgid "Manage Cities"
-msgstr ""
+msgstr "إدارة المدن"
 
-#: mill/templates/mill/admin-old.html:189 mill/templates/mill/admin.html:41
-#: mill/templates/mill/manage_admin.html:189
-#: mill/templates/mill/manage_factory.html:15
+#: mill/templates/mill/manage_factory.html:15 mill/templates/mill/manage_factory.html:3
 msgid "Manage Factories"
-msgstr ""
+msgstr "إدارة المصانع"
 
-#: mill/templates/mill/admin-old.html:192 mill/templates/mill/admin.html:49
-#: mill/templates/mill/manage_admin.html:192
-#: mill/templates/mill/manage_devices.html:14
+#: mill/templates/mill/manage_devices.html:14 mill/templates/mill/manage_devices.html:3
 msgid "Manage Devices"
-msgstr ""
+msgstr "إدارة الأجهزة"
 
-#: mill/templates/mill/admin-old.html:194 mill/templates/mill/admin.html:50
-#: mill/templates/mill/manage_admin.html:193
 #: mill/templates/mill/super_admin.html:19
 msgid "Super Admin Dashboard"
-msgstr ""
+msgstr "لوحة تحكم المدير المتفوق"
 
-#: mill/templates/mill/admin-old.html:205 mill/templates/mill/admin.html:65
-#: mill/templates/mill/manage_admin.html:206
-msgid "Link Device to Factory"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:213 mill/templates/mill/admin.html:73
-#: mill/templates/mill/manage_admin.html:214
-msgid "Select City:"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:221 mill/templates/mill/admin.html:81
-#: mill/templates/mill/manage_admin.html:222
-msgid "Select Factory:"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:227 mill/templates/mill/admin.html:87
-#: mill/templates/mill/manage_admin.html:228
-msgid "Or enter Serial Number:"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:232 mill/templates/mill/admin.html:92
-#: mill/templates/mill/manage_admin.html:233
-#: mill/templates/mill/manage_factory.html:187
-msgid "Link Device"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:233 mill/templates/mill/admin.html:93
-#: mill/templates/mill/manage_admin.html:234
-#: mill/templates/mill/manage_databases.html:154
-#: mill/templates/mill/manage_databases.html:186
-#: mill/templates/mill/manage_databases.html:214
-#: mill/templates/mill/manage_devices.html:239
-#: mill/templates/mill/manage_factory.html:219
-msgid "Close"
-msgstr ""
-
-#: mill/templates/mill/admin-old.html:260 mill/templates/mill/admin.html:120
-#: mill/templates/mill/manage_admin.html:256
-msgid "Select a Factory"
-msgstr ""
-
-#: mill/templates/mill/admin.html:36 mill/templates/mill/manage_users.html:12
-#: mill/templates/mill/super_admin.html:25
-msgid "Manage Users"
-msgstr ""
-
-#: mill/templates/mill/admin.html:43 mill/templates/mill/manage_admin.html:196
-msgid "Manage Batches"
-msgstr ""
-
-#: mill/templates/mill/admin.html:44
-msgid "Feedback"
-msgstr ""
-
-#: mill/templates/mill/contact.html:5 mill/templates/mill/contact.html:124
-msgid "Contact Us"
-msgstr ""
-
-#: mill/templates/mill/contact.html:125
-msgid "We're here to help. Let us know how we can assist you."
-msgstr ""
-
-#: mill/templates/mill/contact.html:131
-msgid "Email Support"
-msgstr ""
-
-#: mill/templates/mill/contact.html:133
-msgid "We respond within 24 hours"
-msgstr ""
-
-#: mill/templates/mill/contact.html:138
-msgid "Ticket System"
-msgstr ""
-
-#: mill/templates/mill/contact.html:139
-msgid "Submit your issue below"
-msgstr ""
-
-#: mill/templates/mill/contact.html:140
-msgid "Efficient tracking & resolution"
-msgstr ""
-
-#: mill/templates/mill/contact.html:145
-msgid "Submit a Support Ticket"
-msgstr ""
-
-#: mill/templates/mill/contact.html:172
-msgid "Email Address"
-msgstr ""
-
-#: mill/templates/mill/contact.html:184
-msgid "Phone Number"
-msgstr ""
-
-#: mill/templates/mill/contact.html:186
-msgid "Optional"
-msgstr ""
-
-#: mill/templates/mill/contact.html:195
-msgid "Issue Type"
-msgstr ""
-
-#: mill/templates/mill/contact.html:217
-msgid "Priority"
-msgstr ""
-
-#: mill/templates/mill/contact.html:229
-msgid "Related Factory"
-msgstr ""
-
-#: mill/templates/mill/contact.html:231
-msgid "If your issue is related to a specific factory"
-msgstr ""
-
-#: mill/templates/mill/contact.html:240 mill/templates/mill/contact.html:285
-msgid "Message"
-msgstr ""
-
-#: mill/templates/mill/contact.html:248
-msgid "Submit Ticket"
-msgstr ""
-
-#: mill/templates/mill/contact.html:270
-msgid "Send us an Email"
-msgstr ""
-
-#: mill/templates/mill/contact.html:289
-msgid "Send Email"
-msgstr ""
-
-#: mill/templates/mill/contact.html:334
-msgid "Please fill in all required fields."
-msgstr ""
-
-#: mill/templates/mill/contact.html:339
-msgid "Your email has been sent successfully! We will respond within 24 hours."
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:5
-msgid "Ticket Submitted"
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:43
-msgid "Ticket Submitted Successfully!"
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:44
-msgid ""
-"Thank you for contacting us. We've received your ticket and will respond as "
-"soon as possible."
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:47
-msgid "A confirmation has been sent to your email address."
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:48
-msgid "Your ticket will be processed within 24 hours by our support team."
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:52
-msgid "Submit Another Ticket"
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:53
-msgid "Return to Home"
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:58
-msgid "You can view the status of your tickets in"
-msgstr ""
-
-#: mill/templates/mill/contact.success.html:58
-msgid "My Tickets"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:141
+#: mill/templates/mill/power_events_list.html:414
 msgid "Dashboard"
-msgstr ""
+msgstr "لوحة التحكم"
 
-#: mill/templates/mill/dashboard.html:142
+#: mill/templates/mill/export_data.html:89
+msgid "Export Data"
+msgstr "تصدير البيانات"
+
+#: mill/templates/mill/navbar.html:48 mill/templates/mill/factory_map.html:3
+msgid "Factory Map"
+msgstr "خريطة المصانع"
+
+#: mill/templates/mill/navbar.html:52
+msgid "Support Tickets"
+msgstr "تذاكر الدعم"
+
+#: mill/templates/mill/navbar.html:56
+msgid "Power Management"
+msgstr "إدارة الطاقة"
+
+#: mill/templates/mill/navbar.html:60 mill/templates/mill/notifications/notification_list.html:6
+msgid "Notifications"
+msgstr "الإشعارات"
+
+#: mill/templates/mill/navbar.html:64
+msgid "Manage Profile"
+msgstr "إدارة الملف الشخصي"
+
+#: mill/templates/mill/navbar.html:68
+msgid "Admin"
+msgstr "المدير"
+
+#: mill/templates/mill/navbar.html:72
+msgid "Logout"
+msgstr "تسجيل الخروج"
+
+#: mill/templates/mill/dashboard.html:113
 msgid "Monitor and manage mill production metrics"
-msgstr ""
+msgstr "مراقبة وإدارة مقاييس إنتاج المطاحن"
 
-#: mill/templates/mill/dashboard.html:146
-msgid "Date:"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:159
+#: mill/templates/mill/dashboard.html:125
 msgid "Filter Options"
-msgstr ""
+msgstr "خيارات التصفية"
 
-#: mill/templates/mill/dashboard.html:163
+#: mill/templates/mill/dashboard.html:130
 msgid "Select Cities"
-msgstr ""
+msgstr "اختر المدن"
 
-#: mill/templates/mill/dashboard.html:170
-#: mill/templates/mill/manage_devices.html:136
-#: mill/templates/mill/manage_factory.html:78
+#: mill/templates/mill/dashboard.html:137 mill/templates/mill/manage_devices.html:393
 msgid "All Cities"
-msgstr ""
+msgstr "جميع المدن"
 
-#: mill/templates/mill/dashboard.html:178
+#: mill/templates/mill/dashboard.html:144
 msgid "Unselect All Cities"
-msgstr ""
+msgstr "إلغاء تحديد جميع المدن"
 
-#: mill/templates/mill/dashboard.html:198
+#: mill/templates/mill/dashboard.html:155
 msgid "Filter by Sector"
-msgstr ""
+msgstr "تصفية حسب القطاع"
 
-#: mill/templates/mill/dashboard.html:203
+#: mill/templates/mill/dashboard.html:160
 msgid "All Sectors"
-msgstr ""
+msgstr "جميع القطاعات"
 
-#: mill/templates/mill/dashboard.html:209
-#: mill/templates/mill/manage_factory.html:60
-#: mill/templates/mill/manage_factory.html:114
-#: mill/templates/mill/manage_factory.html:172
+#: mill/templates/mill/dashboard.html:165 mill/templates/mill/index.html:18
+#: mill/templates/mill/manage_factory.html:312
 msgid "Private"
-msgstr ""
+msgstr "خاص"
+
+#: mill/templates/mill/dashboard.html:170 mill/templates/mill/index.html:10
+msgid "Government"
+msgstr "حكومي"
+
+#: mill/templates/mill/dashboard.html:175 mill/templates/mill/index.html:26
+#: mill/templates/mill/manage_factory.html:313
+msgid "Commercial"
+msgstr "تجاري"
+
+#: mill/templates/mill/dashboard.html:3
+msgid "Mill Management System"
+msgstr "نظام إدارة المطاحن"
+
+#: mill/templates/mill/power_analytics.html:3
+msgid "Power Analytics"
+msgstr "تحليلات الطاقة"
+
+#: mill/templates/mill/power_events_list.html:3
+msgid "Power Events List"
+msgstr "قائمة أحداث الطاقة"
+
+#: mill/templates/mill/power_analytics.html:303
+msgid "Comprehensive analysis of power consumption, efficiency, and trends"
+msgstr "تحليل شامل لاستهلاك الطاقة والكفاءة والاتجاهات"
+
+#: mill/templates/mill/power_analytics.html:310
+msgid "Summary Statistics"
+msgstr "الإحصائيات الملخصة"
+
+#: mill/templates/mill/power_analytics.html:318
+msgid "Events List"
+msgstr "قائمة الأحداث"
+
+#: mill/templates/mill/power_analytics.html:325
+msgid "Active Events"
+msgstr "الأحداث النشطة"
+
+#: mill/templates/mill/power_analytics.html:335
+msgid "Critical Events"
+msgstr "الأحداث الحرجة"
+
+#: mill/templates/mill/power_analytics.html:345
+msgid "Devices Without Power"
+msgstr "الأجهزة بدون طاقة"
+
+#: mill/templates/mill/power_analytics.html:355
+msgid "Total Events Tracked"
+msgstr "إجمالي الأحداث المتتبعة"
+
+#: mill/templates/mill/power_analytics.html:365
+msgid "Events (Last 30 Days)"
+msgstr "الأحداث (آخر 30 يوم)"
+
+#: mill/templates/mill/power_analytics.html:375
+msgid "System Uptime"
+msgstr "وقت تشغيل النظام"
+
+#: mill/templates/mill/power_analytics.html:385
+msgid "Power Efficiency Metrics"
+msgstr "مقاييس كفاءة الطاقة"
+
+#: mill/templates/mill/power_analytics.html:395
+msgid "Average Power Consumption"
+msgstr "متوسط استهلاك الطاقة"
+
+#: mill/templates/mill/power_analytics.html:400
+msgid "Average power consumption across all devices"
+msgstr "متوسط استهلاك الطاقة عبر جميع الأجهزة"
+
+#: mill/templates/mill/power_analytics.html:405
+msgid "Peak Power Usage"
+msgstr "استخدام الطاقة القصوى"
+
+#: mill/templates/mill/power_events_list.html:549
+msgid "No Power Events Found"
+msgstr "لم يتم العثور على أحداث طاقة"
+
+#: mill/templates/mill/power_events_list.html:550
+msgid "No power events match your current filters. Try adjusting your search criteria."
+msgstr "لا توجد أحداث طاقة تطابق المرشحات الحالية. حاول تعديل معايير البحث."
+
+#: mill/templates/mill/manage_batch.html:3 mill/templates/mill/admin.html:40
+msgid "Manage Batches"
+msgstr "إدارة الدفعات"
+
+#: mill/templates/mill/feedback_form.html:3 mill/templates/mill/feedback_list.html:3
+msgid "Feedback"
+msgstr "التعليقات"
+
+#: mill/templates/mill/view_statistics.html:3
+msgid "Mill Statistics"
+msgstr "إحصائيات المطحنة"
+
+#: mill/templates/mill/manage_batch.html:12
+#: mill/templates/mill/manage_batch.html:8
+msgid "Batch Management"
+msgstr "إدارة الدفعات"
+
+#: mill/templates/mill/manage_batch.html:10
+#: mill/templates/mill/manage_batch.html:12
+#: mill/templates/mill/manage_batch.html:15
+msgid "Create New Batch"
+msgstr "إنشاء دفعة جديدة"
+
+#: mill/templates/mill/feedback_form.html:68
+#: mill/templates/mill/feedback_form.html:7
+#: mill/templates/mill/feedback_form.html:8
+msgid "Submit Feedback"
+msgstr "إرسال التعليق"
+
+#: mill/templates/mill/feedback_list.html:8
+msgid "Feedback List"
+msgstr "قائمة التعليقات"
+
+#: mill/templates/mill/feedback_list.html:11
+msgid "New Feedback"
+msgstr "تعليق جديد"
+
+#: mill/templates/mill/feedback_form.html:13 mill/templates/mill/feedback_list.html:17
+#: mill/templates/mill/feedback_form.html:18
+msgid "Category"
+msgstr "الفئة"
+
+#: mill/templates/mill/feedback_form.html:22
+#: mill/templates/mill/feedback_form.html:31
+#: mill/templates/mill/feedback_form.html:65
+msgid "Select Factories"
+msgstr "اختر المصانع"
+
+#: mill/templates/mill/feedback_form.html:23 mill/templates/mill/feedback_list.html:60
+#: mill/templates/mill/feedback_form.html:26
+#: mill/templates/mill/manage_batch.html:20
+#: mill/templates/mill/manage_batch.html:24
+msgid "All Factories"
+msgstr "جميع المصانع"
+
+#: mill/templates/mill/feedback_form.html:35
+#: mill/templates/mill/feedback_form.html:40
+msgid "Issue Date"
+msgstr "تاريخ المشكلة"
+
+#: mill/templates/mill/feedback_form.html:39
+#: mill/templates/mill/feedback_form.html:45
+msgid "Expected Value"
+msgstr "القيمة المتوقعة"
+
+#: mill/templates/mill/feedback_form.html:43
+#: mill/templates/mill/feedback_form.html:50
+msgid "Shown Value"
+msgstr "القيمة المعروضة"
+
+#: mill/templates/mill/feedback_form.html:51
+#: mill/templates/mill/feedback_form.html:60
+msgid "Message"
+msgstr "الرسالة"
+
+#: mill/templates/mill/feedback_form.html:65
+#: mill/templates/mill/feedback_list.html:52
+msgid "Priority"
+msgstr "الأولوية"
+
+#: mill/templates/mill/feedback_form.html:70
+#: mill/templates/mill/feedback_form.html:78
+msgid "Search factories..."
+msgstr "البحث في المصانع..."
+
+#: mill/templates/mill/feedback_list.html:19
+msgid "All Categories"
+msgstr "جميع الفئات"
+
+#: mill/templates/mill/manage_batch.html:30
+#: mill/templates/mill/manage_batch.html:55
+#: mill/templates/mill/manage_devices.html:423
+msgid "Status"
+msgstr "الحالة"
+
+#: mill/templates/mill/feedback_list.html:27
+#: mill/templates/mill/manage_batch.html:28
+#: mill/templates/mill/manage_batch.html:32
+msgid "All Status"
+msgstr "جميع الحالات"
+
+#: mill/templates/mill/feedback_list.html:35
+msgid "All Priorities"
+msgstr "جميع الأولويات"
+
+#: mill/templates/mill/feedback_list.html:38
+msgid "Filter"
+msgstr "تصفية"
+
+#: mill/templates/mill/feedback_list.html:39
+msgid "Reset"
+msgstr "إعادة تعيين"
+
+#: mill/templates/mill/feedback_list.html:47
+msgid "Date"
+msgstr "التاريخ"
+
+
+
+#: mill/templates/mill/manage_batch.html:55
+#: mill/templates/mill/manage_batch.html:56
+#: mill/templates/mill/manage_devices.html:425
+msgid "Actions"
+msgstr "الإجراءات"
+
+#: mill/templates/mill/manage_batch.html:16 mill/templates/mill/view_statistics.html:47
+#: mill/templates/mill/manage_batch.html:22
+msgid "Factory"
+msgstr "المصنع"
+
+#: mill/templates/mill/manage_batch.html:25
+msgid "active"
+msgstr "نشط"
+
+#: mill/templates/mill/manage_batch.html:26 mill/templates/mill/manage_batch.html:34
+msgid "completed"
+msgstr "مكتمل"
+
+#: mill/templates/mill/manage_batch.html:28
+#: mill/templates/mill/manage_batch.html:33
+#: mill/templates/mill/manage_batch.html:37
+msgid "Date Range"
+msgstr "نطاق التاريخ"
+
+#: mill/templates/mill/manage_batch.html:31
+#: mill/templates/mill/manage_batch.html:37
+#: mill/templates/mill/manage_batch.html:41
+msgid "Apply Filters"
+msgstr "تطبيق المرشحات"
+
+#: mill/templates/mill/manage_batch.html:40
+#: mill/templates/mill/manage_batch.html:48
+msgid "Batch Number"
+msgstr "رقم الدفعة"
+
+#: mill/templates/mill/manage_batch.html:42
+#: mill/templates/mill/manage_batch.html:50
+msgid "Wheat Amount (tons)"
+msgstr "كمية القمح (أطنان)"
+
+#: mill/templates/mill/manage_batch.html:43
+#: mill/templates/mill/manage_batch.html:52
+msgid "Expected Output"
+msgstr "الإنتاج المتوقع"
+
+#: mill/templates/mill/manage_batch.html:44
+#: mill/templates/mill/manage_batch.html:53
+msgid "Actual Output"
+msgstr "الإنتاج الفعلي"
+
+#: mill/templates/mill/manage_batch.html:45
+#: mill/templates/mill/manage_batch.html:54
+msgid "Progress"
+msgstr "التقدم"
+
+#: mill/templates/mill/view_statistics.html:49
+msgid "Selected Device:"
+msgstr "الجهاز المحدد:"
+
+#: mill/templates/mill/view_statistics.html:52
+msgid "All Devices"
+msgstr "جميع الأجهزة"
+
+#: mill/templates/mill/view_statistics.html:65
+msgid "Real-time update..."
+msgstr "تحديث في الوقت الفعلي..."
+
+#: mill/templates/mill/view_statistics.html:66
+msgid "Fetching latest data from devices."
+msgstr "جلب أحدث البيانات من الأجهزة."
+
+#: mill/templates/mill/manage_devices.html:343
+msgid "Add New Device"
+msgstr "إضافة جهاز جديد"
+
+#: mill/templates/mill/manage_devices.html:365 mill/templates/mill/manage_devices.html:384
+msgid "Add Device"
+msgstr "إضافة جهاز"
+
+#: mill/templates/mill/manage_devices.html:371 mill/templates/mill/manage_devices.html:421
+msgid "Device Name"
+msgstr "اسم الجهاز"
+
+#: mill/templates/mill/manage_devices.html:372
+msgid "Enter device name..."
+msgstr "أدخل اسم الجهاز..."
+
+#: mill/templates/mill/manage_devices.html:378
+msgid "Device Serial Number"
+msgstr "الرقم التسلسلي للجهاز"
+
+#: mill/templates/mill/manage_devices.html:379
+msgid "Enter serial number..."
+msgstr "أدخل الرقم التسلسلي..."
+
+
+
+#: mill/templates/mill/manage_devices.html:390
+msgid "Filter by city"
+msgstr "تصفية حسب المدينة"
+
+
+
+#: mill/templates/mill/manage_devices.html:399
+msgid "Clear"
+msgstr "مسح"
+
+#: mill/templates/mill/manage_devices.html:408
+msgid "New Devices (Unnamed)"
+msgstr "الأجهزة الجديدة (غير مسماة)"
+
+#: mill/templates/mill/manage_devices.html:420
+msgid "Serial Number"
+msgstr "الرقم التسلسلي"
+
+
+
+#: mill/templates/mill/manage_devices.html:422
+msgid "City"
+msgstr "المدينة"
+
+#: mill/templates/mill/manage_devices.html:424
+msgid "Selected Counter"
+msgstr "العداد المحدد"
+
+#: mill/templates/mill/manage_devices.html:435
+msgid "Not Assigned"
+msgstr "غير محدد"
+
+#: mill/templates/mill/manage_devices.html:442
+msgid "ACTIVE"
+msgstr "نشط"
+
+#: mill/templates/mill/manage_devices.html:445
+msgid "INACTIVE"
+msgstr "غير نشط"
+
+#: mill/templates/mill/manage_devices.html:450
+msgid "Counter 1"
+msgstr "العداد 1"
+
+#: mill/templates/mill/manage_devices.html:451
+msgid "Counter 2"
+msgstr "العداد 2"
+
+#: mill/templates/mill/manage_devices.html:452
+msgid "Counter 3"
+msgstr "العداد 3"
+
+#: mill/templates/mill/manage_devices.html:453
+msgid "Counter 4"
+msgstr "العداد 4"
+
+#: mill/templates/mill/manage_devices.html:460
+msgid "Edit"
+msgstr "تحرير"
+
+#: mill/templates/mill/manage_city.html:275
+#: mill/templates/mill/manage_devices.html:465
+msgid "Verwijderen"
+msgstr "حذف"
+
+#: mill/templates/mill/manage_devices.html:515
+msgid "Existing Devices (Named)"
+msgstr "الأجهزة الموجودة (مسماة)"
+
+#: mill/templates/mill/manage_devices.html:525
+msgid "ACTIONS"
+msgstr "الإجراءات"
+
+#: mill/templates/mill/manage_devices.html:526
+msgid "SELECTED COUNTER"
+msgstr "العداد المحدد"
+
+#: mill/templates/mill/manage_devices.html:527
+msgid "STATUS"
+msgstr "الحالة"
+
+#: mill/templates/mill/manage_devices.html:528
+msgid "CITY"
+msgstr "المدينة"
+
+#: mill/templates/mill/manage_devices.html:529
+msgid "DEVICE NAME"
+msgstr "اسم الجهاز"
+
+#: mill/templates/mill/manage_devices.html:530
+msgid "SERIAL NUMBER #"
+msgstr "الرقم التسلسلي #"
+
+#: mill/templates/mill/manage_factory.html:310
+msgid "Select Sector"
+msgstr "اختر القطاع"
+
+#: mill/templates/mill/manage_factory.html:311
+msgid "Public"
+msgstr "عام"
+
+#: mill/templates/mill/manage_factory.html:318
+msgid "Address"
+msgstr "العنوان"
+
+#: mill/templates/mill/manage_factory.html:319
+msgid "Enter full address for map functionality"
+msgstr "أدخل العنوان الكامل لوظيفة الخريطة"
+
+#: mill/templates/mill/manage_factory.html:325
+msgid "Latitude"
+msgstr "خط العرض"
+
+#: mill/templates/mill/manage_factory.html:327
+msgid "Use Google Maps to find coordinates"
+msgstr "استخدم خرائط جوجل للعثور على الإحداثيات"
+
+#: mill/templates/mill/manage_factory.html:332
+msgid "Longitude"
+msgstr "خط الطول"
+
+#: mill/templates/mill/manage_factory.html:339
+msgid "Add Factory"
+msgstr "إضافة مصنع"
+
+#: mill/templates/mill/manage_factory.html:345
+msgid "Search and Filter Factories"
+msgstr "البحث وتصفية المصانع"
+
+#: mill/templates/mill/manage_factory.html:349
+msgid "Search by factory name..."
+msgstr "البحث باسم المصنع..."
+
+#: mill/templates/mill/manage_factory.html:356
+msgid "Zoeken"
+msgstr "بحث"
+
+#: mill/templates/mill/manage_factory.html:361
+msgid "Existing Factories"
+msgstr "المصانع الموجودة"
+
+#: mill/templates/mill/manage_factory.html:370
+msgid "LINKED DEVICES"
+msgstr "الأجهزة المرتبطة"
+
+#: mill/templates/mill/manage_factory.html:371
+msgid "SECTOR"
+msgstr "القطاع"
+
+#: mill/templates/mill/manage_factory.html:372
+msgid "FACTORY NAME"
+msgstr "اسم المصنع"
+
+#: mill/templates/mill/manage_factory.html:407
+msgid "Link Device"
+msgstr "ربط جهاز"
+
+#: mill/templates/mill/manage_factory.html:411
+msgid "Unlink Device"
+msgstr "إلغاء ربط الجهاز"
+
+#: mill/templates/mill/manage_factory.html:415
+msgid "Are you sure you want to delete this factory?"
+msgstr "هل أنت متأكد من حذف هذا المصنع؟"
+
+#: mill/templates/mill/manage_factory.html:418
+msgid "Remove"
+msgstr "إزالة"
+
+#: mill/templates/mill/manage_factory.html:430
+msgid "No devices linked"
+msgstr "لا توجد أجهزة مرتبطة"
+
+#: mill/templates/mill/manage_factory.html:450
+msgid "PUBLIC"
+msgstr "عام"
+
+#: mill/templates/mill/manage_factory.html:452
+msgid "PRIVATE"
+msgstr "خاص"
+
+#: mill/templates/mill/manage_factory.html:454
+msgid "COMMERCIAL"
+msgstr "تجاري"
+
+#: mill/templates/mill/manage_factory.html:470
+msgid "Edit Factory"
+msgstr "تحرير المصنع"
+
+#: mill/templates/mill/manage_city.html:175
+msgid "Add, edit, and manage cities in your system"
+msgstr "إضافة وتحرير وإدارة المدن في نظامك"
+
+#: mill/templates/mill/manage_city.html:195
+msgid "Search Cities"
+msgstr "البحث في المدن"
+
+#: mill/templates/mill/manage_city.html:202
+msgid "Search cities by name..."
+msgstr "البحث في المدن بالاسم..."
+
+#: mill/templates/mill/manage_city.html:207
+msgid "Search"
+msgstr "بحث"
+
+#: mill/templates/mill/manage_city.html:215
+msgid "Add New City"
+msgstr "إضافة مدينة جديدة"
+
+#: mill/templates/mill/manage_city.html:223
+msgid "City Name"
+msgstr "اسم المدينة"
+
+#: mill/templates/mill/manage_city.html:228
+msgid "Enter city name..."
+msgstr "أدخل اسم المدينة..."
+
+#: mill/templates/mill/manage_city.html:233
+msgid "Add City"
+msgstr "إضافة مدينة"
+
+#: mill/templates/mill/manage_city.html:241
+msgid "Existing Cities"
+msgstr "المدن الموجودة"
+
+#: mill/templates/mill/manage_city.html:250
+msgid "FACTORIES"
+msgstr "المصانع"
+
+#: mill/templates/mill/manage_city.html:251
+msgid "CITY NAME"
+msgstr "اسم المدينة"
+
+#: mill/templates/mill/manage_city.html:270
+msgid "Are you sure you want to delete this city?"
+msgstr "هل أنت متأكد من حذف هذه المدينة؟"
+
+#: mill/templates/mill/manage_city.html:285
+msgid "No cities found matching your search."
+msgstr "لم يتم العثور على مدن تطابق بحثك."
+
+#: mill/templates/mill/manage_city.html:287
+msgid "No cities available."
+msgstr "لا توجد مدن متاحة."
+
+#: mill/templates/mill/dashboard.html:245
+#: mill/templates/mill/manage_batch.html:29
+#: mill/templates/mill/manage_batch.html:33
+msgid "Active"
+msgstr "نشط"
+
+#: mill/templates/mill/manage_batch.html:30
+msgid "Completed"
+msgstr "مكتمل"
+
+#: mill/templates/mill/manage_batch.html:75
+msgid "No batches found"
+msgstr "لم يتم العثور على دفعات"
+
+#: mill/templates/mill/manage_batch.html:120
+msgid "Waste Factor (%)"
+msgstr "عامل الهدر (%)"
+
+#: mill/templates/mill/manage_batch.html:125
+msgid "Start Date"
+msgstr "تاريخ البدء"
+
+#: mill/templates/mill/manage_batch.html:131
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: mill/templates/mill/manage_batch.html:132
+msgid "Create Batch"
+msgstr "إنشاء دفعة"
+
+#: mill/templates/mill/feedback_form.html:89
+msgid "Close"
+msgstr "إغلاق"
+
+#: mill/templates/mill/feedback_form.html:90
+msgid "Apply"
+msgstr "تطبيق"
+
+#: mill/templates/mill/dashboard.html:180
+msgid "Filter by Power Status"
+msgstr "تصفية حسب حالة الطاقة"
+
+#: mill/templates/mill/dashboard.html:185
+msgid "All Power Status"
+msgstr "جميع حالات الطاقة"
+
+#: mill/templates/mill/dashboard.html:190
+msgid "Power ON"
+msgstr "الطاقة تعمل"
+
+#: mill/templates/mill/dashboard.html:195
+msgid "Power OFF"
+msgstr "الطاقة متوقفة"
+
+#: mill/templates/mill/dashboard.html:200
+msgid "Filter by Door Status"
+msgstr "تصفية حسب حالة الباب"
+
+#: mill/templates/mill/dashboard.html:205
+msgid "All Door Status"
+msgstr "جميع حالات الأبواب"
+
+#: mill/templates/mill/dashboard.html:210
+msgid "Door Open"
+msgstr "الباب مفتوح"
 
 #: mill/templates/mill/dashboard.html:215
-msgid "Government"
-msgstr ""
+msgid "Door Closed"
+msgstr "الباب مغلق"
 
-#: mill/templates/mill/dashboard.html:221
-#: mill/templates/mill/manage_factory.html:61
-#: mill/templates/mill/manage_factory.html:116
-#: mill/templates/mill/manage_factory.html:173
-msgid "Commercial"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:240
-msgid "Daily Total"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:251
-msgid "Weekly Total"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:262
-msgid "Monthly Total"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:273
+#: mill/templates/mill/dashboard.html:220
 msgid "Yearly Total"
-msgstr ""
+msgstr "المجموع السنوي"
 
-#: mill/templates/mill/dashboard.html:281
-#: mill/templates/mill/manage_city.html:58
+#: mill/templates/mill/dashboard.html:225
+msgid "Monthly Total"
+msgstr "المجموع الشهري"
+
+#: mill/templates/mill/dashboard.html:230
+msgid "Weekly Total"
+msgstr "المجموع الأسبوعي"
+
+#: mill/templates/mill/dashboard.html:235
+msgid "Daily Total"
+msgstr "المجموع اليومي"
+
+#: mill/templates/mill/dashboard.html:240 mill/templates/mill/feedback_list.html:50
 msgid "Factories"
-msgstr ""
+msgstr "المصانع"
 
-#: mill/templates/mill/dashboard.html:311
+#: mill/templates/mill/dashboard.html:250
+msgid "Door"
+msgstr "الباب"
+
+#: mill/templates/mill/dashboard.html:255 mill/templates/mill/dashboard.html:309
+msgid "Power"
+msgstr "الطاقة"
+
+#: mill/templates/mill/dashboard.html:260 mill/templates/mill/dashboard.html:309
+msgid "On"
+msgstr "تعمل"
+
+#: mill/templates/mill/dashboard.html:265 mill/templates/mill/dashboard.html:309
+msgid "Off"
+msgstr "متوقفة"
+
+#: mill/templates/mill/dashboard.html:270 mill/templates/mill/dashboard.html:315
+msgid "Open"
+msgstr "مفتوح"
+
+#: mill/templates/mill/dashboard.html:275 mill/templates/mill/dashboard.html:315
+msgid "Closed"
+msgstr "مغلق"
+
+#: mill/templates/mill/dashboard.html:280
+msgid "Weekly"
+msgstr "أسبوعي"
+
+#: mill/templates/mill/dashboard.html:285
 msgid "Daily"
-msgstr ""
+msgstr "يومي"
+
+#: mill/templates/mill/dashboard.html:290
+msgid "Yearly"
+msgstr "سنوي"
+
+#: mill/templates/mill/dashboard.html:295
+msgid "Monthly"
+msgstr "شهري"
+
+#: mill/templates/mill/dashboard.html:300
+msgid "Stop Time"
+msgstr "وقت التوقف"
+
+#: mill/templates/mill/dashboard.html:305
+msgid "Start Time"
+msgstr "وقت البدء"
+
+#: mill/templates/mill/dashboard.html:310 mill/templates/mill/home.html:31
+msgid "View Statistics"
+msgstr "عرض الإحصائيات"
+
+#: mill/templates/mill/dashboard.html:116
+msgid "Date:"
+msgstr "التاريخ:"
 
 #: mill/templates/mill/dashboard.html:315
-msgid "Weekly"
-msgstr ""
+msgid "No factories available for the selected cities"
+msgstr "لا توجد مصانع متاحة للمدن المحددة"
 
-#: mill/templates/mill/dashboard.html:319
-msgid "Monthly"
-msgstr ""
-
-#: mill/templates/mill/dashboard.html:323
-msgid "Yearly"
-msgstr ""
+#: mill/templates/mill/dashboard.html:320
+msgid "Inactive"
+msgstr "غير نشط"
 
 #: mill/templates/mill/dashboard.html:330
-msgid "Start Time"
-msgstr ""
+msgid "Power:"
+msgstr "الطاقة:"
 
-#: mill/templates/mill/dashboard.html:334
-msgid "Stop Time"
-msgstr ""
+#: mill/templates/mill/dashboard.html:335
+msgid "Door:"
+msgstr "الباب:"
 
-#: mill/templates/mill/dashboard.html:342
-msgid "View Statistics"
-msgstr ""
+#: mill/templates/mill/power_dashboard.html:362
+msgid "Power Management Dashboard"
+msgstr "لوحة تحكم إدارة الطاقة"
 
-#: mill/templates/mill/dashboard.html:345
-msgid "Devices"
-msgstr ""
+#: mill/templates/mill/power_dashboard.html:365
+msgid "Monitor device power status and manage power-related events"
+msgstr "مراقبة حالة الطاقة للأجهزة وإدارة الأحداث المتعلقة بالطاقة"
 
-#: mill/templates/mill/dashboard.html:356
-msgid "No factories available for the selected cities"
-msgstr ""
+#: mill/templates/mill/power_event_detail.html:393
+msgid "Power Dashboard"
+msgstr "لوحة تحكم الطاقة"
 
-#: mill/templates/mill/footer.html:8
-msgid "Terms"
-msgstr ""
+#: mill/templates/mill/device_power_status.html:534
+msgid "Back to Dashboard"
+msgstr "العودة إلى لوحة التحكم"
 
-#: mill/templates/mill/footer.html:9
-msgid "Privacy"
-msgstr ""
+#: mill/templates/mill/sync_counter_data.html:12
+msgid "Back to Power Dashboard"
+msgstr "العودة إلى لوحة تحكم الطاقة"
 
-#: mill/templates/mill/footer.html:10
-msgid "Support"
-msgstr ""
+#: mill/templates/mill/notifications/notification_list.html:87
+msgid "You have no notifications."
+msgstr "ليس لديك إشعارات."
 
-#: mill/templates/mill/footer.html:13
-msgid "All rights reserved."
-msgstr ""
+#: mill/templates/mill/notification_management.html:85
+msgid "Total Notifications"
+msgstr "إجمالي الإشعارات"
 
-#: mill/templates/mill/login.html:8
+#: mill/templates/mill/notification_management.html:91
+msgid "Unread Notifications"
+msgstr "الإشعارات غير المقروءة"
+
+#: mill/templates/mill/notification_management.html:230
+msgid "Receive In-App Notifications"
+msgstr "استلام الإشعارات داخل التطبيق"
+
+#: mill/templates/mill/notification_management.html:238
+msgid "Receive Email Notifications"
+msgstr "استلام الإشعارات عبر البريد الإلكتروني"
+
+#: mill/templates/mill/my_tickets.html:13
+msgid "My Support Tickets"
+msgstr "تذاكر الدعم الخاصة بي"
+
+#: mill/templates/mill/my_tickets.html:142
+msgid "You haven't submitted any support tickets yet."
+msgstr "لم تقم بإرسال أي تذاكر دعم بعد."
+
+#: mill/templates/mill/contact.html:162
+msgid "Contact Us"
+msgstr "اتصل بنا"
+
+#: mill/templates/mill/contact.html:207
+msgid "Send Message"
+msgstr "إرسال الرسالة"
+
+#: mill/templates/mill/contact.html:273
+msgid "Contact Information"
+msgstr "معلومات الاتصال"
+
+#: mill/templates/mill/contact.html:281
+msgid "Get in Touch"
+msgstr "تواصل معنا"
+
+#: mill/templates/mill/contact.success.html:5
+msgid "Message Sent Successfully"
+msgstr "تم إرسال الرسالة بنجاح"
+
+#: mill/templates/mill/contact.success.html:11
+msgid "Thank you for contacting us!"
+msgstr "شكراً لك على التواصل معنا!"
+
+#: mill/templates/mill/contact.success.html:15
+msgid "We have received your message and will get back to you as soon as possible."
+msgstr "لقد استلمنا رسالتك وسنرد عليك في أقرب وقت ممكن."
+
+#: mill/templates/mill/contact.success.html:19 mill/templates/mill/language_test.html:101
+msgid "Back to Home"
+msgstr "العودة إلى الصفحة الرئيسية"
+
+#: mill/templates/mill/index.html:4
+msgid "Choose Your Sector"
+msgstr "اختر قطاعك"
+
+#: mill/templates/mill/contact.html:269
+msgid "Send us an Email"
+msgstr "أرسل لنا بريد إلكتروني"
+
+#: mill/templates/mill/contact.html:288
+msgid "Send Email"
+msgstr "إرسال البريد الإلكتروني"
+
+#: mill/templates/mill/contact.html:247
+msgid "Submit Ticket"
+msgstr "إرسال التذكرة"
+
+#: mill/templates/mill/contact.html:325
+msgid "Please fill in all required fields."
+msgstr "يرجى ملء جميع الحقول المطلوبة."
+
+#: mill/templates/mill/contact.html:330
+msgid "Your email has been sent successfully! We will respond within 24 hours."
+msgstr "تم إرسال بريدك الإلكتروني بنجاح! سنرد عليك خلال 24 ساعة."
+
+
+
+#: mill/templates/mill/login.html:5
 msgid "Login Page"
-msgstr ""
+msgstr "صفحة تسجيل الدخول"
 
-#: mill/templates/mill/login.html:125
-msgid "الشركة العامة لتصنيع الحبوب"
-msgstr ""
+#: mill/templates/mill/login.html:5
+msgid "Login"
+msgstr "تسجيل الدخول"
 
-#: mill/templates/mill/login.html:126
-msgid "نظام مراقبة عمل المطاحن"
-msgstr ""
 
-#: mill/templates/mill/login.html:152
-msgid "تسجيل الدخول"
-msgstr ""
 
-#: mill/templates/mill/manage_city.html:15
-#: mill/templates/mill/manage_devices.html:16
-#: mill/templates/mill/manage_factory.html:18
-#: mill/templates/mill/manage_users.html:15
-#: mill/templates/mill/super_admin.html:22
-msgid "Back to Admin Dashboard"
-msgstr ""
 
-#: mill/templates/mill/manage_city.html:32
-msgid "Search cities..."
-msgstr ""
 
-#: mill/templates/mill/manage_city.html:34
-#: mill/templates/mill/manage_factory.html:87
-msgid "Search"
-msgstr ""
 
-#: mill/templates/mill/manage_city.html:36
-#: mill/templates/mill/manage_devices.html:144
-#: mill/templates/mill/manage_factory.html:88
-msgid "Clear"
-msgstr ""
 
-#: mill/templates/mill/manage_city.html:41
-#: mill/templates/mill/manage_city.html:49
-msgid "Add City"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:46
-msgid "City Name:"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:52
-msgid "Existing Cities"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:57
-msgid "City Name"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:59
-#: mill/templates/mill/manage_devices.html:58
-#: mill/templates/mill/manage_devices.html:159
-#: mill/templates/mill/manage_factory.html:102
-msgid "Actions"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:73
-#: mill/templates/mill/manage_devices.html:108
-#: mill/templates/mill/manage_devices.html:210
-#: mill/templates/mill/manage_factory.html:175
-msgid "Edit"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:79
-#: mill/templates/mill/manage_devices.html:113
-#: mill/templates/mill/manage_devices.html:215
-#: mill/templates/mill/manage_factory.html:183
-msgid "Remove"
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:89
-msgid "No cities found matching your search."
-msgstr ""
-
-#: mill/templates/mill/manage_city.html:91
-msgid "No cities available."
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:7
-#: mill/templates/mill/manage_databases.html:44
-msgid "Database Management"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:49
-#: mill/templates/mill/manage_databases.html:134
-#: mill/templates/mill/manage_databases.html:155
-#: mill/templates/mill/manage_databases.html:187
-msgid "Add Database"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:53
-msgid "Print"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:62
-msgid "Main Database"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:67
-#: mill/templates/mill/manage_databases.html:99
-msgid "Tables"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:73
-#: mill/templates/mill/manage_databases.html:105
-msgid "View Columns"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:115
-msgid "Manage Tables"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:121
-msgid "Download CSV"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:139
-msgid "Local"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:140
-msgid "External"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:144
-msgid "Add Local Database"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:146
-#: mill/templates/mill/manage_databases.html:162
-msgid "Database Name"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:150
-msgid "Database Location"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:160
-msgid "Add External Database"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:166
-msgid "IP/Host"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:170
-msgid "Port"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:174
-#: mill/templates/mill/manage_users.html:31
-msgid "Username"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:178
-#: mill/templates/mill/manage_users.html:39
-msgid "Password"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:182
-msgid "Friendly Name"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:200
-#: mill/templates/mill/manage_databases.html:215
-msgid "Remove Database"
-msgstr ""
-
-#: mill/templates/mill/manage_databases.html:206
-msgid "Select Database"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:29
-#: mill/templates/mill/manage_devices.html:42
-msgid "Add Device"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:35
-#: mill/templates/mill/manage_devices.html:54
-#: mill/templates/mill/manage_devices.html:155
-msgid "Device Name"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:39
-msgid "Device Serial Number"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:47
-msgid "New Devices"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:53
-#: mill/templates/mill/manage_devices.html:154
-msgid "Serial Number"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:55
-#: mill/templates/mill/manage_devices.html:156
-#: mill/templates/mill/manage_factory.html:96
-msgid "City"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:56
-#: mill/templates/mill/manage_devices.html:157
-#: mill/templates/mill/manage_factory.html:98
-msgid "Status"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:57
-#: mill/templates/mill/manage_devices.html:158
-msgid "Selected Counter"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:73
-#: mill/templates/mill/manage_devices.html:175
-msgid "Not Assigned"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:82
-#: mill/templates/mill/manage_devices.html:184
-msgid "Deactivate"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:84
-#: mill/templates/mill/manage_devices.html:186
-msgid "Activate"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:95
-#: mill/templates/mill/manage_devices.html:197
-msgid "Counter 1"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:96
-#: mill/templates/mill/manage_devices.html:198
-msgid "Counter 2"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:97
-#: mill/templates/mill/manage_devices.html:199
-msgid "Counter 3"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:98
-#: mill/templates/mill/manage_devices.html:200
-msgid "Counter 4"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:128
-msgid "Existing Devices"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:238
-msgid "Pair Device"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:246
-msgid "Select Factory to Pair With"
-msgstr ""
-
-#: mill/templates/mill/manage_devices.html:253
-msgid "Pair"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:32
-msgid "Export Factories"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:35
-msgid "Download Factories as Excel"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:39
-#: mill/templates/mill/manage_factory.html:64
-msgid "Add Factory"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:43
-#: mill/templates/mill/manage_factory.html:95
-msgid "Factory Name"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:47
-msgid "Select City "
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:50
-msgid "Select a city"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:57
-msgid "Select Sector"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:59
-#: mill/templates/mill/manage_factory.html:112
-#: mill/templates/mill/manage_factory.html:171
-msgid "Public"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:67
-msgid "Existing Factories"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:70
-msgid "Search and Filter"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:74
-msgid "Search by factory name..."
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:97
-msgid "Sector"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:99
-msgid "Linked Devices"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:128
-msgid "Active"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:130
-msgid "Inactive"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:149
-msgid "No devices linked"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:160
-msgid "N/A"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:179
-msgid "Are you sure you want to delete this factory?"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:190
-msgid "Unlink Device"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:203
-msgid "Manage Devices for Factory"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:212
-msgid "Select Device"
-msgstr ""
-
-#: mill/templates/mill/manage_factory.html:220
-msgid "Save changes"
-msgstr ""
-
-#: mill/templates/mill/manage_tables.html:18
-msgid "Manage Tables for {{ db_name }}"
-msgstr ""
-
-#: mill/templates/mill/manage_users.html:27
-msgid "Create User"
-msgstr ""
-
-#: mill/templates/mill/manage_users.html:35
-msgid "Email"
-msgstr ""
-
-#: mill/templates/mill/manage_users.html:43
-msgid "Confirm Password"
-msgstr ""
-
-#: mill/templates/mill/manage_users.html:46
-msgid "Add User"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:15
-#: mill/templates/mill/test_translation.html:10
-#: mill/views/test_translation.py:12 mill/views/test_translation.py:16
-#: mill/views/test_translation.py:20
-msgid "Language"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:25
-#: mill/templates/mill/test_translation.html:11
-msgid "Admin"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:29
-#: mill/templates/mill/test_translation.html:12
-msgid "Export Data"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:32
-#: mill/templates/mill/test_translation.html:13
-msgid "Logout"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:35
-#: mill/templates/mill/test_translation.html:14
-msgid "Manage Profile"
-msgstr ""
-
-#: mill/templates/mill/navbar.html:38
-#: mill/templates/mill/test_translation.html:15
-msgid "Notifications"
-msgstr ""
-
-#: mill/templates/mill/profile.html:212
-msgid "{{ user.name }}"
-msgstr ""
-
-#: mill/templates/mill/profile.html:217
-msgid "{{ user.email }}"
-msgstr ""
-
-#: mill/templates/mill/profile.html:222
-msgid "{{ user.job_function }}"
-msgstr ""
-
-#: mill/templates/mill/profile.html:229
-msgid "{{ user.cities | join("
-msgstr ""
-
-#: mill/templates/mill/profile.html:233
-msgid "{{ user.factories | join("
-msgstr ""
-
-#: mill/templates/mill/register.html:7 mill/templates/mill/register.html:122
-#: mill/templates/mill/register.html:136
-msgid "Register"
-msgstr ""
-
-#: mill/templates/mill/register.html:139
+#: mill/templates/mill/register.html:71
 msgid "Already have an account?"
-msgstr ""
+msgstr "لديك حساب بالفعل؟"
 
-#: mill/templates/mill/register.html:139
-msgid "Login here"
-msgstr ""
+#: mill/templates/mill/register.html:73 mill/templates/mill/login.html:51 mill/templates/mill/register.html:73
+msgid "Sign In"
+msgstr "تسجيل الدخول"
 
-#: mill/templates/mill/super_admin.html:28
-msgid "Manage Databases"
-msgstr ""
+#: mill/templates/mill/contact.success.html:23
+msgid "Send Another Message"
+msgstr "إرسال رسالة أخرى"
 
-#: mill/templates/mill/view_tables.html:17
-msgid "Tables and Columns for Database: {{ db_name }}"
-msgstr ""
+#: mill/templates/mill/login.html:11
+msgid "Welcome Back"
+msgstr "مرحباً بعودتك"
 
-#: mill/views/contact_views.py:23
-msgid ""
-"Your ticket has been submitted successfully. We'll get back to you soon."
-msgstr ""
+#: mill/templates/mill/login.html:15
+msgid "Please sign in to your account"
+msgstr "يرجى تسجيل الدخول إلى حسابك"
 
-#: mill/views/contact_views.py:55
-msgid "You don't have permission to update ticket status."
-msgstr ""
+#: mill/templates/mill/login.html:25
+msgid "Username"
+msgstr "اسم المستخدم"
 
-#: mill/views/contact_views.py:64
-#, python-brace-format
-msgid "Ticket status updated to {status}"
-msgstr ""
+#: mill/templates/mill/login.html:35
+msgid "Password"
+msgstr "كلمة المرور"
 
-#: mill/views/contact_views.py:68
-msgid "Invalid status value"
-msgstr ""
+#: mill/templates/mill/login.html:45
+msgid "Remember Me"
+msgstr "تذكرني"
 
-#: mill/views/contact_views.py:70
-msgid "Ticket not found"
-msgstr ""
+#: mill/templates/mill/login.html:57
+msgid "Don't have an account?"
+msgstr "ليس لديك حساب؟"
 
-#: mill/views/factory_views.py:101
-msgid "Factory removed successfully."
-msgstr ""
+#: mill/templates/mill/login.html:59
+msgid "Contact your administrator"
+msgstr "تواصل مع مديرك"
+
+#: mill/templates/mill/register.html:5
+msgid "Register"
+msgstr "تسجيل"
+
+#: mill/templates/mill/register.html:11 mill/templates/mill/register.html:65 mill/templates/mill/register.html:71
+msgid "Create Account"
+msgstr "إنشاء حساب"
+
+#: mill/templates/mill/register.html:15
+msgid "Please fill in the form below to create your account"
+msgstr "يرجى ملء النموذج أدناه لإنشاء حسابك"
+
+#: mill/templates/mill/register.html:25
+msgid "First Name"
+msgstr "الاسم الأول"
+
+#: mill/templates/mill/register.html:35
+msgid "Last Name"
+msgstr "اسم العائلة"
+
+#: mill/templates/mill/register.html:45 mill/templates/mill/register.html:45
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: mill/templates/mill/register.html:55
+msgid "Confirm Password"
+msgstr "تأكيد كلمة المرور"
+
+#: mill/templates/mill/index.html:28
+msgid "Explore"
+msgstr "استكشاف"
+
+#: mill/templates/mill/home.html:5
+msgid "Home"
+msgstr "الرئيسية"
+
+#: mill/templates/mill/home.html:11
+msgid "Welcome to Mill Management System"
+msgstr "مرحباً بك في نظام إدارة المطاحن"
+
+#: mill/templates/mill/home.html:15
+msgid "Monitor and manage your mill production efficiently"
+msgstr "راقب وأدر إنتاج مطحنتك بكفاءة"
+
+
+
+#: mill/templates/mill/home.html:37
+msgid "Contact Support"
+msgstr "تواصل مع الدعم"
+
+#: mill/templates/mill/home.html:43
+msgid "About Us"
+msgstr "من نحن"
+
+#: mill/templates/mill/home.html:49
+msgid "Our Services"
+msgstr "خدماتنا"
+
+#: mill/templates/mill/home.html:55
+msgid "Contact"
+msgstr "اتصل بنا"
+
+#: mill/templates/mill/home.html:61
+msgid "Privacy Policy"
+msgstr "سياسة الخصوصية"
+
+#: mill/templates/mill/home.html:67
+msgid "Terms of Service"
+msgstr "شروط الخدمة"
+
+#: mill/templates/mill/home.html:73
+msgid "Copyright"
+msgstr "حقوق النشر"
+
+#: mill/templates/mill/home.html:75
+msgid "All rights reserved."
+msgstr "جميع الحقوق محفوظة."
+
+#: mill/templates/mill/language_test.html:5
+msgid "Language Test Page"
+msgstr "صفحة اختبار اللغة"
+
+#: mill/templates/mill/language_test.html:11
+msgid "Current Language Information"
+msgstr "معلومات اللغة الحالية"
+
+#: mill/templates/mill/language_test.html:15
+msgid "Current Language"
+msgstr "اللغة الحالية"
+
+#: mill/templates/mill/language_test.html:17
+msgid "Language Direction"
+msgstr "اتجاه اللغة"
+
+#: mill/templates/mill/language_test.html:19
+msgid "Is RTL"
+msgstr "من اليمين إلى اليسار"
+
+#: mill/templates/mill/language_test.html:25
+msgid "Available Languages"
+msgstr "اللغات المتاحة"
+
+#: mill/templates/mill/language_test.html:33
+msgid "Current"
+msgstr "الحالي"
+
+#: mill/templates/mill/language_test.html:39
+msgid "Test Translations"
+msgstr "اختبار الترجمات"
+
+#: mill/templates/mill/language_test.html:45
+msgid "Form Elements"
+msgstr "عناصر النموذج"
+
+#: mill/templates/mill/language_test.html:55
+msgid "Enter your name"
+msgstr "أدخل اسمك"
+
+#: mill/templates/mill/language_test.html:61
+msgid "Enter your email"
+msgstr "أدخل بريدك الإلكتروني"
+
+#: mill/templates/mill/language_test.html:67
+msgid "Enter your message"
+msgstr "أدخل رسالتك"
+
+#: mill/templates/mill/language_test.html:73
+msgid "Navigation Elements"
+msgstr "عناصر التنقل"
+
+#: mill/templates/mill/language_test.html:79
+msgid "Buttons"
+msgstr "الأزرار"
+
+#: mill/templates/mill/language_test.html:85
+msgid "RTL Test Content"
+msgstr "محتوى اختبار RTL"
+
+#: mill/templates/mill/language_test.html:89
+msgid "This content is displayed in RTL mode (Right-to-Left)"
+msgstr "يتم عرض هذا المحتوى في وضع RTL (من اليمين إلى اليسار)"
+
+#: mill/templates/mill/language_test.html:91
+msgid "Arabic text flows from right to left, and the interface should be properly aligned for Arabic users."
+msgstr "يتدفق النص العربي من اليمين إلى اليسار، ويجب أن تكون الواجهة محاذاة بشكل صحيح للمستخدمين العرب."
+
+#: mill/templates/mill/language_test.html:93
+msgid "This content is displayed in LTR mode (Left-to-Right)"
+msgstr "يتم عرض هذا المحتوى في وضع LTR (من اليسار إلى اليمين)"
+
+#: mill/templates/mill/language_test.html:95
+msgid "English text flows from left to right, and the interface is aligned for English users."
+msgstr "يتدفق النص الإنجليزي من اليسار إلى اليمين، وتكون الواجهة محاذاة للمستخدمين الإنجليز."
+
+

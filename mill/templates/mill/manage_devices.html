@@ -1,7 +1,7 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Manage Devices{% endblock %}
+{% block title %}{% trans "Manage Devices" %}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -134,6 +134,7 @@
         padding: 0.5rem 1rem;
         font-weight: 500;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
     
     .btn-warning {
@@ -143,6 +144,7 @@
         padding: 0.5rem 1rem;
         font-weight: 500;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
     
     .btn-status {
@@ -168,6 +170,13 @@
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        table-layout: fixed;
+        width: 100%;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+        min-width: 100%;
     }
     
     .table thead th {
@@ -199,11 +208,13 @@
     }
     
     .table thead th.counter-col {
-        width: 120px;
+        width: 150px;
+        min-width: 150px;
     }
     
     .table thead th.actions-col {
-        width: 200px;
+        width: 250px;
+        min-width: 250px;
     }
     
     .table tbody tr {
@@ -246,12 +257,16 @@
     }
     
     .table tbody td.counter {
-        max-width: 120px;
+        max-width: 150px;
+        min-width: 150px;
+        padding: 0.5rem;
     }
     
     .table tbody td.actions {
-        max-width: 200px;
+        max-width: 250px;
+        min-width: 250px;
         white-space: nowrap;
+        padding: 0.5rem;
     }
     
     .badge-city {
@@ -456,7 +471,7 @@
                                             {% csrf_token %}
                                             <input type="hidden" name="action" value="update_device_counter">
                                             <input type="hidden" name="device_id" value="{{ device.id }}">
-                                            <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <select name="selected_counter" class="form-select form-select-sm" onchange="this.form.submit()" style="width: 100%; min-width: 120px;">
                                                 <option value="counter_1" {% if device.selected_counter == 'counter_1' %}selected{% endif %}>{% trans "Counter 1" %}</option>
                                                 <option value="counter_2" {% if device.selected_counter == 'counter_2' %}selected{% endif %}>{% trans "Counter 2" %}</option>
                                                 <option value="counter_3" {% if device.selected_counter == 'counter_3' %}selected{% endif %}>{% trans "Counter 3" %}</option>
@@ -465,12 +480,12 @@
                                         </form>
                                     </td>
                                     <td class="actions">
-                                        <div class="d-flex gap-2">
-                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                        <div class="d-flex flex-column gap-1">
+                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline mb-1">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="action" value="rename_device">
                                                 <input type="hidden" name="device_id" value="{{ device.id }}">
-                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required>
+                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required style="width: 120px;">
                                                 <button type="submit" class="btn btn-warning btn-sm">
                                                     <i class="bi bi-pencil me-1"></i>
                                                     {% trans "Edit" %}
@@ -524,12 +539,12 @@
                             {% if device.name != device.id|stringformat:"s" %}
                                 <tr id="device-row-{{ device.id }}">
                                     <td class="actions">
-                                        <div class="d-flex gap-2">
-                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline">
+                                        <div class="d-flex flex-column gap-1">
+                                            <form method="POST" action="{% url 'manage_devices' %}" class="d-inline mb-1">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="action" value="rename_device">
                                                 <input type="hidden" name="device_id" value="{{ device.id }}">
-                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required>
+                                                <input type="text" name="new_device_name" value="{{ device.name }}" class="form-control form-control-sm d-inline-block w-auto me-2" required style="width: 120px;">
                                                 <button type="submit" class="btn btn-warning btn-sm">
                                                     <i class="bi bi-pencil me-1"></i>
                                                     {% trans "Edit" %}

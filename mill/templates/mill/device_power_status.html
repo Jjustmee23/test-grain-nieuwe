@@ -344,6 +344,147 @@
             </div>
         </div>
 
+        <!-- Counter Changes Section -->
+        <div class="events-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="bi bi-graph-up me-2"></i>Counter Changes ({{ counter_data.time_range }})</h4>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" onchange="window.location.href='?hours=' + this.value">
+                        <option value="1" {% if selected_hours == 1 %}selected{% endif %}>Last 1 hour</option>
+                        <option value="6" {% if selected_hours == 6 %}selected{% endif %}>Last 6 hours</option>
+                        <option value="12" {% if selected_hours == 12 %}selected{% endif %}>Last 12 hours</option>
+                        <option value="24" {% if selected_hours == 24 %}selected{% endif %}>Last 24 hours</option>
+                        <option value="48" {% if selected_hours == 48 %}selected{% endif %}>Last 48 hours</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="info-item text-center">
+                        <div class="info-label">Total Bags Produced</div>
+                        <div class="info-value text-success">{{ counter_data.total_bags_produced }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-item text-center">
+                        <div class="info-label">Bags Without Power</div>
+                        <div class="info-value text-danger">{{ counter_data.bags_without_power }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-item text-center">
+                        <div class="info-label">Production Events</div>
+                        <div class="info-value text-primary">{{ counter_data.counter_changes|length }}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-item text-center">
+                        <div class="info-label">Critical Events</div>
+                        <div class="info-value text-warning">{{ counter_data.production_without_power|length }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if counter_data.counter_changes %}
+                {% for change in counter_data.counter_changes %}
+                    <div class="event-item">
+                        <div class="event-header">
+                            <h5 class="event-title">
+                                <i class="bi bi-clock me-2"></i>
+                                Production Update - {{ change.timestamp|date:"M d, Y H:i:s" }}
+                            </h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="event-severity {% if change.ain1_value and change.ain1_value <= 0 %}critical{% else %}medium{% endif %}">
+                                    {% if change.ain1_value and change.ain1_value <= 0 %}
+                                        <i class="bi bi-exclamation-triangle me-1"></i>NO POWER
+                                    {% else %}
+                                        <i class="bi bi-check-circle me-1"></i>POWER OK
+                                    {% endif %}
+                                </span>
+                                <span class="event-time">{{ change.timestamp|date:"H:i:s" }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            {% for counter_name, counter_data in change.changes.items %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="card {% if not counter_data.has_power %}border-danger{% endif %}">
+                                        <div class="card-body p-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <strong>{{ counter_name|title }}</strong>
+                                                <span class="badge {% if counter_data.has_power %}bg-success{% else %}bg-danger{% endif %}">
+                                                    +{{ counter_data.change }}
+                                                </span>
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ counter_data.previous }} → {{ counter_data.current }}
+                                                {% if not counter_data.has_power %}
+                                                    <span class="text-danger">(NO POWER!)</span>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <strong>Power Value:</strong> {{ change.ain1_value|default:"N/A" }} V
+                            </small>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-graph-down"></i>
+                    <h5>No Counter Changes</h5>
+                    <p>No production activity has been recorded in the selected time range.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Critical Production Without Power -->
+        {% if counter_data.production_without_power %}
+        <div class="events-section">
+            <h4><i class="bi bi-exclamation-triangle text-danger me-2"></i>Critical: Production Without Power</h4>
+            
+            {% for production in counter_data.production_without_power %}
+                <div class="event-item border-danger">
+                    <div class="event-header">
+                        <h5 class="event-title text-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            CRITICAL: {{ production.counter|title }} Production Without Power
+                        </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="event-severity critical">
+                                <i class="bi bi-exclamation-triangle me-1"></i>CRITICAL
+                            </span>
+                            <span class="event-time">{{ production.timestamp|date:"M d, Y H:i:s" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-danger">
+                        <strong>WARNING:</strong> {{ production.change }} bags were produced while the device had NO POWER!
+                        <br>
+                        <strong>Power Value:</strong> {{ production.ain1_value }} V (should be > 0)
+                        <br>
+                        <strong>Counter:</strong> {{ production.counter|title }}
+                        <br>
+                        <strong>Time:</strong> {{ production.timestamp|date:"F d, Y H:i:s" }}
+                    </div>
+                    
+                    <p class="text-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This indicates a serious system issue that requires immediate investigation.
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Recent Power Events -->
         <div class="events-section">
             <h4><i class="bi bi-lightning me-2"></i>Recent Power Events</h4>

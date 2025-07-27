@@ -36,6 +36,14 @@ class Factory(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, help_text="Latitude coordinate")
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True, help_text="Longitude coordinate")
     
+    # Factory responsible users
+    responsible_users = models.ManyToManyField(
+        User, 
+        blank=True, 
+        related_name='responsible_factories',
+        help_text="Users responsible for this factory (will receive notifications)"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -45,6 +53,7 @@ class Factory(models.Model):
 class Device(models.Model):
     id = models.CharField(max_length=30,primary_key=True,unique=True)
     name = models.CharField(max_length=255)
+    serial_number = models.CharField(max_length=100, blank=True, null=True, help_text="Device serial number")
     selected_counter = models.CharField(max_length=50, default='counter_1')
     status = models.BooleanField(default=False)
     factory = models.ForeignKey(Factory, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices')
@@ -83,7 +92,6 @@ class TransactionData(models.Model):
         ]
     def __str__(self):
         return f"Production Data for {self.device.name} at {self.created_at}"
-from django.db import models
 
 class RawData(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='raw_data')
@@ -107,7 +115,7 @@ class RawData(models.Model):
     ain7_value = models.FloatField(null=True, blank=True)
     ain8_value = models.FloatField(null=True, blank=True)
     start_flag = models.IntegerField(null=True, blank=True)
-    type = models.IntegerField(null=True, blank=True)
+    data_type = models.IntegerField(null=True, blank=True, help_text="Data type identifier")
     length = models.IntegerField(null=True, blank=True)
     version = models.IntegerField(null=True, blank=True)
     end_flag = models.IntegerField(null=True, blank=True)
@@ -609,27 +617,103 @@ class NotificationLog(models.Model):
             models.Index(fields=['notification', 'delivery_method', 'status']),
         ]
 
+class DoorStatus(models.Model):
+    """Track current door status for each device"""
+    device = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='door_status')
+    
+    # Current door state
+    is_open = models.BooleanField(default=False)
+    last_din_data = models.CharField(max_length=255, blank=True, null=True, help_text="Last din array data")
+    last_check = models.DateTimeField(auto_now=True)
+    
+    # Door configuration
+    door_input_index = models.IntegerField(default=3, help_text="Index in din array for door status (0-3)")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Door Status'
+        verbose_name_plural = 'Door Statuses'
+        indexes = [
+            models.Index(fields=['device', 'is_open']),
+            models.Index(fields=['last_check']),
+        ]
+    
+    def __str__(self):
+        return f"Door Status for {self.device.name}: {'Open' if self.is_open else 'Closed'}"
+    
+    def update_from_din(self, din_data):
+        """Update door status from din array data"""
+        if not din_data:
+            return False
+            
+        try:
+            # Parse din data (format: "[0, 0, 0, 1]" or similar)
+            din_array = eval(din_data) if isinstance(din_data, str) else din_data
+            
+            if isinstance(din_array, list) and len(din_array) > self.door_input_index:
+                door_value = din_array[self.door_input_index]
+                new_status = door_value == 1
+                
+                # Only update if status changed
+                if self.is_open != new_status:
+                    self.is_open = new_status
+                    self.last_din_data = din_data
+                    self.save()
+                    
+                    # Create door log if door opened
+                    if new_status:
+                        DoorOpenLogs.objects.create(
+                            device=self.device,
+                            din_data=din_data,
+                            door_input_index=self.door_input_index
+                        )
+                    
+                    return True
+                else:
+                    # Update last din data even if status didn't change
+                    self.last_din_data = din_data
+                    self.save()
+                    
+            return False
+        except (ValueError, SyntaxError, TypeError):
+            # Handle parsing errors gracefully
+            return False
+    
+    def get_status_display(self):
+        return "Open" if self.is_open else "Closed"
+    
+    def get_status_color(self):
+        return "danger" if self.is_open else "success"
+
 class DoorOpenLogs(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='door_open_logs')
     timestamp = models.DateTimeField(auto_now_add=True)
-    counter_id = models.IntegerField()  # Store the counter_4 value
+    din_data = models.CharField(max_length=255, blank=True, null=True, help_text="din array data when door opened")
+    door_input_index = models.IntegerField(default=3, help_text="Index in din array for door status")
     is_resolved = models.BooleanField(default=False)
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='door_logs_resolved'  # Changed this to avoid conflict
+        related_name='door_logs_resolved'
     )
     resolved_at = models.DateTimeField(null=True, blank=True)
-
+    
     class Meta:
         ordering = ['-timestamp']
         verbose_name = 'Door Open Log'
         verbose_name_plural = 'Door Open Logs'
-
+        indexes = [
+            models.Index(fields=['device', 'timestamp']),
+            models.Index(fields=['is_resolved']),
+        ]
+    
     def __str__(self):
-        return f"Door Open Log - Device: {self.device.name} at {self.timestamp}"
+        return f"Door opened at {self.timestamp} for {self.device.name}"
         
 class ContactTicket(models.Model):
     TICKET_TYPES = [
@@ -790,26 +874,34 @@ class TicketResponse(models.Model):
 
        
 @receiver(pre_save, sender=RawData)
-def handle_counter_4_change(sender, instance, **kwargs):
+def handle_din_change(sender, instance, **kwargs):
+    """Handle din data changes for door status detection"""
     try:
         # Get the previous state of this RawData instance
         old_instance = RawData.objects.get(id=instance.id)
         
-        # Check if counter_4 has changed from null to a value
-        if old_instance.counter_4 is None and instance.counter_4 is not None:
-            # Create a new DoorOpenLogs entry
-            DoorOpenLogs.objects.create(
+        # Check if din has changed
+        if old_instance.din != instance.din and instance.din:
+            # Get or create door status for this device
+            door_status, created = DoorStatus.objects.get_or_create(
                 device=instance.device,
-                counter_id=instance.counter_4
+                defaults={'door_input_index': 3}  # Default to last element
             )
+            
+            # Update door status from new din data
+            door_status.update_from_din(instance.din)
+            
     except RawData.DoesNotExist:
         # This is a new instance
-        if instance.counter_4 is not None:
-            # Create a new DoorOpenLogs entry for new instances with counter_4
-            DoorOpenLogs.objects.create(
+        if instance.din:
+            # Get or create door status for this device
+            door_status, created = DoorStatus.objects.get_or_create(
                 device=instance.device,
-                counter_id=instance.counter_4
+                defaults={'door_input_index': 3}  # Default to last element
             )
+            
+            # Update door status from din data
+            door_status.update_from_din(instance.din)
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -1628,8 +1720,8 @@ class DevicePowerStatus(models.Model):
         self.ain1_value = ain1_value
         self.last_power_check = timezone.now()
         
-        # Determine if device has power
-        self.has_power = ain1_value > self.power_threshold
+        # Determine if device has power (any positive value)
+        self.has_power = ain1_value > 0
         
         # Handle power loss
         if not self.has_power and previous_has_power:
@@ -1754,3 +1846,340 @@ class PowerManagementPermission(models.Model):
             return permission.can_view_power_status
         except cls.DoesNotExist:
             return False
+
+class PowerData(models.Model):
+    """Track power data for each device with historical information"""
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='power_data')
+    
+    # Power values from MQTT
+    ain1_value = models.FloatField(null=True, blank=True, help_text="Power value from AIN1")
+    ain2_value = models.FloatField(null=True, blank=True, help_text="Power value from AIN2")
+    ain3_value = models.FloatField(null=True, blank=True, help_text="Power value from AIN3")
+    ain4_value = models.FloatField(null=True, blank=True, help_text="Power value from AIN4")
+    
+    # Power status
+    has_power = models.BooleanField(default=True, help_text="Whether device has power")
+    power_threshold = models.FloatField(default=0.0, help_text="Power threshold for detection")
+    
+    # Power events tracking
+    power_loss_count_today = models.IntegerField(default=0, help_text="Number of power losses today")
+    power_restore_count_today = models.IntegerField(default=0, help_text="Number of power restores today")
+    total_power_loss_time_today = models.DurationField(null=True, blank=True, help_text="Total time without power today")
+    
+    # Weekly tracking
+    power_loss_count_week = models.IntegerField(default=0, help_text="Number of power losses this week")
+    power_restore_count_week = models.IntegerField(default=0, help_text="Number of power restores this week")
+    total_power_loss_time_week = models.DurationField(null=True, blank=True, help_text="Total time without power this week")
+    
+    # Monthly tracking
+    power_loss_count_month = models.IntegerField(default=0, help_text="Number of power losses this month")
+    power_restore_count_month = models.IntegerField(default=0, help_text="Number of power restores this month")
+    total_power_loss_time_month = models.DurationField(null=True, blank=True, help_text="Total time without power this month")
+    
+    # Yearly tracking
+    power_loss_count_year = models.IntegerField(default=0, help_text="Number of power losses this year")
+    power_restore_count_year = models.IntegerField(default=0, help_text="Number of power restores this year")
+    total_power_loss_time_year = models.DurationField(null=True, blank=True, help_text="Total time without power this year")
+    
+    # Power consumption tracking
+    avg_power_consumption_today = models.FloatField(default=0.0, help_text="Average power consumption today")
+    peak_power_consumption_today = models.FloatField(default=0.0, help_text="Peak power consumption today")
+    total_power_consumption_today = models.FloatField(default=0.0, help_text="Total power consumption today")
+    
+    # Timestamps
+    last_power_loss = models.DateTimeField(null=True, blank=True, help_text="Last time power was lost")
+    last_power_restore = models.DateTimeField(null=True, blank=True, help_text="Last time power was restored")
+    last_mqtt_update = models.DateTimeField(auto_now=True, help_text="Last MQTT data update")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Power Data'
+        verbose_name_plural = 'Power Data'
+        indexes = [
+            models.Index(fields=['device', 'created_at']),
+            models.Index(fields=['device', 'has_power']),
+            models.Index(fields=['last_mqtt_update']),
+        ]
+        ordering = ['-last_mqtt_update']
+    
+    def __str__(self):
+        return f"Power Data for {self.device.name} - {self.last_mqtt_update}"
+    
+    def update_from_mqtt(self, mqtt_data):
+        """Update power data from MQTT message"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Update AIN values
+        if 'ain1' in mqtt_data:
+            self.ain1_value = float(mqtt_data['ain1'])
+        if 'ain2' in mqtt_data:
+            self.ain2_value = float(mqtt_data['ain2'])
+        if 'ain3' in mqtt_data:
+            self.ain3_value = float(mqtt_data['ain3'])
+        if 'ain4' in mqtt_data:
+            self.ain4_value = float(mqtt_data['ain4'])
+        
+        # Determine power status
+        old_has_power = self.has_power
+        self.has_power = self.ain1_value > self.power_threshold if self.ain1_value is not None else True
+        
+        # Track power events
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = today_start - timedelta(days=today_start.weekday())
+        month_start = today_start.replace(day=1)
+        year_start = today_start.replace(month=1, day=1)
+        
+        # Power loss event
+        if not self.has_power and old_has_power:
+            self.last_power_loss = now
+            self.power_loss_count_today += 1
+            self.power_loss_count_week += 1
+            self.power_loss_count_month += 1
+            self.power_loss_count_year += 1
+        
+        # Power restore event
+        elif self.has_power and not old_has_power:
+            self.last_power_restore = now
+            self.power_restore_count_today += 1
+            self.power_restore_count_week += 1
+            self.power_restore_count_month += 1
+            self.power_restore_count_year += 1
+            
+            # Calculate power loss duration if we have both loss and restore times
+            if self.last_power_loss:
+                loss_duration = now - self.last_power_loss
+                if self.total_power_loss_time_today is None:
+                    self.total_power_loss_time_today = timedelta()
+                if self.total_power_loss_time_week is None:
+                    self.total_power_loss_time_week = timedelta()
+                if self.total_power_loss_time_month is None:
+                    self.total_power_loss_time_month = timedelta()
+                if self.total_power_loss_time_year is None:
+                    self.total_power_loss_time_year = timedelta()
+                
+                self.total_power_loss_time_today += loss_duration
+                self.total_power_loss_time_week += loss_duration
+                self.total_power_loss_time_month += loss_duration
+                self.total_power_loss_time_year += loss_duration
+        
+        # Update power consumption metrics
+        if self.ain1_value is not None:
+            # Update peak power
+            if self.ain1_value > self.peak_power_consumption_today:
+                self.peak_power_consumption_today = self.ain1_value
+            
+            # Update total consumption (assuming 5-minute intervals)
+            self.total_power_consumption_today += self.ain1_value * (5/60)  # 5 minutes in hours
+        
+        # Reset daily counters at midnight
+        if self.last_mqtt_update and self.last_mqtt_update.date() < now.date():
+            self.power_loss_count_today = 0
+            self.power_restore_count_today = 0
+            self.total_power_loss_time_today = timedelta()
+            self.avg_power_consumption_today = 0.0
+            self.peak_power_consumption_today = 0.0
+            self.total_power_consumption_today = 0.0
+        
+        # Reset weekly counters
+        if self.last_mqtt_update and self.last_mqtt_update.date() < week_start.date():
+            self.power_loss_count_week = 0
+            self.power_restore_count_week = 0
+            self.total_power_loss_time_week = timedelta()
+        
+        # Reset monthly counters
+        if self.last_mqtt_update and self.last_mqtt_update.date() < month_start.date():
+            self.power_loss_count_month = 0
+            self.power_restore_count_month = 0
+            self.total_power_loss_time_month = timedelta()
+        
+        # Reset yearly counters
+        if self.last_mqtt_update and self.last_mqtt_update.date() < year_start.date():
+            self.power_loss_count_year = 0
+            self.power_restore_count_year = 0
+            self.total_power_loss_time_year = timedelta()
+        
+        self.save()
+    
+    def update_from_counter_db(self):
+        """Update power data from mqtt_data table in counter database"""
+        from django.utils import timezone
+        from datetime import timedelta
+        import psycopg2
+        from django.conf import settings
+        
+        # Get counter database settings from CounterSyncService
+        counter_db_settings = {
+            'dbname': 'counter',
+            'user': 'root',
+            'password': 'testpassword',
+            'host': '45.154.238.114',
+            'port': '5432',
+        }
+        
+        try:
+            conn = psycopg2.connect(**counter_db_settings)
+            cursor = conn.cursor()
+            
+            # Get latest mqtt_data for this device
+            cursor.execute("""
+                SELECT ain1_value, ain2_value, ain3_value, ain4_value, timestamp
+                FROM mqtt_data 
+                WHERE counter_id = %s 
+                ORDER BY timestamp DESC 
+                LIMIT 1
+            """, (self.device.id,))
+            
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if row:
+                ain1_value, ain2_value, ain3_value, ain4_value, timestamp = row
+                
+                # Update AIN values
+                self.ain1_value = float(ain1_value) if ain1_value is not None else None
+                self.ain2_value = float(ain2_value) if ain2_value is not None else None
+                self.ain3_value = float(ain3_value) if ain3_value is not None else None
+                self.ain4_value = float(ain4_value) if ain4_value is not None else None
+                
+                # Determine power status
+                old_has_power = self.has_power
+                self.has_power = self.ain1_value > self.power_threshold if self.ain1_value is not None else True
+                
+                # Track power events and create PowerEvent if status changed
+                now = timezone.now()
+                today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                week_start = today_start - timedelta(days=today_start.weekday())
+                month_start = today_start.replace(day=1)
+                year_start = today_start.replace(month=1, day=1)
+                
+                # Power loss event
+                if not self.has_power and old_has_power:
+                    self.last_power_loss = now
+                    self.power_loss_count_today += 1
+                    self.power_loss_count_week += 1
+                    self.power_loss_count_month += 1
+                    self.power_loss_count_year += 1
+                    
+                    # Create PowerEvent for power loss
+                    PowerEvent.objects.create(
+                        device=self.device,
+                        event_type='power_loss',
+                        severity='high' if self.ain1_value == 0 else 'medium',
+                        ain1_value=self.ain1_value,
+                        previous_ain1_value=self.ain1_value,
+                        message=f"Power loss detected on {self.device.name}. AIN1 value: {self.ain1_value}"
+                    )
+                
+                # Power restore event
+                elif self.has_power and not old_has_power:
+                    self.last_power_restore = now
+                    self.power_restore_count_today += 1
+                    self.power_restore_count_week += 1
+                    self.power_restore_count_month += 1
+                    self.power_restore_count_year += 1
+                    
+                    # Calculate power loss duration if we have both loss and restore times
+                    if self.last_power_loss:
+                        loss_duration = now - self.last_power_loss
+                        if self.total_power_loss_time_today is None:
+                            self.total_power_loss_time_today = timedelta()
+                        if self.total_power_loss_time_week is None:
+                            self.total_power_loss_time_week = timedelta()
+                        if self.total_power_loss_time_month is None:
+                            self.total_power_loss_time_month = timedelta()
+                        if self.total_power_loss_time_year is None:
+                            self.total_power_loss_time_year = timedelta()
+                        
+                        self.total_power_loss_time_today += loss_duration
+                        self.total_power_loss_time_week += loss_duration
+                        self.total_power_loss_time_month += loss_duration
+                        self.total_power_loss_time_year += loss_duration
+                    
+                    # Create PowerEvent for power restore
+                    PowerEvent.objects.create(
+                        device=self.device,
+                        event_type='power_restored',
+                        severity='medium',
+                        ain1_value=self.ain1_value,
+                        previous_ain1_value=0.0,
+                        message=f"Power restored on {self.device.name}. AIN1 value: {self.ain1_value}"
+                    )
+                
+                # Update power consumption metrics
+                if self.ain1_value is not None:
+                    # Update peak power
+                    if self.ain1_value > self.peak_power_consumption_today:
+                        self.peak_power_consumption_today = self.ain1_value
+                    
+                    # Update total consumption (assuming 5-minute intervals)
+                    self.total_power_consumption_today += self.ain1_value * (5/60)  # 5 minutes in hours
+                
+                # Reset daily counters at midnight
+                if self.last_mqtt_update and self.last_mqtt_update.date() < now.date():
+                    self.power_loss_count_today = 0
+                    self.power_restore_count_today = 0
+                    self.total_power_loss_time_today = timedelta()
+                    self.avg_power_consumption_today = 0.0
+                    self.peak_power_consumption_today = 0.0
+                    self.total_power_consumption_today = 0.0
+                
+                # Reset weekly counters
+                if self.last_mqtt_update and self.last_mqtt_update.date() < week_start.date():
+                    self.power_loss_count_week = 0
+                    self.power_restore_count_week = 0
+                    self.total_power_loss_time_week = timedelta()
+                
+                # Reset monthly counters
+                if self.last_mqtt_update and self.last_mqtt_update.date() < month_start.date():
+                    self.power_loss_count_month = 0
+                    self.power_restore_count_month = 0
+                    self.total_power_loss_time_month = timedelta()
+                
+                # Reset yearly counters
+                if self.last_mqtt_update and self.last_mqtt_update.date() < year_start.date():
+                    self.power_loss_count_year = 0
+                    self.power_restore_count_year = 0
+                    self.total_power_loss_time_year = timedelta()
+                
+                self.save()
+                return True
+                
+        except Exception as e:
+            print(f"Error updating PowerData from counter database for device {self.device.name}: {e}")
+            return False
+    
+    def get_power_status_display(self):
+        """Get human-readable power status"""
+        if self.has_power:
+            return "Power ON"
+        else:
+            return "Power OFF"
+    
+    def get_power_status_color(self):
+        """Get Bootstrap color for power status"""
+        if self.has_power:
+            return "success"
+        else:
+            return "danger"
+    
+    def get_uptime_percentage_today(self):
+        """Calculate uptime percentage for today"""
+        if self.total_power_loss_time_today:
+            total_time = timezone.now() - timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            uptime = total_time - self.total_power_loss_time_today
+            return (uptime.total_seconds() / total_time.total_seconds()) * 100
+        return 100.0
+    
+    def get_uptime_percentage_week(self):
+        """Calculate uptime percentage for this week"""
+        if self.total_power_loss_time_week:
+            total_time = timezone.now() - (timezone.now() - timedelta(days=timezone.now().weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+            uptime = total_time - self.total_power_loss_time_week
+            return (uptime.total_seconds() / total_time.total_seconds()) * 100
+        return 100.0

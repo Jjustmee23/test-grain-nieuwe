@@ -20,40 +20,40 @@ msgstr ""
 #: mill/forms.py:105 mill/templates/mill/contact.html:162
 #: mill/templates/mill/contact.html:273
 msgid "Your Name"
-msgstr ""
+msgstr "Your Name"
 
 #: mill/forms.py:111 mill/templates/mill/contact.html:277
 msgid "Your Email"
-msgstr ""
+msgstr "Your Email"
 
 #: mill/forms.py:117
 msgid "Your Phone Number (Optional)"
-msgstr ""
+msgstr "Your Phone Number (Optional)"
 
 #: mill/forms.py:128 mill/templates/mill/contact.html:207
 #: mill/templates/mill/contact.html:281
 msgid "Subject"
-msgstr ""
+msgstr "Subject"
 
 #: mill/forms.py:134
 msgid "Your Message"
-msgstr ""
+msgstr "Your Message"
 
 #: mill/forms.py:157
 msgid "Optional - Enter your phone number for urgent matters"
-msgstr ""
+msgstr "Optional - Enter your phone number for urgent matters"
 
 #: mill/forms.py:158
 msgid "Select the urgency level of your ticket"
-msgstr ""
+msgstr "Select the urgency level of your ticket"
 
 #: mill/forms.py:161
 msgid "Type of Issue"
-msgstr ""
+msgstr "Type of Issue"
 
 #: mill/forms.py:162
 msgid "Urgency Level"
-msgstr ""
+msgstr "Urgency Level"
 
 #: mill/templates/mill/404.html:16 mill/templates/mill/404.html:17
 #: mill/templates/mill/admin_confirm_delete.html:18
@@ -65,7 +65,7 @@ msgstr ""
 #: mill/templates/mill/admin.html:13 mill/templates/mill/manage_admin.html:6
 #: mill/templates/mill/manage_admin.html:152
 msgid "Admin Dashboard"
-msgstr ""
+msgstr "Admin Dashboard"
 
 #: mill/templates/mill/admin-old.html:171 mill/templates/mill/admin.html:18
 #: mill/templates/mill/manage_admin.html:167
@@ -336,6 +336,38 @@ msgstr ""
 #: mill/templates/mill/manage_factory.html:116
 #: mill/templates/mill/manage_factory.html:173
 msgid "Commercial"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:225
+msgid "Filter by Power Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:228
+msgid "All Power Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:233
+msgid "Power ON"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:238
+msgid "Power OFF"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:243
+msgid "Filter by Door Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:246
+msgid "All Door Status"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:251
+msgid "Door Open"
+msgstr ""
+
+#: mill/templates/mill/dashboard.html:256
+msgid "Door Closed"
 msgstr ""
 
 #: mill/templates/mill/dashboard.html:240

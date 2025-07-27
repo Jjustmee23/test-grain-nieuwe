@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from mill.utils import calculate_start_time, calculate_stop_time, check_factory_status, allowed_cities, allowed_factories
-from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs, Batch
+from mill.models import City, Factory, Device, ProductionData, DoorOpenLogs, DoorStatus, Batch, DevicePowerStatus
 from django.db.models import Sum
 from datetime import datetime
 from mill.utils import allowed_cities
@@ -22,6 +22,9 @@ def dashboard(request):
     # Read cities & date from query
     selected_cities_param = request.GET.get('cities')
     selected_date_str = request.GET.get('date', current_datetime.strftime('%Y-%m-%d'))
+    selected_sector = request.GET.get('sector', '')
+    selected_power_status = request.GET.get('power_status', '')
+    selected_door_status = request.GET.get('door_status', '')
 
     # Handle multiple city selection
     selected_city_ids = []
@@ -56,6 +59,10 @@ def dashboard(request):
 
     # Filter factories for selected cities
     factories =  allowed_factories(request).filter(city_id__in=selected_city_ids)
+    
+    # Apply sector filter
+    if selected_sector:
+        factories = factories.filter(group=selected_sector)
 
     # Query Devices with select_related to reduce queries
     devices = Device.objects.filter(factory__in=factories).select_related('factory')
@@ -104,21 +111,51 @@ def dashboard(request):
             city_data[key] += value
 
     for factory in factories:
-        # Get the latest unresolved door log for any device in this factory
-        latest_door_log = DoorOpenLogs.objects.filter(
-            device__factory=factory,
-            is_resolved=False
-        ).first()
+        # Get door status for this factory
+        factory_devices = Device.objects.filter(factory=factory)
+        door_statuses = DoorStatus.objects.filter(device__in=factory_devices)
+        
+        # Check if any door is open
+        any_door_open = door_statuses.filter(is_open=True).exists()
+        
+        # Get real power status from DevicePowerStatus
+        power_statuses = DevicePowerStatus.objects.filter(device__in=factory_devices)
+        
+        # Determine overall factory power status
+        # If any device has power, factory has power
+        factory_has_power = False
+        if power_statuses.exists():
+            factory_has_power = power_statuses.filter(has_power=True).exists()
+        else:
+            # Fallback to factory.status if no power status data available
+            factory_has_power = factory.status
         
         factory.status_info = {
-            'power_status': factory.status,  # Use existing status for power
-            'door_status': latest_door_log is not None  # True if there's an unresolved door log
+            'power_status': factory_has_power,
+            'door_status': any_door_open  # True if any door is open
         }
+    
+    # Apply power status filter
+    if selected_power_status:
+        if selected_power_status == 'power_on':
+            factories = [f for f in factories if f.status_info['power_status']]
+        elif selected_power_status == 'power_off':
+            factories = [f for f in factories if not f.status_info['power_status']]
+    
+    # Apply door status filter
+    if selected_door_status:
+        if selected_door_status == 'door_open':
+            factories = [f for f in factories if f.status_info['door_status']]
+        elif selected_door_status == 'door_closed':
+            factories = [f for f in factories if not f.status_info['door_status']]
 
     context = {
         'cities': cities,
         'factories': factories,
         'selected_city_ids': selected_city_ids,
+        'selected_sector': selected_sector,
+        'selected_power_status': selected_power_status,
+        'selected_door_status': selected_door_status,
         'current_date': selected_date,
         'city_data': city_data,
         'is_public': request.user.groups.filter(name='Public').exists(),

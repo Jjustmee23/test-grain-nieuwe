@@ -1,0 +1,107 @@
+{% extends 'mill/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Language Test Page" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4">{% trans "Language Test Page" %}</h1>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>{% trans "Current Language Information" %}</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>{% trans "Current Language" %}:</strong> {{ current_language }}</p>
+                    <p><strong>{% trans "Language Direction" %}:</strong> {{ language_direction }}</p>
+                    <p><strong>{% trans "Is RTL" %}:</strong> {{ is_rtl|yesno:"Yes,No" }}</p>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3>{% trans "Available Languages" %}</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for lang_code, lang_name in available_languages %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ lang_name }} ({{ lang_code }})
+                            {% if current_language == lang_code %}
+                                <span class="badge bg-primary">{% trans "Current" %}</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3>{% trans "Test Translations" %}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>{% trans "Form Elements" %}</h4>
+                            <form>
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">{% trans "Your Name" %}</label>
+                                    <input type="text" class="form-control" id="name" placeholder="{% trans 'Enter your name' %}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">{% trans "Your Email" %}</label>
+                                    <input type="email" class="form-control" id="email" placeholder="{% trans 'Enter your email' %}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="message" class="form-label">{% trans "Your Message" %}</label>
+                                    <textarea class="form-control" id="message" rows="3" placeholder="{% trans 'Enter your message' %}"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">{% trans "Submit" %}</button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>{% trans "Navigation Elements" %}</h4>
+                            <nav class="nav flex-column">
+                                <a class="nav-link active" href="#">{% trans "Dashboard" %}</a>
+                                <a class="nav-link" href="#">{% trans "Manage Users" %}</a>
+                                <a class="nav-link" href="#">{% trans "Manage Factories" %}</a>
+                                <a class="nav-link" href="#">{% trans "Settings" %}</a>
+                            </nav>
+                            
+                            <h4 class="mt-4">{% trans "Buttons" %}</h4>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary">{% trans "Save" %}</button>
+                                <button type="button" class="btn btn-outline-secondary">{% trans "Cancel" %}</button>
+                                <button type="button" class="btn btn-outline-danger">{% trans "Delete" %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3>{% trans "RTL Test Content" %}</h3>
+                </div>
+                <div class="card-body">
+                    {% if is_rtl %}
+                        <p class="text-success">{% trans "This content is displayed in RTL mode (Right-to-Left)" %}</p>
+                        <p>{% trans "Arabic text flows from right to left, and the interface should be properly aligned for Arabic users." %}</p>
+                    {% else %}
+                        <p class="text-info">{% trans "This content is displayed in LTR mode (Left-to-Right)" %}</p>
+                        <p>{% trans "English text flows from left to right, and the interface is aligned for English users." %}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{% url 'index' %}" class="btn btn-secondary">{% trans "Back to Home" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

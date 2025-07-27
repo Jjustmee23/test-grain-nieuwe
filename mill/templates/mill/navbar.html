@@ -10,26 +10,26 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                        <a class="nav-link" href="{% url 'logout' %}">{% trans "Logout" %}</a>
                     </li>
                     {% if not user.groups.all.0.name == 'Public' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin' %}">Admin</a>
+                        <a class="nav-link" href="{% url 'admin' %}">{% trans "Admin" %}</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'manage_profile' %}">Manage Profile</a>
+                        <a class="nav-link" href="{% url 'dashboard' %}">{% trans "Dashboard" %}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'notifications' %}">Notifications</a>
+                        <a class="nav-link" href="{% url 'manage_profile' %}">{% trans "Manage Profile" %}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'notifications' %}">{% trans "Notifications" %}</a>
                     </li>
                     {% if user.is_superuser or user.power_management_permission.can_access_power_management %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'power_dashboard' %}">
-                            <i class="bi bi-lightning-charge me-1"></i>Power Management
+                            <i class="bi bi-lightning-charge me-1"></i>{% trans "Power Management" %}
                         </a>
                     </li>
                     {% endif %}
@@ -37,16 +37,16 @@
                     {% if user.is_superuser and user.userprofile.support_tickets_enabled %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'admin_tickets' %}">
-                            <i class="fas fa-headset me-1"></i>Support Tickets
+                            <i class="fas fa-headset me-1"></i>{% trans "Support Tickets" %}
                         </a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'export_data' %}">Export Data</a>
+                        <a class="nav-link" href="{% url 'export_data' %}">{% trans "Export Data" %}</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'factory_map' %}">
-                            <i class="fas fa-map-marked-alt me-1"></i>Factory Map
+                            <i class="fas fa-map-marked-alt me-1"></i>{% trans "Factory Map" %}
                         </a>
                     </li>
                 </ul>

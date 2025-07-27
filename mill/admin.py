@@ -15,7 +15,7 @@ from .models import (
     UserProfile, Batch, FlourBagCount, Alert, BatchNotification, TVDashboardSettings,
     UserNotificationPreference, EmailTemplate, Microsoft365Settings, NotificationLog,
     EmailHistory, MassMessage, PowerEvent, DevicePowerStatus, PowerNotificationSettings,
-    PowerManagementPermission
+    PowerManagementPermission, DoorStatus, DoorOpenLogs, PowerData
 )
 import requests
 
@@ -83,11 +83,12 @@ class CityAdmin(admin.ModelAdmin):
 # admin.site.register(Factory)
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'status', 'error','group', 'created_at')
+    list_display = ('name', 'city', 'status', 'error','group', 'responsible_users_count', 'created_at')
     list_filter = ('status', 'error', 'city', 'group')
     search_fields = ('name', 'address')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
+    filter_horizontal = ('responsible_users',)
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'city', 'status', 'error', 'group')
@@ -96,8 +97,16 @@ class FactoryAdmin(admin.ModelAdmin):
             'fields': ('address', 'latitude', 'longitude'),
             'description': 'Add coordinates for map functionality. You can use Google Maps to find coordinates.'
         }),
+        ('Responsible Users', {
+            'fields': ('responsible_users',),
+            'description': 'Users responsible for this factory. They will receive notifications about power issues and other alerts.'
+        }),
     )
     readonly_fields = ('created_at',)
+    
+    def responsible_users_count(self, obj):
+        return obj.responsible_users.count()
+    responsible_users_count.short_description = 'Responsible Users'
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'support_tickets_enabled')
@@ -734,6 +743,70 @@ class TVDashboardSettingsAdmin(admin.ModelAdmin):
         if not change:  # Only on creation
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+@admin.register(DoorStatus)
+class DoorStatusAdmin(admin.ModelAdmin):
+    list_display = ('device', 'is_open', 'status_display', 'last_check', 'door_input_index')
+    list_filter = ('is_open', 'last_check', 'device__factory')
+    search_fields = ('device__name', 'device__factory__name')
+    ordering = ('-last_check',)
+    readonly_fields = ('created_at', 'updated_at', 'last_check')
+    
+    fieldsets = (
+        ('Device Information', {
+            'fields': ('device', 'door_input_index')
+        }),
+        ('Door Status', {
+            'fields': ('is_open', 'last_din_data')
+        }),
+        ('Timestamps', {
+            'fields': ('last_check', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def status_display(self, obj):
+        return obj.get_status_display()
+    status_display.short_description = 'Status'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(DoorOpenLogs)
+class DoorOpenLogsAdmin(admin.ModelAdmin):
+    list_display = ('device', 'timestamp', 'din_data', 'door_input_index', 'is_resolved', 'resolved_by', 'resolved_at')
+    list_filter = ('is_resolved', 'timestamp', 'device__factory', 'door_input_index')
+    search_fields = ('device__name', 'device__factory__name', 'din_data')
+    date_hierarchy = 'timestamp'
+    ordering = ('-timestamp',)
+    readonly_fields = ('timestamp',)
+    
+    fieldsets = (
+        ('Device Information', {
+            'fields': ('device', 'door_input_index')
+        }),
+        ('Door Event', {
+            'fields': ('din_data', 'timestamp')
+        }),
+        ('Resolution', {
+            'fields': ('is_resolved', 'resolved_by', 'resolved_at')
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return True
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
     
     def get_queryset(self, request):
         """Show only active config or all if user is superuser"""
@@ -904,3 +977,51 @@ class PowerManagementPermissionAdmin(admin.ModelAdmin):
         if not change:  # Only on creation
             obj.granted_by = request.user
         super().save_model(request, obj, form, change)
+
+@admin.register(PowerData)
+class PowerDataAdmin(admin.ModelAdmin):
+    list_display = ('device', 'has_power', 'ain1_value', 'power_loss_count_today', 'power_restore_count_today', 'last_mqtt_update')
+    list_filter = ('has_power', 'last_mqtt_update', 'device__factory')
+    search_fields = ('device__name', 'device__factory__name')
+    ordering = ('-last_mqtt_update',)
+    readonly_fields = ('created_at', 'updated_at', 'last_mqtt_update')
+    
+    fieldsets = (
+        ('Device Information', {
+            'fields': ('device', 'has_power', 'power_threshold')
+        }),
+        ('Power Values', {
+            'fields': ('ain1_value', 'ain2_value', 'ain3_value', 'ain4_value')
+        }),
+        ('Today Statistics', {
+            'fields': ('power_loss_count_today', 'power_restore_count_today', 'total_power_loss_time_today', 
+                      'avg_power_consumption_today', 'peak_power_consumption_today', 'total_power_consumption_today')
+        }),
+        ('Weekly Statistics', {
+            'fields': ('power_loss_count_week', 'power_restore_count_week', 'total_power_loss_time_week')
+        }),
+        ('Monthly Statistics', {
+            'fields': ('power_loss_count_month', 'power_restore_count_month', 'total_power_loss_time_month')
+        }),
+        ('Yearly Statistics', {
+            'fields': ('power_loss_count_year', 'power_restore_count_year', 'total_power_loss_time_year')
+        }),
+        ('Power Events', {
+            'fields': ('last_power_loss', 'last_power_restore')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'last_mqtt_update'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+# PowerData is already registered with @admin.register decorator

@@ -8,7 +8,7 @@ ENV DJANGO_DISABLE_MIGRATIONS False
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc python3-dev \
+    libpq-dev gcc python3-dev gettext \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,6 +26,9 @@ COPY . /app
 
 # Create staticfiles directory
 RUN mkdir -p /app/staticfiles
+
+    # Compile translations
+RUN python manage.py compilemessages
 
 # Collect static files
 RUN python manage.py collectstatic --noinput

@@ -1,11 +1,11 @@
 {% extends 'mill/base.html' %}
 {% load static %}
 {% load i18n %}
-{% block title %}Feedback{% endblock %}
+{% block title %}{% trans "Feedback" %}{% endblock %}
 {% block content %}
 
 <div class="container mt-4">
-    <h2>Submit Feedback</h2>
+    <h2>{% trans "Submit Feedback" %}</h2>
     <div class="card">
         <div class="card-body">
             <form method="post">
