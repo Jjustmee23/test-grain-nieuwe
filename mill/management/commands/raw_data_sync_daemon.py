@@ -67,6 +67,19 @@ class Command(BaseCommand):
                     # Run the sync command
                     call_command('sync_raw_data', verbosity=1)
                     
+                    # Also update production data every 4 syncs (every 20 minutes)
+                    if sync_count % 4 == 0:
+                        self.stdout.write('Updating production data...')
+                        try:
+                            # Use the original production logic instead of populate_production_data
+                            from mill.services.production_calculation_service import ProductionCalculationService
+                            service = ProductionCalculationService()
+                            result = service.update_all_production_data()
+                            self.stdout.write(self.style.SUCCESS(f'✓ Production data updated: {result}'))
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f'Error updating production data: {str(e)}'))
+                            logger.error(f'Production data update error: {str(e)}', exc_info=True)
+                    
                     # Calculate next sync time
                     next_sync = current_time + timezone.timedelta(seconds=interval)
                     self.stdout.write(f'Next sync at: {next_sync.strftime("%Y-%m-%d %H:%M:%S")}')

@@ -79,9 +79,9 @@ class Command(BaseCommand):
                         new_records_count = counter_cursor.fetchone()[0]
                         self.stdout.write(f"✓ Force sync all: {new_records_count} records in mqtt_data")
                     else:
-                        counter_cursor.execute("SELECT COUNT(*) FROM mqtt_data WHERE id > %s;", [latest_raw_id])
+                        counter_cursor.execute("SELECT COUNT(*) FROM mqtt_data WHERE id > %s AND DATE(timestamp) = CURRENT_DATE;", [latest_raw_id])
                         new_records_count = counter_cursor.fetchone()[0]
-                        self.stdout.write(f"✓ New records in mqtt_data: {new_records_count}")
+                        self.stdout.write(f"✓ New records in mqtt_data from today: {new_records_count}")
 
                     if new_records_count == 0:
                         self.stdout.write(
@@ -116,10 +116,11 @@ class Command(BaseCommand):
                             
                             self.stdout.write(f"✓ Copied all {new_records_count} records from counter to testdb")
                         else:
-                            # Insert only new records
+                            # Insert only new records from today
                             counter_cursor.execute("""
                                 SELECT * FROM mqtt_data 
                                 WHERE id > %s
+                                AND DATE(timestamp) = CURRENT_DATE
                                 ORDER BY id;
                             """, [latest_raw_id])
                             new_records = counter_cursor.fetchall()
@@ -139,7 +140,7 @@ class Command(BaseCommand):
                                 insert_sql = f"INSERT INTO raw_data ({column_names}) VALUES ({placeholders})"
                                 testdb_cursor.executemany(insert_sql, new_records)
                                 
-                                self.stdout.write(f"✓ Synced {new_records_count} new records to testdb")
+                                self.stdout.write(f"✓ Synced {len(new_records)} new records from today to testdb")
 
                         # 6. Verify the sync
                         testdb_cursor.execute("SELECT COUNT(*) FROM raw_data;")
