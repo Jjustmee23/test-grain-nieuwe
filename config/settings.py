@@ -120,7 +120,7 @@ DATABASES = {
             'NAME': 'counter',
             'USER': 'root',
             'PASSWORD': 'testpassword',
-            'HOST': os.getenv('DB_HOST', '45.154.238.114'),
+            'HOST': 'counter-postgres',
             'PORT': '5432',
         },
 }
