@@ -31,6 +31,7 @@ ALLOWED_HOSTS = [
     'www.grain05.midaweb.be',
     '127.0.0.1',  # If needed for local development
     'localhost',  # If needed for local development
+    '45.154.238.114',  # Server IP
     'tasneehobob.com',
     'www.tasneehobob.com',
     'mathanti.com',
@@ -40,6 +41,8 @@ ALLOWED_HOSTS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://grain05.midaweb.be',
     'https://www.grain05.midaweb.be',
+    'http://45.154.238.114:8000',  # Server IP with port
+    'https://45.154.238.114:8000',  # Server IP with port (HTTPS)
     'https://mathanti.com',
     'https://www.mathanti.com',
     'https://tasneehobob.com',
@@ -117,7 +120,7 @@ DATABASES = {
             'NAME': 'counter',
             'USER': 'root',
             'PASSWORD': 'testpassword',
-            'HOST': os.getenv('DB_HOST', '45.154.238.114'),
+            'HOST': 'counter-postgres',
             'PORT': '5432',
         },
 }
@@ -156,7 +159,7 @@ LOCALE_PATHS = [
     BASE_DIR / 'locale',  # Path to translation files
 ]
 LOGIN_URL = '/login'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Baghdad'
 
 USE_I18N = True
 USE_L10N = True

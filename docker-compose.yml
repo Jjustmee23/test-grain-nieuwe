@@ -51,6 +51,7 @@ services:
       POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: testdb
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      TZ: Asia/Baghdad
     ports:
       - "5433:5432"
     volumes:
@@ -62,8 +63,47 @@ services:
       timeout: 10s
       retries: 3
 
+  counter-postgres:
+    image: postgres:17
+    container_name: app_counter_postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: counter
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - counter_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d counter"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  counter-postgres:
+    image: postgres:17
+    container_name: app_counter_postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: counter
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - counter_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d counter"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data_test:
+  counter_postgres_data:
   static_volume:
 
 
