@@ -159,7 +159,7 @@ LOCALE_PATHS = [
     BASE_DIR / 'locale',  # Path to translation files
 ]
 LOGIN_URL = '/login'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Baghdad'
 
 USE_I18N = True
 USE_L10N = True
