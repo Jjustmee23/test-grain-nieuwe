@@ -106,8 +106,18 @@ class UnifiedPowerManagementService:
                 ).order_by('-timestamp').first()
                 
                 if latest_raw_data:
-                    ain1_value = latest_raw_data.ain1_value
-                    last_update = latest_raw_data.timestamp
+                    # Use the correct field name 'ain1_value'
+                    try:
+                        ain1_value = float(latest_raw_data.ain1_value) if latest_raw_data.ain1_value is not None else None
+                        last_update = latest_raw_data.timestamp
+                    except (ValueError, TypeError):
+                        ain1_value = None
+                        last_update = None
+            
+            # Get DevicePowerStatus for accurate last check time
+            device_power_status = DevicePowerStatus.objects.filter(device=device).first()
+            if device_power_status and device_power_status.last_power_check:
+                last_update = device_power_status.last_power_check
             
             # Determine power status based on AIN1 value
             has_power = False
@@ -740,7 +750,7 @@ class UnifiedPowerManagementService:
                 'analysis_data': None
             } 
 
-    def get_device_detailed_power_analysis(self, device):
+    def get_device_detailed_power_analysis(self, device, days=7):
         """
         Get detailed power analysis for a specific device including:
         - Current power status
@@ -809,7 +819,12 @@ class UnifiedPowerManagementService:
                         # End power loss incident
                         current_incident['end_time'] = record.timestamp
                         current_incident['end_counter'] = total_counter
-                        current_incident['duration'] = record.timestamp - current_incident['start_time']
+                        
+                        # Calculate duration safely
+                        if record.timestamp and current_incident['start_time']:
+                            current_incident['duration'] = record.timestamp - current_incident['start_time']
+                        else:
+                            current_incident['duration'] = timedelta(0)
                         
                         # Only include if there was counter activity or duration > 10 minutes
                         if (current_incident['has_counter_activity'] or 
@@ -821,7 +836,13 @@ class UnifiedPowerManagementService:
             # Handle ongoing incident
             if current_incident is not None:
                 current_incident['end_time'] = current_time
-                current_incident['duration'] = current_time - current_incident['start_time']
+                
+                # Calculate duration safely
+                if current_incident['start_time']:
+                    current_incident['duration'] = current_time - current_incident['start_time']
+                else:
+                    current_incident['duration'] = timedelta(0)
+                
                 current_incident['is_ongoing'] = True
                 
                 if (current_incident['has_counter_activity'] or 
@@ -832,7 +853,12 @@ class UnifiedPowerManagementService:
             total_incidents = len(power_incidents)
             incidents_with_counter = len([i for i in power_incidents if i['has_counter_activity']])
             total_production_without_power = sum(i['total_production'] for i in power_incidents if i['has_counter_activity'])
-            total_downtime = sum(i['duration'] for i in power_incidents)
+            
+            # Calculate total downtime safely
+            total_downtime = timedelta(0)
+            for incident in power_incidents:
+                if 'duration' in incident and isinstance(incident['duration'], timedelta):
+                    total_downtime += incident['duration']
             
             # Current status
             current_status = 'online'
@@ -847,18 +873,32 @@ class UnifiedPowerManagementService:
             # Get recent power events
             recent_events = PowerEvent.objects.filter(device=device).order_by('-created_at')[:10]
             
+            # Group counter changes by date for each incident
+            for incident in power_incidents:
+                if incident['counter_changes']:
+                    incident['counter_changes_by_date'] = self._group_counter_changes_by_date(incident['counter_changes'])
+            
+            # Calculate daily production without power
+            daily_production_without_power = self._calculate_daily_production_without_power(device, days=7)
+            
+            # Calculate individual power outages with production
+            power_outages_with_production = self._calculate_power_outages_with_production(device, days=7)
+            
             return {
                 'has_data': True,
                 'device': device,
                 'current_status': current_status,
                 'power_status': power_status,
                 'power_incidents': power_incidents,
+                'daily_production_without_power': daily_production_without_power,
+                'power_outages_with_production': power_outages_with_production,
                 'statistics': {
                     'total_incidents': total_incidents,
                     'incidents_with_counter': incidents_with_counter,
                     'total_production_without_power': total_production_without_power,
                     'total_downtime': total_downtime,
-                    'avg_incident_duration': total_downtime / total_incidents if total_incidents > 0 else timedelta(0)
+                    'avg_incident_duration': total_downtime / total_incidents if total_incidents > 0 else timedelta(0),
+                    'power_incidents': power_incidents  # Add the incidents for detailed view
                 },
                 'recent_events': recent_events,
                 'analysis_period': '7 days'
@@ -871,7 +911,326 @@ class UnifiedPowerManagementService:
                 'message': f'Error during analysis: {str(e)}',
                 'device': device,
                 'current_status': 'error'
-            } 
+            }
+    
+    def _group_counter_changes_by_date(self, counter_changes):
+        """Group counter changes by date and calculate totals"""
+        from collections import defaultdict
+        from datetime import datetime, timezone
+        
+        grouped = defaultdict(lambda: {'changes': [], 'total': 0})
+        today = datetime.now(timezone.utc).date()
+        
+        for change in counter_changes:
+            if change['timestamp']:
+                date = change['timestamp'].date()
+                grouped[date]['changes'].append(change)
+                grouped[date]['total'] += change['change']
+        
+        # Convert to list and sort by date
+        result = []
+        for date in sorted(grouped.keys(), reverse=True):
+            result.append({
+                'date': date,
+                'date_display': date.strftime('%d/%m/%Y'),
+                'is_today': date == today,
+                'changes': grouped[date]['changes'],
+                'total': grouped[date]['total']
+            })
+        
+        return result
+
+    def _calculate_daily_production_without_power(self, device, days=7):
+        """Calculate total production without power per day for the last N days"""
+        from mill.models import RawData
+        from datetime import datetime, timezone, timedelta
+        
+        try:
+            # Calculate date range
+            end_date = datetime.now(timezone.utc).date()
+            start_date = end_date - timedelta(days=days)
+            
+            # Get all raw data for the device in the date range
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__date__gte=start_date,
+                timestamp__date__lte=end_date
+            ).order_by('timestamp')
+            
+            # Group by date and calculate production without power
+            daily_production = {}
+            current_date = None
+            power_status = True  # Assume power is on initially
+            start_counter = None
+            
+            for record in raw_data:
+                record_date = record.timestamp.date()
+                
+                # Initialize date if not exists
+                if record_date not in daily_production:
+                    daily_production[record_date] = {
+                        'date': record_date,
+                        'date_display': record_date.strftime('%d/%m/%Y'),
+                        'is_today': record_date == datetime.now(timezone.utc).date(),
+                        'total_production_without_power': 0,
+                        'power_outage_hours': 0,
+                        'start_counter': None,
+                        'end_counter': None,
+                        'has_power_outage': False
+                    }
+                
+                # Check power status (ain1_value > 0 means power is on)
+                has_power = record.ain1_value > 0 if record.ain1_value is not None else True
+                
+                # Get total counter value (sum of all counters)
+                total_counter = sum([
+                    record.counter_1 or 0,
+                    record.counter_2 or 0,
+                    record.counter_3 or 0,
+                    record.counter_4 or 0
+                ])
+                
+                if not has_power:
+                    # Power is off
+                    if power_status:  # Power just went off
+                        start_counter = total_counter
+                        daily_production[record_date]['start_counter'] = start_counter
+                        daily_production[record_date]['has_power_outage'] = True
+                    
+                    power_status = False
+                else:
+                    # Power is on
+                    if not power_status and start_counter is not None:  # Power just came back on
+                        # Calculate production during power outage
+                        production_during_outage = total_counter - start_counter
+                        if production_during_outage > 0:
+                            daily_production[record_date]['total_production_without_power'] += production_during_outage
+                        
+                        start_counter = None
+                    
+                    power_status = True
+                
+                # Update end counter for the day
+                daily_production[record_date]['end_counter'] = total_counter
+            
+            # Handle ongoing power outage at the end of the day
+            for date, data in daily_production.items():
+                if not power_status and start_counter is not None and data['start_counter'] == start_counter:
+                    # Ongoing power outage
+                    data['total_production_without_power'] += (data['end_counter'] - start_counter)
+            
+            # Convert to list and sort by date
+            result = []
+            for date in sorted(daily_production.keys(), reverse=True):
+                result.append(daily_production[date])
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating daily production without power for {device.name}: {str(e)}")
+            return []
+
+    def _calculate_power_outages_with_production(self, device, days=7):
+        """Calculate individual power outages with production data - UNIFIED LOGIC"""
+        from mill.models import RawData
+        from datetime import datetime, timezone, timedelta
+        
+        try:
+            # Calculate date range
+            end_date = datetime.now(timezone.utc).date()
+            start_date = end_date - timedelta(days=days)
+            
+            # Get all raw data for the device in the date range
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__date__gte=start_date,
+                timestamp__date__lte=end_date
+            ).order_by('timestamp')
+            
+            # Track power outages with detailed production events
+            power_outages = []
+            current_outage = None
+            power_status = True  # Assume power is on initially
+            last_counter_value = None
+            
+            for record in raw_data:
+                # Check power status (ain1_value > 0 means power is on)
+                has_power = record.ain1_value > 0 if record.ain1_value is not None else True
+                
+                # Get total counter value (sum of all counters)
+                total_counter = sum([
+                    record.counter_1 or 0,
+                    record.counter_2 or 0,
+                    record.counter_3 or 0,
+                    record.counter_4 or 0
+                ])
+                
+                if not has_power:
+                    # Power is off
+                    if power_status:  # Power just went off
+                        # Start new outage
+                        current_outage = {
+                            'start_time': record.timestamp,
+                            'start_counter': total_counter,
+                            'start_date': record.timestamp.date(),
+                            'end_time': None,
+                            'end_counter': None,
+                            'end_date': None,
+                            'total_production': 0,
+                            'duration': None,
+                            'is_ongoing': False,
+                            'production_events': [],  # Detailed production events with timestamps
+                            'counter_changes': []
+                        }
+                        power_status = False
+                        last_counter_value = total_counter
+                    
+                    # Track production events during outage
+                    if current_outage and total_counter > last_counter_value:
+                        production_increment = total_counter - last_counter_value
+                        current_outage['production_events'].append({
+                            'timestamp': record.timestamp,
+                            'counter_value': total_counter,
+                            'production_increment': production_increment,
+                            'time_from_start': record.timestamp - current_outage['start_time']
+                        })
+                        current_outage['total_production'] += production_increment
+                        
+                        # Calculate cumulative production
+                        cumulative = 0
+                        for event in current_outage['production_events']:
+                            cumulative += event['production_increment']
+                        current_outage['production_events'][-1]['cumulative'] = cumulative
+                    
+                    # Update counter changes
+                    if current_outage:
+                        if len(current_outage['counter_changes']) == 0 or total_counter > current_outage['counter_changes'][-1]['counter_value']:
+                            current_outage['counter_changes'].append({
+                                'timestamp': record.timestamp,
+                                'counter_value': total_counter,
+                                'change': total_counter - (current_outage['counter_changes'][-1]['counter_value'] if current_outage['counter_changes'] else current_outage['start_counter'])
+                            })
+                    
+                    last_counter_value = total_counter
+                
+                else:
+                    # Power is on
+                    if not power_status and current_outage:  # Power just came back on
+                        # End current outage
+                        current_outage['end_time'] = record.timestamp
+                        current_outage['end_counter'] = total_counter
+                        current_outage['end_date'] = record.timestamp.date()
+                        current_outage['duration'] = record.timestamp - current_outage['start_time']
+                        current_outage['is_ongoing'] = False
+                        
+                        # Final production calculation
+                        current_outage['total_production'] = total_counter - current_outage['start_counter']
+                        
+                        # Only include if there was production or duration > 10 minutes
+                        if (current_outage['total_production'] > 0 or 
+                            current_outage['duration'] > timedelta(minutes=10)):
+                            power_outages.append(current_outage)
+                        
+                        current_outage = None
+                    
+                    power_status = True
+                    last_counter_value = total_counter
+            
+            # Handle ongoing power outage
+            if current_outage:
+                current_outage['is_ongoing'] = True
+                current_outage['end_time'] = datetime.now(timezone.utc)
+                current_outage['end_counter'] = last_counter_value
+                current_outage['end_date'] = current_outage['end_time'].date()
+                current_outage['duration'] = current_outage['end_time'] - current_outage['start_time']
+                
+                # Only include if there was production or duration > 10 minutes
+                if (current_outage['total_production'] > 0 or 
+                    current_outage['duration'] > timedelta(minutes=10)):
+                    power_outages.append(current_outage)
+            
+            # Group consecutive outages by date range
+            grouped_outages = []
+            if power_outages:
+                current_group = [power_outages[0]]
+                
+                for i in range(1, len(power_outages)):
+                    current_outage = power_outages[i]
+                    last_outage = power_outages[i-1]
+                    
+                    # Check if outages are consecutive (within 1 hour of each other)
+                    time_diff = current_outage['start_time'] - last_outage['end_time']
+                    
+                    if time_diff <= timedelta(hours=1):
+                        # Consecutive outage, add to current group
+                        current_group.append(current_outage)
+                    else:
+                        # Gap between outages, start new group
+                        if current_group:
+                            grouped_outages.append(current_group)
+                        current_group = [current_outage]
+                
+                # Add the last group
+                if current_group:
+                    grouped_outages.append(current_group)
+            
+            # Format grouped outages with detailed time information
+            result = []
+            for group in grouped_outages:
+                if len(group) == 1:
+                    # Single outage
+                    outage = group[0]
+                    result.append({
+                        'type': 'single',
+                        'start_time': outage['start_time'],
+                        'end_time': outage['end_time'],
+                        'start_date': outage['start_date'],
+                        'end_date': outage['end_date'],
+                        'date_range': f"{outage['start_date'].strftime('%d/%m/%Y')} - {outage['end_date'].strftime('%d/%m/%Y')}",
+                        'time_range': f"{outage['start_time'].strftime('%d/%m/%Y %H:%M')} - {outage['end_time'].strftime('%d/%m/%Y %H:%M')}",
+                        'duration': outage['duration'],
+                        'total_production': outage['total_production'],
+                        'start_counter': outage['start_counter'],
+                        'end_counter': outage['end_counter'],
+                        'is_ongoing': outage['is_ongoing'],
+                        'counter_changes': outage['counter_changes'],
+                        'production_events': outage['production_events']
+                    })
+                else:
+                    # Multiple consecutive outages
+                    first_outage = group[0]
+                    last_outage = group[-1]
+                    total_production = sum(o['total_production'] for o in group)
+                    
+                    # Combine all production events
+                    all_production_events = []
+                    for outage in group:
+                        all_production_events.extend(outage['production_events'])
+                    
+                    result.append({
+                        'type': 'multiple',
+                        'start_time': first_outage['start_time'],
+                        'end_time': last_outage['end_time'],
+                        'start_date': first_outage['start_date'],
+                        'end_date': last_outage['end_date'],
+                        'date_range': f"{first_outage['start_date'].strftime('%d/%m/%Y')} - {last_outage['end_date'].strftime('%d/%m/%Y')}",
+                        'time_range': f"{first_outage['start_time'].strftime('%d/%m/%Y %H:%M')} - {last_outage['end_time'].strftime('%d/%m/%Y %H:%M')}",
+                        'duration': last_outage['end_time'] - first_outage['start_time'],
+                        'total_production': total_production,
+                        'start_counter': first_outage['start_counter'],
+                        'end_counter': last_outage['end_counter'],
+                        'is_ongoing': last_outage['is_ongoing'],
+                        'outage_count': len(group),
+                        'individual_outages': group,
+                        'counter_changes': [],  # Combined counter changes from all outages
+                        'production_events': all_production_events
+                    })
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating power outages with production for {device.name}: {str(e)}")
+            return []
 
     def get_all_devices_without_power(self):
         """
@@ -914,4 +1273,79 @@ class UnifiedPowerManagementService:
             
         except Exception as e:
             self.logger.error(f"Error getting devices without power: {str(e)}")
+            return []
+
+    def get_device_counter_changes(self, device, hours=24):
+        """
+        Get counter changes for a device over a specified time period
+        """
+        try:
+            from mill.models import RawData
+            
+            # Calculate time range
+            end_time = timezone.now()
+            start_time = end_time - timedelta(hours=hours)
+            
+            # Get raw data for the device in the time range
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__gte=start_time,
+                timestamp__lte=end_time
+            ).order_by('timestamp')
+            
+            counter_changes = []
+            
+            for data in raw_data:
+                counter_changes.append({
+                    'timestamp': data.timestamp,
+                    'counter_1': data.counter_1,
+                    'counter_2': data.counter_2,
+                    'counter_3': data.counter_3,
+                    'counter_4': data.counter_4,
+                    'ain1_value': data.ain1_value,  # Use correct field name
+                    'ain2_value': data.ain2_value,  # Use correct field name
+                    'ain3_value': data.ain3_value,  # Use correct field name
+                    'ain4_value': data.ain4_value,  # Use correct field name
+                })
+            
+            return counter_changes
+            
+        except Exception as e:
+            self.logger.error(f"Error getting counter changes for device {device.name}: {str(e)}")
+            return []
+
+    def get_power_consumption_data(self, device, days=30):
+        """
+        Get power consumption data for a device over a specified time period
+        """
+        try:
+            from mill.models import RawData
+            
+            # Calculate time range
+            end_time = timezone.now()
+            start_time = end_time - timedelta(days=days)
+            
+            # Get raw data for the device in the time range
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__gte=start_time,
+                timestamp__lte=end_time,
+                ain1_value__isnull=False
+            ).order_by('timestamp')
+            
+            power_data = []
+            
+            for data in raw_data:
+                power_data.append({
+                    'timestamp': data.timestamp,
+                    'ain1_value': data.ain1_value,  # Use correct field name
+                    'ain2_value': data.ain2_value,  # Use correct field name
+                    'ain3_value': data.ain3_value,  # Use correct field name
+                    'ain4_value': data.ain4_value,  # Use correct field name
+                })
+            
+            return power_data
+            
+        except Exception as e:
+            self.logger.error(f"Error getting power consumption data for device {device.name}: {str(e)}")
             return [] 

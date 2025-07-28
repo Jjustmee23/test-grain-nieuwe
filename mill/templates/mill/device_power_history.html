@@ -1,0 +1,312 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Device Power History - {{ device.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="header-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="bi bi-clock-history"></i> Device Power History</h2>
+                <h4 class="text-muted">
+                    {{ device.name }} | Factory: {{ device.factory.name|default:"N/A" }}
+                </h4>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'device_detailed_power_analysis' device.id %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Terug naar Analyse
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-calendar-range"></i> Periode Selectie</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="start_date" class="form-label">Start Datum</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="end_date" class="form-label">Eind Datum</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="days" class="form-label">Of Laatste X Dagen</label>
+                    <select class="form-control" id="days" name="days">
+                        <option value="7" {% if selected_days == 7 %}selected{% endif %}>7 dagen</option>
+                        <option value="14" {% if selected_days == 14 %}selected{% endif %}>14 dagen</option>
+                        <option value="30" {% if selected_days == 30 %}selected{% endif %}>30 dagen</option>
+                        <option value="60" {% if selected_days == 60 %}selected{% endif %}>60 dagen</option>
+                        <option value="90" {% if selected_days == 90 %}selected{% endif %}>90 dagen</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block w-100">
+                        <i class="bi bi-search"></i> Zoeken
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if analysis.has_data %}
+        <!-- Summary Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary">{{ analysis.power_outages_with_production|length }}</h3>
+                        <p class="text-muted">Power Onderbrekingen</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-danger">
+                            {% for outage in analysis.power_outages_with_production %}
+                                {% if forloop.first %}
+                                    {% with total=outage.total_production %}
+                                        {% for outage2 in analysis.power_outages_with_production %}
+                                            {% if not forloop.first %}
+                                                {% with total=total|add:outage2.total_production %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ total }}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        </h3>
+                        <p class="text-muted">Totaal Productie zonder Stroom</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-warning">
+                            {% for outage in analysis.power_outages_with_production %}
+                                {% if forloop.first %}
+                                    {% with total=outage.duration %}
+                                        {% for outage2 in analysis.power_outages_with_production %}
+                                            {% if not forloop.first %}
+                                                {% with total=total|add:outage2.duration %}{% endwith %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if total.days > 0 %}
+                                            {{ total.days }}d
+                                        {% else %}
+                                            {{ total.seconds|floatformat:0|div:3600|floatformat:1 }}h
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        </h3>
+                        <p class="text-muted">Totaal Duur</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-info">
+                            {% for outage in analysis.power_outages_with_production %}
+                                {% if outage.is_ongoing %}
+                                    <span class="badge bg-warning">ONGOING</span>
+                                {% endif %}
+                            {% endfor %}
+                        </h3>
+                        <p class="text-muted">Status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Power Outages History -->
+        {% if analysis.power_outages_with_production %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-lightning-charge"></i> Power Onderbrekingen Geschiedenis</h5>
+                <a href="{% url 'export_power_outages' device.id %}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel"></i> Export naar Excel
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Type</th>
+                                <th>Periode</th>
+                                <th>Tijdsperiode</th>
+                                <th>Duur</th>
+                                <th>Start Counter</th>
+                                <th>Eind Counter</th>
+                                <th>Productie zonder Stroom</th>
+                                <th>Status</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for outage in analysis.power_outages_with_production %}
+                            <tr class="{% if outage.is_ongoing %}table-warning{% elif outage.total_production > 0 %}table-danger{% endif %}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if outage.type == 'multiple' %}
+                                        <span class="badge bg-info">{{ outage.outage_count }}x</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">1x</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ outage.date_range }}</td>
+                                <td>{{ outage.time_range }}</td>
+                                <td>
+                                    {% if outage.duration.days > 0 %}
+                                        {{ outage.duration.days }}d 
+                                    {% endif %}
+                                    {% if outage.duration.seconds > 3600 %}
+                                        {{ outage.duration.seconds|floatformat:0|add:"-3600"|floatformat:0|div:3600|floatformat:0 }}h
+                                    {% elif outage.duration.seconds > 60 %}
+                                        {{ outage.duration.seconds|floatformat:0|div:60|floatformat:0 }}m
+                                    {% else %}
+                                        {{ outage.duration.seconds }}s
+                                    {% endif %}
+                                </td>
+                                <td>{{ outage.start_counter }} stuks</td>
+                                <td>{{ outage.end_counter|default:"N/A" }} stuks</td>
+                                <td>
+                                    {% if outage.total_production > 0 %}
+                                        <span class="text-danger fw-bold">{{ outage.total_production }} stuks</span>
+                                    {% else %}
+                                        <span class="text-muted">0 stuks</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if outage.is_ongoing %}
+                                        <span class="badge bg-warning">ONGOING</span>
+                                    {% else %}
+                                        <span class="badge bg-success">AFGEROND</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if outage.production_events %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#historyModal{{ forloop.counter }}">
+                                            <i class="bi bi-eye"></i> Details
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- History Modals -->
+        {% for outage in analysis.power_outages_with_production %}
+            {% if outage.production_events %}
+            <div class="modal fade" id="historyModal{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="bi bi-clock-history"></i> Power Onderbreking Details - {{ outage.date_range }}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Counter Details:</strong><br>
+                                    <small class="text-muted">
+                                        Start: {{ outage.start_counter }} stuks<br>
+                                        Eind: {{ outage.end_counter|default:"N/A" }} stuks<br>
+                                        <span class="text-danger fw-bold">
+                                            Totaal Productie zonder stroom: {{ outage.total_production }} stuks
+                                        </span>
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Tijdsperiode:</strong><br>
+                                    <small class="text-muted">
+                                        <strong>{{ outage.time_range }}</strong>
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Tijdstip</th>
+                                            <th>Tijd vanaf Start</th>
+                                            <th>Counter Waarde</th>
+                                            <th>Productie Increment</th>
+                                            <th>Cumulatief</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for event in outage.production_events %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ event.timestamp|date:"d/m/Y H:i:s" }}</td>
+                                            <td>
+                                                {% if event.time_from_start.days > 0 %}
+                                                    {{ event.time_from_start.days }}d 
+                                                {% endif %}
+                                                {% if event.time_from_start.seconds > 3600 %}
+                                                    {{ event.time_from_start.seconds|floatformat:0|add:"-3600"|floatformat:0|div:3600|floatformat:0 }}h
+                                                {% elif event.time_from_start.seconds > 60 %}
+                                                    {{ event.time_from_start.seconds|floatformat:0|div:60|floatformat:0 }}m
+                                                {% else %}
+                                                    {{ event.time_from_start.seconds }}s
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ event.counter_value }} stuks</td>
+                                            <td class="text-success">+{{ event.production_increment }} stuks</td>
+                                            <td class="text-danger fw-bold">{{ event.cumulative|default:event.production_increment }} stuks</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="table-dark">
+                                        <tr>
+                                            <td colspan="5"><strong>TOTAAL</strong></td>
+                                            <td><strong class="text-danger">{{ outage.total_production }} stuks</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                            <a href="{% url 'export_incident_counter_changes' device.id %}?incident_start={{ outage.start_time|date:'Y-m-d H:i:s' }}" class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel"></i> Export naar Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Geen power onderbrekingen gevonden in de geselecteerde periode.
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

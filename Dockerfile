@@ -8,7 +8,7 @@ ENV DJANGO_DISABLE_MIGRATIONS False
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc python3-dev gettext \
+    libpq-dev gcc python3-dev gettext cron \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,5 +36,8 @@ RUN python manage.py collectstatic --noinput
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
+# Make startup script executable
+RUN chmod +x /app/start.sh
+
 # Define the command to run on container start
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["/app/start.sh"]

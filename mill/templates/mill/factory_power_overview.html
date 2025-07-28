@@ -337,8 +337,8 @@
                             <strong>{{ power_status.device.name }}</strong>
                         </td>
                         <td>
-                            {% if power_status.last_check %}
-                                {{ power_status.last_check|date:"M d, H:i" }}
+                                        {% if power_status.last_power_check %}
+            {{ power_status.last_power_check|date:"M d, H:i" }}
                             {% else %}
                                 <span class="text-muted">No data</span>
                             {% endif %}

@@ -27,10 +27,29 @@
                         <a class="nav-link" href="{% url 'notifications' %}">{% trans "Notifications" %}</a>
                     </li>
                     {% if user.is_superuser or user.power_management_permission.can_access_power_management %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'power_dashboard' %}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="powerManagementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-lightning-charge me-1"></i>{% trans "Power Management" %}
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="powerManagementDropdown">
+                            <li><a class="dropdown-item" href="{% url 'power_dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2"></i>{% trans "Dashboard" %}
+                            </a></li>
+                            {% if user.is_superuser %}
+                            <li><a class="dropdown-item" href="{% url 'all_devices_without_power' %}">
+                                <i class="bi bi-exclamation-triangle me-2"></i>{% trans "Devices Without Power" %}
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'power_analytics' %}">
+                                <i class="bi bi-graph-up me-2"></i>{% trans "Analytics" %}
+                            </a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{% url 'power_events_list' %}">
+                                <i class="bi bi-list-ul me-2"></i>{% trans "Power Events" %}
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'power_notification_settings' %}">
+                                <i class="bi bi-gear me-2"></i>{% trans "Notification Settings" %}
+                            </a></li>
+                        </ul>
                     </li>
                     {% endif %}
 

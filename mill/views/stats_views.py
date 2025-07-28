@@ -397,9 +397,9 @@ def get_power_status_data(request, factory_id):
             latest_raw_data = RawData.objects.filter(device=device).order_by('-timestamp').first()
             
             # Update power status based on latest RawData if available
-            if latest_raw_data and latest_raw_data.ain1 is not None:
+            if latest_raw_data and latest_raw_data.ain1_value is not None:
                 try:
-                    ain1_value = float(latest_raw_data.ain1)
+                    ain1_value = float(latest_raw_data.ain1_value)
                     has_power = ain1_value > 0  # Threshold for power detection (any positive value)
                     
                     # Always update AIN1 value to ensure accuracy
@@ -431,9 +431,9 @@ def get_power_status_data(request, factory_id):
             
             # Get the most accurate AIN1 value from latest RawData
             accurate_ain1_value = None
-            if latest_raw_data and latest_raw_data.ain1 is not None:
+            if latest_raw_data and latest_raw_data.ain1_value is not None:
                 try:
-                    raw_ain1 = latest_raw_data.ain1
+                    raw_ain1 = latest_raw_data.ain1_value
                     # Handle different data types and formats
                     if isinstance(raw_ain1, (int, float)):
                         accurate_ain1_value = float(raw_ain1)
@@ -445,14 +445,14 @@ def get_power_status_data(request, factory_id):
                     else:
                         accurate_ain1_value = None
                 except (ValueError, TypeError) as e:
-                    print(f"Error parsing AIN1 value '{latest_raw_data.ain1}' for device {device.name}: {e}")
+                    print(f"Error parsing AIN1 value '{latest_raw_data.ain1_value}' for device {device.name}: {e}")
                     accurate_ain1_value = None
             
             device_data = {
                 'device_id': device.id,
                 'device_name': device.name,
                 'has_power': power_status.has_power if power_status else False,
-                'last_check': power_status.last_check.isoformat() if power_status else None,
+                'last_check': power_status.last_power_check.isoformat() if power_status else None,
                 'ain1_value': accurate_ain1_value,  # Use most accurate value from RawData
                 'power_loss_detected_at': power_status.power_loss_detected_at.isoformat() if power_status and power_status.power_loss_detected_at else None,
                 'last_raw_data_timestamp': latest_raw_data.timestamp.isoformat() if latest_raw_data else None,

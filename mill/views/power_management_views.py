@@ -38,6 +38,9 @@ def power_dashboard(request):
         # Get all factories for super admin
         factories = Factory.objects.all()
         
+        # Get devices with power issues
+        devices_with_issues = DevicePowerStatus.objects.filter(has_power=False).select_related('device', 'device__factory')
+        
         # Paginate recent events
         recent_events = PowerEvent.objects.filter(is_resolved=False).order_by('-created_at')
         paginator = Paginator(recent_events, 20)
@@ -50,6 +53,7 @@ def power_dashboard(request):
             'analytics': analytics,
             'active_events': page_obj,
             'factories': factories,
+            'devices_with_issues': devices_with_issues,
         }
         
         return render(request, 'mill/power_dashboard.html', context)
@@ -165,8 +169,25 @@ def device_power_status(request, device_id):
     try:
         device = get_object_or_404(Device, id=device_id)
         
-        # Get power status
-        power_status = DevicePowerStatus.objects.filter(device=device).first()
+        # Get or create power status
+        power_status, created = DevicePowerStatus.objects.get_or_create(
+            device=device,
+            defaults={'power_threshold': 0.0}
+        )
+        
+        # If created, update with latest data
+        if created:
+            from mill.models import RawData
+            latest_raw_data = RawData.objects.filter(
+                device=device,
+                ain1_value__isnull=False
+            ).order_by('-timestamp').first()
+            
+            if latest_raw_data:
+                power_status.ain1_value = latest_raw_data.ain1_value
+                power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                power_status.has_power = latest_raw_data.ain1_value > 0
+                power_status.save()
         
         # Get power events for this device
         power_events = PowerEvent.objects.filter(device=device).order_by('-created_at')[:10]
@@ -200,8 +221,25 @@ def device_suspicious_activity(request, device_id):
     try:
         device = get_object_or_404(Device, id=device_id)
         
-        # Get power status
-        power_status = DevicePowerStatus.objects.filter(device=device).first()
+        # Get or create power status
+        power_status, created = DevicePowerStatus.objects.get_or_create(
+            device=device,
+            defaults={'power_threshold': 0.0}
+        )
+        
+        # If created, update with latest data
+        if created:
+            from mill.models import RawData
+            latest_raw_data = RawData.objects.filter(
+                device=device,
+                ain1_value__isnull=False
+            ).order_by('-timestamp').first()
+            
+            if latest_raw_data:
+                power_status.ain1_value = latest_raw_data.ain1_value
+                power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                power_status.has_power = latest_raw_data.ain1_value > 0
+                power_status.save()
         
         # Get suspicious activity analysis
         power_service = UnifiedPowerManagementService() # Changed from PowerManagementService to UnifiedPowerManagementService
@@ -435,7 +473,7 @@ def power_status_api(request, factory_id):
                 'device_name': device_data['device_name'],
                 'has_power': device_data['has_power'],
                 'ain1_value': device_data['ain1_value'],
-                'last_check': device_data['last_update'].isoformat() if device_data['last_update'] else None,
+                'last_update': device_data['last_update'].isoformat() if device_data['last_update'] else None,
                 'power_loss_detected_at': device_data['last_power_loss'].isoformat() if device_data['last_power_loss'] else None,
                 'uptime_percentage': device_data['uptime_percentage'],
                 'power_loss_count_today': device_data['power_loss_count_today'],
@@ -723,6 +761,27 @@ def factory_power_overview(request, factory_id):
         # Get devices for this factory
         devices = Device.objects.filter(factory=factory)
         
+        # Ensure all devices have DevicePowerStatus records
+        for device in devices:
+            power_status, created = DevicePowerStatus.objects.get_or_create(
+                device=device,
+                defaults={'power_threshold': 0.0}
+            )
+            
+            # If created, update with latest data
+            if created:
+                from mill.models import RawData
+                latest_raw_data = RawData.objects.filter(
+                    device=device,
+                    ain1_value__isnull=False
+                ).order_by('-timestamp').first()
+                
+                if latest_raw_data:
+                    power_status.ain1_value = latest_raw_data.ain1_value
+                    power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                    power_status.has_power = latest_raw_data.ain1_value > 0
+                    power_status.save()
+        
         # Get power summary for this factory
         power_summary = service.get_device_power_summary(factory_id=factory_id)
         
@@ -732,65 +791,19 @@ def factory_power_overview(request, factory_id):
         # Get power analytics for this factory
         analytics = service.get_power_analytics(factory_id=factory_id, days=30)
         
-        # Convert devices data to power status format for template compatibility
+        # Get actual DevicePowerStatus objects for all devices
         power_statuses = []
-        
-        # First, try to get data from unified service
-        for device_data in power_summary['devices_data']:
-            # Find the device object
-            device = devices.filter(id=device_data['device_id']).first()
-            if device:
-                power_statuses.append({
-                    'device': device,
-                    'has_power': device_data['has_power'],
-                    'ain1_value': device_data['ain1_value'],
-                    'last_check': device_data['last_update'],
-                    'power_loss_detected_at': device_data['last_power_loss'],
-                    'power_restored_at': device_data['last_power_restore'],
-                    'uptime_percentage': device_data['uptime_percentage'],
-                    'power_loss_count_today': device_data['power_loss_count_today'],
-                    'power_restore_count_today': device_data['power_restore_count_today'],
-                })
-        
-        # If no devices found in power summary, create basic status for all devices
-        if not power_statuses:
-            for device in devices:
-                # Get latest AIN1 value from RawData
-                from mill.models import RawData
-                latest_raw_data = RawData.objects.filter(
+        for device in devices:
+            power_status = DevicePowerStatus.objects.filter(device=device).first()
+            if power_status:
+                power_statuses.append(power_status)
+            else:
+                # This shouldn't happen since we created them above, but just in case
+                power_status, created = DevicePowerStatus.objects.get_or_create(
                     device=device,
-                    ain1_value__isnull=False
-                ).order_by('-timestamp').first()
-                
-                ain1_value = latest_raw_data.ain1_value if latest_raw_data else None
-                has_power = ain1_value > 0 if ain1_value is not None else False
-                
-                power_statuses.append({
-                    'device': device,
-                    'has_power': has_power,
-                    'ain1_value': ain1_value,
-                    'last_check': latest_raw_data.timestamp if latest_raw_data else None,
-                    'power_loss_detected_at': None,
-                    'power_restored_at': None,
-                    'uptime_percentage': 100.0,
-                    'power_loss_count_today': 0,
-                    'power_restore_count_today': 0,
-                })
-        
-        # If still no power statuses, create default status for devices without any data
-        if not power_statuses:
-            for device in devices:
-                power_statuses.append({
-                    'device': device,
-                    'has_power': False,
-                    'ain1_value': None,
-                    'last_check': None,
-                    'power_loss_detected_at': None,
-                    'power_restored_at': None,
-                    'uptime_percentage': 0.0,
-                    'power_loss_count_today': 0,
-                    'power_restore_count_today': 0,
-                })
+                    defaults={'power_threshold': 0.0}
+                )
+                power_statuses.append(power_status)
         
         # Get recent power events (last 24 hours)
         twenty_four_hours_ago = timezone.now() - timezone.timedelta(hours=24)
@@ -818,6 +831,11 @@ def factory_power_overview(request, factory_id):
                 'total_power_consumption': 0.0,
                 'devices_data': []
             }
+        
+        # Debug: Print power statuses to console
+        print(f"DEBUG: Factory {factory.name} power statuses:")
+        for ps in power_statuses:
+            print(f"  - {ps.device.name}: last_check={ps.last_power_check}, has_power={ps.has_power}, ain1={ps.ain1_value}")
         
         context = {
             'factory': factory,
@@ -1046,8 +1064,25 @@ def device_detailed_power_analysis(request, device_id):
         # Get detailed analysis
         analysis = power_service.get_device_detailed_power_analysis(device)
         
-        # Get power status
-        power_status = DevicePowerStatus.objects.filter(device=device).first()
+        # Get or create power status
+        power_status, created = DevicePowerStatus.objects.get_or_create(
+            device=device,
+            defaults={'power_threshold': 0.0}
+        )
+        
+        # If created, update with latest data
+        if created:
+            from mill.models import RawData
+            latest_raw_data = RawData.objects.filter(
+                device=device,
+                ain1_value__isnull=False
+            ).order_by('-timestamp').first()
+            
+            if latest_raw_data:
+                power_status.ain1_value = latest_raw_data.ain1_value
+                power_status.last_power_check = latest_raw_data.timestamp or timezone.now()
+                power_status.has_power = latest_raw_data.ain1_value > 0
+                power_status.save()
         
         context = {
             'device': device,
@@ -1059,4 +1094,476 @@ def device_detailed_power_analysis(request, device_id):
         
     except Exception as e:
         messages.error(request, f'Error loading device analysis: {str(e)}')
-        return redirect('power_dashboard') 
+        return redirect('power_dashboard')
+
+@login_required
+def export_device_power_analysis(request, device_id):
+    """Export device power analysis to Excel - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        import pandas as pd
+        from io import BytesIO
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        device = get_object_or_404(Device, id=device_id)
+        power_service = UnifiedPowerManagementService()
+        
+        # Get detailed analysis
+        analysis = power_service.get_device_detailed_power_analysis(device)
+        
+        if not analysis['has_data']:
+            messages.error(request, 'No data available for export')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+        # Create Excel file
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            
+            # Summary sheet
+            summary_data = {
+                'Metric': [
+                    'Device Name',
+                    'Factory',
+                    'Current Status',
+                    'Total Incidents',
+                    'Incidents with Counter Activity',
+                    'Total Production without Power',
+                    'Total Downtime (hours)',
+                    'Average Incident Duration (hours)',
+                    'Export Date'
+                ],
+                'Value': [
+                    device.name,
+                    device.factory.name if device.factory else 'N/A',
+                    analysis['current_status'],
+                    analysis['statistics']['total_incidents'],
+                    analysis['statistics']['incidents_with_counter'],
+                    analysis['statistics']['total_production_without_power'],
+                    round(analysis['statistics']['total_downtime'].total_seconds() / 3600, 2),
+                    round(analysis['statistics']['avg_incident_duration'].total_seconds() / 3600, 2),
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                ]
+            }
+            
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
+            # Incidents sheet
+            if analysis['statistics']['power_incidents']:
+                incidents_data = []
+                for incident in analysis['statistics']['power_incidents']:
+                    incidents_data.append({
+                        'Start Time': incident['start_time'].strftime('%Y-%m-%d %H:%M:%S') if incident['start_time'] else 'N/A',
+                        'End Time': incident['end_time'].strftime('%Y-%m-%d %H:%M:%S') if incident['end_time'] else 'N/A',
+                        'Duration (hours)': round(incident['duration'].total_seconds() / 3600, 2) if 'duration' in incident else 0,
+                        'Start Counter': incident['start_counter'],
+                        'End Counter': incident['end_counter'] if incident['end_counter'] else 'N/A',
+                        'Total Production': incident['total_production'],
+                        'Has Counter Activity': 'Yes' if incident['has_counter_activity'] else 'No',
+                        'Is Ongoing': 'Yes' if incident.get('is_ongoing', False) else 'No'
+                    })
+                
+                incidents_df = pd.DataFrame(incidents_data)
+                incidents_df.to_excel(writer, sheet_name='Power Incidents', index=False)
+                
+                # Counter changes sheet
+                all_counter_changes = []
+                for i, incident in enumerate(analysis['statistics']['power_incidents']):
+                    if incident['counter_changes']:
+                        for change in incident['counter_changes']:
+                            all_counter_changes.append({
+                                'Incident #': i + 1,
+                                'Incident Start': incident['start_time'].strftime('%Y-%m-%d %H:%M:%S') if incident['start_time'] else 'N/A',
+                                'Timestamp': change['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if change['timestamp'] else 'N/A',
+                                'Counter Value': change['counter_value'],
+                                'Change': change['change'],
+                                'Accumulated Production': change['counter_value'] - incident['start_counter']
+                            })
+                
+                if all_counter_changes:
+                    counter_changes_df = pd.DataFrame(all_counter_changes)
+                    counter_changes_df.to_excel(writer, sheet_name='Counter Changes', index=False)
+                
+                # Counter changes by date sheet
+                all_counter_changes_by_date = []
+                for i, incident in enumerate(analysis['statistics']['power_incidents']):
+                    if incident.get('counter_changes_by_date'):
+                        for date_group in incident['counter_changes_by_date']:
+                            all_counter_changes_by_date.append({
+                                'Incident #': i + 1,
+                                'Incident Start': incident['start_time'].strftime('%Y-%m-%d %H:%M:%S') if incident['start_time'] else 'N/A',
+                                'Date': date_group['date_display'],
+                                'Is Today': 'Yes' if date_group['is_today'] else 'No',
+                                'Total Production': date_group['total'],
+                                'Number of Changes': len(date_group['changes'])
+                            })
+                
+                if all_counter_changes_by_date:
+                    counter_changes_by_date_df = pd.DataFrame(all_counter_changes_by_date)
+                    counter_changes_by_date_df.to_excel(writer, sheet_name='Counter Changes by Date', index=False)
+                
+                # Daily production without power sheet
+                if analysis.get('daily_production_without_power'):
+                    daily_production_data = []
+                    for day in analysis['daily_production_without_power']:
+                        daily_production_data.append({
+                            'Date': day['date_display'],
+                            'Is Today': 'Yes' if day['is_today'] else 'No',
+                            'Has Power Outage': 'Yes' if day['has_power_outage'] else 'No',
+                            'Start Counter': day['start_counter'] if day['start_counter'] else 'N/A',
+                            'End Counter': day['end_counter'] if day['end_counter'] else 'N/A',
+                            'Total Production Without Power': day['total_production_without_power']
+                        })
+                    
+                    daily_production_df = pd.DataFrame(daily_production_data)
+                    daily_production_df.to_excel(writer, sheet_name='Daily Production Without Power', index=False)
+                
+                # Power outages with production sheet
+                if analysis.get('power_outages_with_production'):
+                    power_outages_data = []
+                    for outage in analysis['power_outages_with_production']:
+                        power_outages_data.append({
+                            'Type': 'Multiple' if outage['type'] == 'multiple' else 'Single',
+                            'Date Range': outage['date_range'],
+                            'Start Time': outage['start_time'].strftime('%Y-%m-%d %H:%M:%S') if outage['start_time'] else 'N/A',
+                            'End Time': outage['end_time'].strftime('%Y-%m-%d %H:%M:%S') if outage['end_time'] else 'N/A',
+                            'Duration (hours)': round(outage['duration'].total_seconds() / 3600, 2) if outage['duration'] else 0,
+                            'Start Counter': outage['start_counter'],
+                            'End Counter': outage['end_counter'] if outage['end_counter'] else 'N/A',
+                            'Total Production': outage['total_production'],
+                            'Is Ongoing': 'Yes' if outage['is_ongoing'] else 'No',
+                            'Outage Count': outage.get('outage_count', 1)
+                        })
+                    
+                    power_outages_df = pd.DataFrame(power_outages_data)
+                    power_outages_df.to_excel(writer, sheet_name='Power Outages with Production', index=False)
+                
+                # Production events sheet
+                all_production_events = []
+                for i, outage in enumerate(analysis.get('power_outages_with_production', [])):
+                    for event in outage.get('production_events', []):
+                        all_production_events.append({
+                            'Outage #': i + 1,
+                            'Outage Type': 'Multiple' if outage['type'] == 'multiple' else 'Single',
+                            'Date Range': outage['date_range'],
+                            'Event Timestamp': event['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if event['timestamp'] else 'N/A',
+                            'Time from Start': f"{event['time_from_start'].days}d {event['time_from_start'].seconds//3600}h {(event['time_from_start'].seconds%3600)//60}m" if event['time_from_start'] else 'N/A',
+                            'Counter Value': event['counter_value'],
+                            'Production Increment': event['production_increment'],
+                            'Accumulated Production': event['counter_value'] - outage['start_counter']
+                        })
+                
+                if all_production_events:
+                    production_events_df = pd.DataFrame(all_production_events)
+                    production_events_df.to_excel(writer, sheet_name='Production Events', index=False)
+        
+        output.seek(0)
+        
+        # Create response
+        filename = f"power_analysis_{device.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Error exporting data: {str(e)}')
+        return redirect('device_detailed_power_analysis', device_id=device_id)
+
+@login_required
+def export_incident_counter_changes(request, device_id):
+    """Export specific incident counter changes to Excel - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        import pandas as pd
+        from io import BytesIO
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        device = get_object_or_404(Device, id=device_id)
+        incident_start = request.GET.get('incident_start')
+        
+        if not incident_start:
+            messages.error(request, 'Incident start time is required')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+        # Debug logging
+        print(f"DEBUG: Export request for device {device.name}, incident_start: {incident_start}")
+        
+        power_service = UnifiedPowerManagementService()
+        analysis = power_service.get_device_detailed_power_analysis(device)
+        
+        if not analysis['has_data']:
+            messages.error(request, 'No data available for export')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+        # Find the specific incident
+        target_incident = None
+        print(f"DEBUG: Looking for incident with start time: {incident_start}")
+        
+        for i, incident in enumerate(analysis['statistics']['power_incidents']):
+            print(f"DEBUG: Incident {i+1} start_time: {incident['start_time']}")
+            if incident['start_time']:
+                incident_str = incident['start_time'].strftime('%Y-%m-%d %H:%M:%S')
+                print(f"DEBUG: Comparing '{incident_str}' with '{incident_start}'")
+                if incident_str == incident_start:
+                    target_incident = incident
+                    print(f"DEBUG: Found matching incident!")
+                    break
+        
+        if not target_incident:
+            messages.error(request, f'Incident not found for start time: {incident_start}')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+        # Create Excel file
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            
+            # Incident summary
+            summary_data = {
+                'Metric': [
+                    'Device Name',
+                    'Incident Start',
+                    'Incident End',
+                    'Duration (hours)',
+                    'Start Counter',
+                    'End Counter',
+                    'Total Production without Power',
+                    'Has Counter Activity',
+                    'Is Ongoing',
+                    'Export Date'
+                ],
+                'Value': [
+                    device.name,
+                    target_incident['start_time'].strftime('%Y-%m-%d %H:%M:%S') if target_incident['start_time'] else 'N/A',
+                    target_incident['end_time'].strftime('%Y-%m-%d %H:%M:%S') if target_incident['end_time'] else 'N/A',
+                    round(target_incident['duration'].total_seconds() / 3600, 2) if 'duration' in target_incident else 0,
+                    target_incident['start_counter'],
+                    target_incident['end_counter'] if target_incident['end_counter'] else 'N/A',
+                    target_incident['total_production'],
+                    'Yes' if target_incident['has_counter_activity'] else 'No',
+                    'Yes' if target_incident.get('is_ongoing', False) else 'No',
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                ]
+            }
+            
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Incident Summary', index=False)
+            
+            # Counter changes
+            if target_incident['counter_changes']:
+                counter_changes_data = []
+                for i, change in enumerate(target_incident['counter_changes']):
+                    counter_changes_data.append({
+                        'Sequence #': i + 1,
+                        'Timestamp': change['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if change['timestamp'] else 'N/A',
+                        'Counter Value': change['counter_value'],
+                        'Change': change['change'],
+                        'Accumulated Production': change['counter_value'] - target_incident['start_counter']
+                    })
+                
+                counter_changes_df = pd.DataFrame(counter_changes_data)
+                counter_changes_df.to_excel(writer, sheet_name='Counter Changes', index=False)
+            
+            # Counter changes by date
+            if target_incident.get('counter_changes_by_date'):
+                counter_changes_by_date_data = []
+                for date_group in target_incident['counter_changes_by_date']:
+                    counter_changes_by_date_data.append({
+                        'Date': date_group['date_display'],
+                        'Is Today': 'Yes' if date_group['is_today'] else 'No',
+                        'Total Production': date_group['total'],
+                        'Number of Changes': len(date_group['changes'])
+                    })
+                
+                counter_changes_by_date_df = pd.DataFrame(counter_changes_by_date_data)
+                counter_changes_by_date_df.to_excel(writer, sheet_name='Counter Changes by Date', index=False)
+        
+        output.seek(0)
+        
+        # Create response
+        filename = f"incident_counter_changes_{device.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Error exporting data: {str(e)}')
+        return redirect('device_detailed_power_analysis', device_id=device_id) 
+
+@login_required
+def export_power_outages(request, device_id):
+    """Export power outages to Excel - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        import pandas as pd
+        from io import BytesIO
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        device = get_object_or_404(Device, id=device_id)
+        power_service = UnifiedPowerManagementService()
+        
+        # Get detailed analysis
+        analysis = power_service.get_device_detailed_power_analysis(device)
+        
+        if not analysis['has_data']:
+            messages.error(request, 'No data available for export')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+        # Create Excel file
+        output = BytesIO()
+        
+        try:
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                
+                # Summary sheet
+                summary_data = {
+                    'Metric': [
+                        'Device Name',
+                        'Factory',
+                        'Total Power Outages',
+                        'Total Production without Power',
+                        'Total Duration (hours)',
+                        'Ongoing Outages',
+                        'Export Date'
+                    ],
+                    'Value': [
+                        device.name,
+                        device.factory.name if device.factory else 'N/A',
+                        len(analysis.get('power_outages_with_production', [])),
+                        sum(outage['total_production'] for outage in analysis.get('power_outages_with_production', [])),
+                        round(sum(outage['duration'].total_seconds() for outage in analysis.get('power_outages_with_production', [])) / 3600, 2),
+                        sum(1 for outage in analysis.get('power_outages_with_production', []) if outage.get('is_ongoing', False)),
+                        datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    ]
+                }
+                
+                summary_df = pd.DataFrame(summary_data)
+                summary_df.to_excel(writer, sheet_name='Summary', index=False)
+                
+                # Power outages sheet
+                if analysis.get('power_outages_with_production'):
+                    outages_data = []
+                    for i, outage in enumerate(analysis['power_outages_with_production']):
+                        outages_data.append({
+                            'Outage #': i + 1,
+                            'Type': 'Multiple' if outage['type'] == 'multiple' else 'Single',
+                            'Date Range': outage['date_range'],
+                            'Time Range': outage['time_range'],
+                            'Duration (hours)': round(outage['duration'].total_seconds() / 3600, 2) if outage['duration'] else 0,
+                            'Start Counter': outage['start_counter'],
+                            'End Counter': outage['end_counter'] if outage['end_counter'] else 'N/A',
+                            'Total Production': outage['total_production'],
+                            'Is Ongoing': 'Yes' if outage['is_ongoing'] else 'No',
+                            'Outage Count': outage.get('outage_count', 1)
+                        })
+                    
+                    outages_df = pd.DataFrame(outages_data)
+                    outages_df.to_excel(writer, sheet_name='Power Outages', index=False)
+                    
+                    # Production events sheet
+                    all_production_events = []
+                    for i, outage in enumerate(analysis['power_outages_with_production']):
+                        for event in outage.get('production_events', []):
+                            all_production_events.append({
+                                'Outage #': i + 1,
+                                'Outage Type': 'Multiple' if outage['type'] == 'multiple' else 'Single',
+                                'Date Range': outage['date_range'],
+                                'Event Timestamp': event['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if event['timestamp'] else 'N/A',
+                                'Time from Start': f"{event['time_from_start'].days}d {event['time_from_start'].seconds//3600}h {(event['time_from_start'].seconds%3600)//60}m" if event['time_from_start'] else 'N/A',
+                                'Counter Value': event['counter_value'],
+                                'Production Increment': event['production_increment'],
+                                'Cumulative': event.get('cumulative', event['production_increment'])
+                            })
+                    
+                    if all_production_events:
+                        production_events_df = pd.DataFrame(all_production_events)
+                        production_events_df.to_excel(writer, sheet_name='Production Events', index=False)
+            
+            output.seek(0)
+            
+            # Create response
+            filename = f"power_outages_{device.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            response = HttpResponse(
+                output.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as excel_error:
+            print(f"Excel creation error: {str(excel_error)}")
+            messages.error(request, f'Error creating Excel file: {str(excel_error)}')
+            return redirect('device_detailed_power_analysis', device_id=device_id)
+        
+    except Exception as e:
+        print(f"Export error: {str(e)}")
+        messages.error(request, f'Error exporting data: {str(e)}')
+        return redirect('device_detailed_power_analysis', device_id=device_id)
+ 
+
+@login_required
+def device_power_history(request, device_id):
+    """Show device power history with date range filtering - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        device = get_object_or_404(Device, id=device_id)
+        power_service = UnifiedPowerManagementService()
+        
+        # Get date range from request
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        days = request.GET.get('days', '30')
+        
+        # Convert days to integer
+        try:
+            days = int(days)
+        except ValueError:
+            days = 30
+        
+        # Get date range for power history
+        if start_date and end_date:
+            # Use specific date range
+            from datetime import datetime
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+            days = (end_dt - start_dt).days + 1
+        
+        # Get detailed analysis with specified days
+        analysis = power_service.get_device_detailed_power_analysis(device, days=days)
+        
+        context = {
+            'device': device,
+            'analysis': analysis,
+            'selected_days': days,
+            'start_date': start_date,
+            'end_date': end_date,
+        }
+        
+        return render(request, 'mill/device_power_history.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading device history: {str(e)}')
+        return redirect('device_detailed_power_analysis', device_id=device_id) 

@@ -1816,8 +1816,8 @@ function updatePowerStatusBoxForDevice(deviceId) {
         </div>
     `;
     
-    // Fetch power data from unified power management
-    fetch(`/api/power-data-mqtt/${factoryId}/?device_id=${deviceId}`)
+    // Fetch power data from unified power management service (same as power management)
+    fetch(`/api/power-status/${factoryId}/?device_id=${deviceId}`)
         .then(response => response.json())
         .then(data => {
             console.log('Unified power management data received:', data);
