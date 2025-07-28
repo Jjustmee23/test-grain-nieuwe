@@ -1,0 +1,486 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Suspicious Activity Analysis - {{ device.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .suspicious-activity {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .analysis-header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .analysis-title {
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .analysis-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+    }
+    
+    .analysis-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .device-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .device-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .status-badge {
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+    
+    .status-badge.suspicious {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .status-badge.normal {
+        background: #28a745;
+        color: white;
+    }
+    
+    .status-badge.pending {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .analysis-summary {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .summary-message {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .summary-message.critical {
+        color: #dc3545;
+    }
+    
+    .summary-message.normal {
+        color: #28a745;
+    }
+    
+    .summary-message.pending {
+        color: #ffc107;
+    }
+    
+    .analysis-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .detail-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .detail-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .detail-label {
+        font-weight: 500;
+        color: #666;
+    }
+    
+    .detail-value {
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .production-changes {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .production-changes h4 {
+        color: #333;
+        margin-bottom: 15px;
+    }
+    
+    .change-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        border: 1px solid #dee2e6;
+    }
+    
+    .change-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .change-title {
+        font-weight: bold;
+        color: #333;
+        margin: 0;
+    }
+    
+    .change-time {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .counter-changes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    
+    .counter-change {
+        background: #e9ecef;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    
+    .counter-name {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .counter-value {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .power-value {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .btn-modern {
+        padding: 12px 24px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .btn-primary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .btn-secondary-modern {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+    }
+    
+    .btn-secondary-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .check-interval-selector {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .check-interval-selector label {
+        color: white;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .check-interval-selector select {
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: none;
+        background: white;
+        color: #333;
+    }
+</style>
+
+<div class="suspicious-activity">
+    <!-- Analysis Header -->
+    <div class="analysis-header">
+        <h1 class="analysis-title">
+            <i class="bi bi-exclamation-triangle me-3"></i>
+            Suspicious Activity Analysis
+        </h1>
+        <p class="analysis-subtitle">
+            Analysis for {{ device.name }} - Detecting production during power loss
+        </p>
+    </div>
+
+    <!-- Analysis Card -->
+    <div class="analysis-card">
+        <!-- Device Header -->
+        <div class="device-header">
+            <h2 class="device-name">{{ device.name }}</h2>
+            <span class="status-badge {% if suspicious_analysis.has_suspicious_activity %}suspicious{% elif suspicious_analysis.pending_check %}pending{% else %}normal{% endif %}">
+                {% if suspicious_analysis.has_suspicious_activity %}
+                    <i class="bi bi-exclamation-triangle me-2"></i>CRITICAL
+                {% elif suspicious_analysis.pending_check %}
+                    <i class="bi bi-clock me-2"></i>PENDING
+                {% else %}
+                    <i class="bi bi-check-circle me-2"></i>NORMAL
+                {% endif %}
+            </span>
+        </div>
+
+        <!-- Check Interval Selector -->
+        <div class="check-interval-selector">
+            <label for="check-interval">Check Interval:</label>
+            <select id="check-interval" onchange="window.location.href='?check_interval=' + this.value">
+                <option value="1" {% if check_interval == 1 %}selected{% endif %}>1 minute</option>
+                <option value="3" {% if check_interval == 3 %}selected{% endif %}>3 minutes</option>
+                <option value="5" {% if check_interval == 5 %}selected{% endif %}>5 minutes</option>
+                <option value="10" {% if check_interval == 10 %}selected{% endif %}>10 minutes</option>
+                <option value="15" {% if check_interval == 15 %}selected{% endif %}>15 minutes</option>
+            </select>
+        </div>
+
+        <!-- Analysis Summary -->
+        <div class="analysis-summary">
+            <div class="summary-message {% if suspicious_analysis.has_suspicious_activity %}critical{% elif suspicious_analysis.pending_check %}pending{% else %}normal{% endif %}">
+                {% if suspicious_analysis.has_suspicious_activity %}
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                {% elif suspicious_analysis.pending_check %}
+                    <i class="bi bi-clock me-2"></i>
+                {% else %}
+                    <i class="bi bi-check-circle me-2"></i>
+                {% endif %}
+                {{ suspicious_analysis.message }}
+            </div>
+            
+            {% if suspicious_analysis.pending_check %}
+                <div class="alert alert-warning">
+                    <strong>Waiting for analysis:</strong> The system will automatically check for suspicious activity when the {{ check_interval }}-minute interval has passed.
+                </div>
+            {% endif %}
+        </div>
+
+        {% if suspicious_analysis.analysis_data %}
+            <!-- Analysis Details -->
+            <div class="analysis-details">
+                <div class="detail-card">
+                    <div class="detail-title">
+                        <i class="bi bi-clock me-2"></i>Timeline
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Power Loss Time:</span>
+                        <span class="detail-value">{{ suspicious_analysis.analysis_data.power_loss_time|date:"M d, Y H:i:s" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Check Time:</span>
+                        <span class="detail-value">{{ suspicious_analysis.analysis_data.check_time|date:"M d, Y H:i:s" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Analysis Period:</span>
+                        <span class="detail-value">{{ check_interval }} minutes</span>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-title">
+                        <i class="bi bi-graph-up me-2"></i>Production Summary
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Production:</span>
+                        <span class="detail-value {% if suspicious_analysis.analysis_data.total_production > 0 %}text-danger{% endif %}">
+                            {{ suspicious_analysis.analysis_data.total_production }} bags
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value {% if suspicious_analysis.has_suspicious_activity %}text-danger{% else %}text-success{% endif %}">
+                            {% if suspicious_analysis.has_suspicious_activity %}SUSPICIOUS{% else %}NORMAL{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="detail-title">
+                        <i class="bi bi-lightning me-2"></i>Power Status
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Current Status:</span>
+                        <span class="detail-value">
+                            {% if power_status.has_power %}
+                                <span class="text-success">Power ON</span>
+                            {% else %}
+                                <span class="text-danger">Power OFF</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">AIN1 Value:</span>
+                        <span class="detail-value">{{ power_status.ain1_value|default:"N/A" }} V</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production During No Power -->
+            {% if suspicious_analysis.analysis_data.production_during_no_power %}
+            <div class="production-changes">
+                <h4><i class="bi bi-exclamation-triangle text-danger me-2"></i>Production During No-Power Period</h4>
+                
+                {% for counter_name, production_data in suspicious_analysis.analysis_data.production_during_no_power.items %}
+                <div class="change-item border-danger">
+                    <div class="change-header">
+                        <h5 class="change-title text-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {{ counter_name|title }} - {{ production_data.production }} bags produced
+                        </h5>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Power Loss Value:</strong> {{ production_data.power_loss_value }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Check Value:</strong> {{ production_data.check_value }}
+                        </div>
+                    </div>
+                    <div class="alert alert-danger mt-2">
+                        <strong>CRITICAL:</strong> {{ production_data.production }} bags were produced while the device had NO POWER!
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Detailed Counter Changes -->
+            {% if suspicious_analysis.analysis_data.counter_changes_during_period %}
+            <div class="production-changes">
+                <h4><i class="bi bi-clock-history me-2"></i>Detailed Counter Changes During Analysis Period</h4>
+                
+                {% for change in suspicious_analysis.analysis_data.counter_changes_during_period %}
+                <div class="change-item">
+                    <div class="change-header">
+                        <h5 class="change-title">
+                            <i class="bi bi-clock me-2"></i>
+                            Update at {{ change.timestamp|date:"H:i:s" }}
+                        </h5>
+                        <span class="change-time">{{ change.timestamp|date:"M d, Y H:i:s" }}</span>
+                    </div>
+                    
+                    <div class="counter-changes">
+                        {% for counter_name, counter_data in change.changes.items %}
+                        <div class="counter-change">
+                            <div class="counter-name">{{ counter_name|title }}</div>
+                            <div class="counter-value">+{{ counter_data.change }}</div>
+                            <div class="text-muted">{{ counter_data.previous }} → {{ counter_data.current }}</div>
+                            <div class="power-value">Power: {{ counter_data.ain1_value|default:"N/A" }} V</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'device_power_status' device.id %}" class="btn-modern btn-secondary-modern">
+                <i class="bi bi-arrow-left"></i>
+                Back to Power Status
+            </a>
+            
+            <a href="{% url 'power_dashboard' %}" class="btn-modern btn-secondary-modern">
+                <i class="bi bi-dashboard"></i>
+                Power Dashboard
+            </a>
+            
+            <a href="{% url 'power_events_list' %}?device={{ device.id }}" class="btn-modern btn-primary-modern">
+                <i class="bi bi-list"></i>
+                View Power Events
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %} 

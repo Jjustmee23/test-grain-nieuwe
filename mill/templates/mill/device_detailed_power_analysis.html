@@ -1,0 +1,387 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+
+{% block title %}Device Power Analyse - {{ device.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .device-analysis {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .device-header {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-online { background: #28a745; }
+    .status-offline { background: #dc3545; }
+    .status-power-loss { background: #ffc107; }
+    .status-unknown { background: #6c757d; }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .stat-card.critical {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .stat-card.warning {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .stat-card.info {
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .incidents-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .incident-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+    }
+    
+    .incident-header {
+        background: #f8f9fa;
+        padding: 15px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .incident-header.critical {
+        background: #fff5f5;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .incident-header.warning {
+        background: #fffbf0;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .incident-details {
+        padding: 15px;
+    }
+    
+    .incident-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .incident-stat {
+        text-align: center;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .incident-stat.critical {
+        background: #fff5f5;
+        color: #dc3545;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 50px;
+        color: #666;
+    }
+    
+    .no-data i {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .btn-modern {
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary-modern {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-secondary-modern {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="device-analysis">
+    <!-- Device Header -->
+    <div class="device-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1>
+                    <span class="status-indicator status-{{ analysis.current_status }}"></span>
+                    {{ device.name }}
+                </h1>
+                <p class="text-muted mb-0">
+                    Device ID: {{ device.id }} | 
+                    Factory: {% if device.factory %}{{ device.factory.name }}{% else %}Geen factory{% endif %}
+                </p>
+            </div>
+            <div class="text-end">
+                <h4 class="mb-1">
+                    {% if analysis.current_status == 'online' %}
+                        <span class="text-success">ONLINE</span>
+                    {% elif analysis.current_status == 'offline' %}
+                        <span class="text-danger">OFFLINE</span>
+                    {% elif analysis.current_status == 'power_loss' %}
+                        <span class="text-warning">POWER LOSS</span>
+                    {% else %}
+                        <span class="text-muted">UNKNOWN</span>
+                    {% endif %}
+                </h4>
+                {% if power_status %}
+                    <small class="text-muted">
+                        Laatste update: {{ power_status.last_updated|date:"d/m/Y H:i" }}
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if analysis.has_data %}
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card {% if analysis.statistics.incidents_with_counter > 0 %}critical{% else %}info{% endif %}">
+                <div class="stat-value">{{ analysis.statistics.total_incidents }}</div>
+                <div class="stat-label">Total Incidenten</div>
+            </div>
+            <div class="stat-card {% if analysis.statistics.incidents_with_counter > 0 %}critical{% else %}warning{% endif %}">
+                <div class="stat-value">{{ analysis.statistics.incidents_with_counter }}</div>
+                <div class="stat-label">Met Counter Activiteit</div>
+            </div>
+            <div class="stat-card {% if analysis.statistics.total_production_without_power > 0 %}critical{% else %}info{% endif %}">
+                <div class="stat-value">{{ analysis.statistics.total_production_without_power }}</div>
+                <div class="stat-label">Productie Zonder Stroom</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-value">
+                    {% if analysis.statistics.total_downtime.days > 0 %}
+                        {{ analysis.statistics.total_downtime.days }}d
+                    {% else %}
+                        {{ analysis.statistics.total_downtime.seconds|floatformat:0|div:3600|floatformat:1 }}h
+                    {% endif %}
+                </div>
+                <div class="stat-label">Total Downtime</div>
+            </div>
+        </div>
+
+        <!-- Power Incidents -->
+        <div class="incidents-section">
+            <h3><i class="bi bi-exclamation-triangle"></i> Power Incidenten (Laatste 7 dagen)</h3>
+            
+            {% if analysis.power_incidents %}
+                {% for incident in analysis.power_incidents %}
+                <div class="incident-item">
+                    <div class="incident-header {% if incident.has_counter_activity %}critical{% else %}warning{% endif %}">
+                        <div>
+                            <strong>
+                                {% if incident.has_counter_activity %}
+                                    <i class="bi bi-exclamation-triangle text-danger"></i> CRITICAL: Productie zonder stroom
+                                {% else %}
+                                    <i class="bi bi-exclamation-circle text-warning"></i> Power Loss
+                                {% endif %}
+                            </strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ incident.start_time|date:"d/m/Y H:i" }} - 
+                                {% if incident.is_ongoing %}
+                                    <span class="text-danger">ONGOING</span>
+                                {% else %}
+                                    {{ incident.end_time|date:"d/m/Y H:i" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <strong>
+                                {% if incident.duration.days > 0 %}
+                                    {{ incident.duration.days }}d 
+                                {% endif %}
+                                {% if incident.duration.seconds > 3600 %}
+                                    {{ incident.duration.seconds|floatformat:0|add:"-3600"|floatformat:0|div:3600|floatformat:0 }}h
+                                {% elif incident.duration.seconds > 60 %}
+                                    {{ incident.duration.seconds|floatformat:0|div:60|floatformat:0 }}m
+                                {% else %}
+                                    {{ incident.duration.seconds }}s
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                    
+                    <div class="incident-details">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Counter Details:</strong><br>
+                                Start: {{ incident.start_counter }} stuks<br>
+                                {% if incident.end_counter %}
+                                    Eind: {{ incident.end_counter }} stuks<br>
+                                {% endif %}
+                                {% if incident.has_counter_activity %}
+                                    <span class="text-danger fw-bold">
+                                        Productie zonder stroom: {{ incident.total_production }} stuks
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Geen counter activiteit</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if incident.counter_changes %}
+                                    <strong>Counter Veranderingen:</strong><br>
+                                    {% for change in incident.counter_changes|slice:":3" %}
+                                        {{ change.timestamp|date:"H:i" }}: +{{ change.change }} stuks<br>
+                                    {% endfor %}
+                                    {% if incident.counter_changes|length > 3 %}
+                                        <small class="text-muted">... en {{ incident.counter_changes|length|add:"-3" }} meer</small>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-data">
+                    <i class="bi bi-check-circle"></i>
+                    <h4>Geen Power Incidenten</h4>
+                    <p>Geen power loss incidenten gevonden in de laatste 7 dagen.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Power Events -->
+        {% if analysis.recent_events %}
+        <div class="incidents-section">
+            <h3><i class="bi bi-list-ul"></i> Recente Power Events</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Datum/Tijd</th>
+                            <th>Event Type</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in analysis.recent_events %}
+                        <tr>
+                            <td>{{ event.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ event.get_event_type_display }}</td>
+                            <td>
+                                <span class="badge bg-{% if event.severity == 'critical' %}danger{% elif event.severity == 'warning' %}warning{% else %}info{% endif %}">
+                                    {{ event.get_severity_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if event.is_resolved %}
+                                    <span class="badge bg-success">Opgelost</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Open</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="no-data">
+            <i class="bi bi-exclamation-circle"></i>
+            <h4>Geen Data Beschikbaar</h4>
+            <p>{{ analysis.message }}</p>
+        </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'all_devices_without_power' %}" class="btn-modern btn-secondary-modern">
+            <i class="bi bi-arrow-left"></i> Terug naar Overzicht
+        </a>
+        <a href="{% url 'device_suspicious_activity' device.id %}" class="btn-modern btn-primary-modern">
+            <i class="bi bi-exclamation-triangle"></i> Suspicious Activity
+        </a>
+        <a href="{% url 'power_events_list' %}?device={{ device.id }}" class="btn-modern btn-primary-modern">
+            <i class="bi bi-list"></i> Alle Power Events
+        </a>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %} 

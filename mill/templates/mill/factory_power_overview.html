@@ -364,8 +364,11 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{% url 'device_power_status' power_status.device.id %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'device_detailed_power_analysis' power_status.device.id %}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye me-1"></i>Details
+                                </a>
+                                <a href="{% url 'device_suspicious_activity' power_status.device.id %}" class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Suspicious
                                 </a>
                                 {% if power_status.power_loss_count_today > 0 %}
                                     <span class="badge bg-warning ms-1">{{ power_status.power_loss_count_today }} losses</span>

@@ -535,6 +535,11 @@
                 Back to Dashboard
             </a>
             
+            <a href="{% url 'device_suspicious_activity' device.id %}" class="btn-modern btn-primary-modern">
+                <i class="bi bi-exclamation-triangle"></i>
+                Suspicious Activity Analysis
+            </a>
+            
             <a href="{% url 'power_events_list' %}?device={{ device.id }}" class="btn-modern btn-primary-modern">
                 <i class="bi bi-list"></i>
                 View All Events

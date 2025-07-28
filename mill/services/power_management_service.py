@@ -848,4 +848,175 @@ This is an automated alert from the Mill Application Power Management System.
                 'total_bags_produced': 0,
                 'bags_without_power': 0,
                 'error': str(e)
+            }
+
+    def get_suspicious_activity_analysis(self, device, check_interval_minutes=5):
+        """
+        Analyze suspicious activity when there's no power but counter is running.
+        This implements the logic requested by the user:
+        - Check if there's no power
+        - Wait 5 minutes and check again
+        - If still no power, check if there's production between the two checks
+        - If there's production without power, it's suspicious
+        - If no production, factory is just offline (normal)
+        """
+        try:
+            from datetime import timedelta
+            
+            # Get current time and calculate the check interval
+            current_time = timezone.now()
+            check_interval = timedelta(minutes=check_interval_minutes)
+            
+            # Get the latest power status
+            power_status = DevicePowerStatus.objects.filter(device=device).first()
+            if not power_status:
+                return {
+                    'has_suspicious_activity': False,
+                    'message': 'No power status data available',
+                    'analysis_data': None
+                }
+            
+            # Check if device currently has no power
+            if power_status.has_power:
+                return {
+                    'has_suspicious_activity': False,
+                    'message': 'Device currently has power - no suspicious activity',
+                    'analysis_data': None
+                }
+            
+            # Get the time when power was lost
+            power_loss_time = power_status.power_loss_detected_at
+            if not power_loss_time:
+                return {
+                    'has_suspicious_activity': False,
+                    'message': 'No power loss time recorded',
+                    'analysis_data': None
+                }
+            
+            # Calculate the check time (5 minutes after power loss)
+            check_time = power_loss_time + check_interval
+            
+            # If we haven't reached the check time yet, return pending status
+            if current_time < check_time:
+                remaining_time = check_time - current_time
+                return {
+                    'has_suspicious_activity': False,
+                    'message': f'Waiting for {check_interval_minutes}-minute check. {remaining_time.seconds // 60} minutes remaining.',
+                    'analysis_data': None,
+                    'pending_check': True,
+                    'check_time': check_time
+                }
+            
+            # Get counter data between power loss and check time
+            start_time = power_loss_time
+            end_time = check_time
+            
+            # Get raw data for this period
+            raw_data = RawData.objects.filter(
+                device=device,
+                timestamp__gte=start_time,
+                timestamp__lte=end_time
+            ).order_by('timestamp')
+            
+            if not raw_data.exists():
+                return {
+                    'has_suspicious_activity': False,
+                    'message': 'No data available for analysis period',
+                    'analysis_data': None
+                }
+            
+            # Get counter values at power loss time
+            power_loss_record = raw_data.first()
+            power_loss_counters = {
+                'counter_1': power_loss_record.counter_1 or 0,
+                'counter_2': power_loss_record.counter_2 or 0,
+                'counter_3': power_loss_record.counter_3 or 0,
+                'counter_4': power_loss_record.counter_4 or 0,
+            }
+            
+            # Get counter values at check time (5 minutes later)
+            check_record = raw_data.last()
+            check_counters = {
+                'counter_1': check_record.counter_1 or 0,
+                'counter_2': check_record.counter_2 or 0,
+                'counter_3': check_record.counter_3 or 0,
+                'counter_4': check_record.counter_4 or 0,
+            }
+            
+            # Calculate production during the no-power period
+            production_during_no_power = {}
+            total_production = 0
+            has_suspicious_activity = False
+            
+            for counter_name in ['counter_1', 'counter_2', 'counter_3', 'counter_4']:
+                power_loss_value = power_loss_counters[counter_name]
+                check_value = check_counters[counter_name]
+                production = check_value - power_loss_value
+                
+                if production > 0:
+                    production_during_no_power[counter_name] = {
+                        'power_loss_value': power_loss_value,
+                        'check_value': check_value,
+                        'production': production
+                    }
+                    total_production += production
+                    has_suspicious_activity = True
+            
+            # Get all counter changes during the period for detailed analysis
+            counter_changes_during_period = []
+            previous_counters = power_loss_counters.copy()
+            
+            for record in raw_data[1:]:  # Skip first record
+                changes = {}
+                for counter_name in ['counter_1', 'counter_2', 'counter_3', 'counter_4']:
+                    current_value = getattr(record, counter_name) or 0
+                    previous_value = previous_counters[counter_name]
+                    change = current_value - previous_value
+                    
+                    if change > 0:
+                        changes[counter_name] = {
+                            'previous': previous_value,
+                            'current': current_value,
+                            'change': change,
+                            'timestamp': record.timestamp,
+                            'ain1_value': record.ain1_value
+                        }
+                    
+                    previous_counters[counter_name] = current_value
+                
+                if changes:
+                    counter_changes_during_period.append({
+                        'timestamp': record.timestamp,
+                        'changes': changes,
+                        'ain1_value': record.ain1_value
+                    })
+            
+            analysis_data = {
+                'power_loss_time': power_loss_time,
+                'check_time': check_time,
+                'power_loss_counters': power_loss_counters,
+                'check_counters': check_counters,
+                'production_during_no_power': production_during_no_power,
+                'total_production': total_production,
+                'counter_changes_during_period': counter_changes_during_period,
+                'check_interval_minutes': check_interval_minutes
+            }
+            
+            if has_suspicious_activity:
+                message = f"CRITICAL: {total_production} bags produced during {check_interval_minutes}-minute no-power period!"
+            else:
+                message = f"Factory is offline (normal) - no production during {check_interval_minutes}-minute no-power period"
+            
+            return {
+                'has_suspicious_activity': has_suspicious_activity,
+                'message': message,
+                'analysis_data': analysis_data
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing suspicious activity for device {device.id}: {str(e)}")
+            return {
+                'has_suspicious_activity': False,
+                'message': f'Error during analysis: {str(e)}',
+                'analysis_data': None
             } 

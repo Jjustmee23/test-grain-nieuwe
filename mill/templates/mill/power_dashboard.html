@@ -358,13 +358,25 @@
 <div class="power-dashboard">
     <!-- Dashboard Header -->
     <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="bi bi-lightning-charge me-3"></i>
-                            {% trans "Power Management Dashboard" %}
-        </h1>
-        <p class="dashboard-subtitle">
-            {% trans "Monitor device power status and manage power-related events" %}
-        </p>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="dashboard-title">
+                    <i class="bi bi-lightning-charge me-3"></i>
+                    {% trans "Power Management Dashboard" %}
+                </h1>
+                <p class="dashboard-subtitle">
+                    {% trans "Monitor device power status and manage power-related events" %}
+                </p>
+            </div>
+            {% if user.is_superuser %}
+            <div class="super-admin-actions">
+                <a href="{% url 'all_devices_without_power' %}" class="btn btn-danger btn-lg">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Alle Devices Zonder Stroom
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Statistics Grid -->

@@ -11,6 +11,7 @@ from mill.models import (
 )
 from mill.services.unified_power_management_service import UnifiedPowerManagementService
 from mill.services.counter_sync_service import CounterSyncService
+from mill.services.power_management_service import PowerManagementService
 from mill.utils.permmissions_handler_utils import is_allowed_factory
 from mill.models import PowerData
 
@@ -187,6 +188,41 @@ def device_power_status(request, device_id):
         
     except Exception as e:
         messages.error(request, f'Error loading device power status: {str(e)}')
+        return redirect('power_dashboard')
+
+@login_required
+def device_suspicious_activity(request, device_id):
+    """View suspicious activity analysis for a specific device - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. Power management is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        device = get_object_or_404(Device, id=device_id)
+        
+        # Get power status
+        power_status = DevicePowerStatus.objects.filter(device=device).first()
+        
+        # Get suspicious activity analysis
+        power_service = UnifiedPowerManagementService() # Changed from PowerManagementService to UnifiedPowerManagementService
+        check_interval = int(request.GET.get('check_interval', 5))  # Default 5 minutes
+        suspicious_analysis = power_service.get_suspicious_activity_analysis(device, check_interval)
+        
+        # Get recent power events for context
+        power_events = PowerEvent.objects.filter(device=device).order_by('-created_at')[:5]
+        
+        context = {
+            'device': device,
+            'power_status': power_status,
+            'suspicious_analysis': suspicious_analysis,
+            'power_events': power_events,
+            'check_interval': check_interval,
+        }
+        
+        return render(request, 'mill/device_suspicious_activity.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading suspicious activity analysis: {str(e)}')
         return redirect('power_dashboard')
 
 @login_required
@@ -958,3 +994,69 @@ def power_data_mqtt_api(request, factory_id):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500) 
+
+@login_required
+def all_devices_without_power(request):
+    """Super admin view: Show all devices currently without power"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        power_service = UnifiedPowerManagementService()
+        devices_without_power = power_service.get_all_devices_without_power()
+        
+        # Calculate summary statistics
+        total_devices = len(devices_without_power)
+        critical_devices = len([d for d in devices_without_power if d['severity'] == 'critical'])
+        warning_devices = len([d for d in devices_without_power if d['severity'] == 'warning'])
+        
+        total_production_without_power = sum(
+            d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0)
+            for d in devices_without_power
+        )
+        
+        context = {
+            'devices_without_power': devices_without_power,
+            'summary': {
+                'total_devices': total_devices,
+                'critical_devices': critical_devices,
+                'warning_devices': warning_devices,
+                'total_production_without_power': total_production_without_power
+            }
+        }
+        
+        return render(request, 'mill/all_devices_without_power.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading devices without power: {str(e)}')
+        return redirect('power_dashboard')
+
+@login_required
+def device_detailed_power_analysis(request, device_id):
+    """Detailed power analysis for a specific device - Super admin only"""
+    if not request.user.is_superuser:
+        messages.error(request, 'Access denied. This page is only available for super administrators.')
+        return redirect('dashboard')
+    
+    try:
+        device = get_object_or_404(Device, id=device_id)
+        power_service = UnifiedPowerManagementService()
+        
+        # Get detailed analysis
+        analysis = power_service.get_device_detailed_power_analysis(device)
+        
+        # Get power status
+        power_status = DevicePowerStatus.objects.filter(device=device).first()
+        
+        context = {
+            'device': device,
+            'analysis': analysis,
+            'power_status': power_status,
+        }
+        
+        return render(request, 'mill/device_detailed_power_analysis.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading device analysis: {str(e)}')
+        return redirect('power_dashboard') 
