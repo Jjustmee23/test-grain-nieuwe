@@ -1015,33 +1015,87 @@ def power_data_mqtt_api(request, factory_id):
 
 @login_required
 def all_devices_without_power(request):
-    """Super admin view: Show all devices currently without power"""
+    """Super admin view: Show all devices currently without power with filters"""
     if not request.user.is_superuser:
         messages.error(request, 'Access denied. This page is only available for super administrators.')
         return redirect('dashboard')
     
     try:
         power_service = UnifiedPowerManagementService()
-        devices_without_power = power_service.get_all_devices_without_power()
+        all_devices = power_service.get_all_devices_without_power()
         
-        # Calculate summary statistics
-        total_devices = len(devices_without_power)
-        critical_devices = len([d for d in devices_without_power if d['severity'] == 'critical'])
-        warning_devices = len([d for d in devices_without_power if d['severity'] == 'warning'])
+        # Get filter parameters
+        severity_filter = request.GET.get('severity', '')
+        factory_filter = request.GET.get('factory', '')
+        production_filter = request.GET.get('production', '')
+        downtime_filter = request.GET.get('downtime', '')
+        
+        # Apply filters
+        filtered_devices = all_devices
+        
+        if severity_filter:
+            if severity_filter == 'critical':
+                filtered_devices = [d for d in filtered_devices if d['severity'] == 'critical']
+            elif severity_filter == 'warning':
+                filtered_devices = [d for d in filtered_devices if d['severity'] == 'warning']
+        
+        if factory_filter:
+            filtered_devices = [d for d in filtered_devices if d['factory'] and factory_filter.lower() in d['factory'].name.lower()]
+        
+        if production_filter:
+            if production_filter == 'with_production':
+                filtered_devices = [d for d in filtered_devices if d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0) > 0]
+            elif production_filter == 'no_production':
+                filtered_devices = [d for d in filtered_devices if d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0) == 0]
+        
+        if downtime_filter:
+            now = timezone.now()
+            if downtime_filter == 'less_1h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and d['downtime_duration'].total_seconds() < 3600]
+            elif downtime_filter == '1h_6h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and 3600 <= d['downtime_duration'].total_seconds() < 21600]
+            elif downtime_filter == '6h_24h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and 21600 <= d['downtime_duration'].total_seconds() < 86400]
+            elif downtime_filter == 'more_24h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and d['downtime_duration'].total_seconds() >= 86400]
+        
+        # Calculate summary statistics for filtered results
+        total_devices = len(filtered_devices)
+        critical_devices = len([d for d in filtered_devices if d['severity'] == 'critical'])
+        warning_devices = len([d for d in filtered_devices if d['severity'] == 'warning'])
         
         total_production_without_power = sum(
             d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0)
-            for d in devices_without_power
+            for d in filtered_devices
         )
         
+        # Get unique factories for filter dropdown
+        factories = list(set([d['factory'] for d in all_devices if d['factory']]))
+        factories.sort(key=lambda x: x.name if x else '')
+        
         context = {
-            'devices_without_power': devices_without_power,
+            'devices_without_power': filtered_devices,
+            'all_devices': all_devices,  # For summary cards
             'summary': {
                 'total_devices': total_devices,
                 'critical_devices': critical_devices,
                 'warning_devices': warning_devices,
-                'total_production_without_power': total_production_without_power
-            }
+                'total_production_without_power': total_production_without_power,
+                'total_all_devices': len(all_devices),
+                'critical_all_devices': len([d for d in all_devices if d['severity'] == 'critical']),
+                'warning_all_devices': len([d for d in all_devices if d['severity'] == 'warning']),
+                'total_production_all_devices': sum(
+                    d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0)
+                    for d in all_devices
+                )
+            },
+            'filters': {
+                'severity': severity_filter,
+                'factory': factory_filter,
+                'production': production_filter,
+                'downtime': downtime_filter
+            },
+            'factories': factories
         }
         
         return render(request, 'mill/all_devices_without_power.html', context)
@@ -1108,6 +1162,10 @@ def export_device_power_analysis(request, device_id):
         from io import BytesIO
         from django.http import HttpResponse
         from datetime import datetime
+        
+        # Check if exporting all devices
+        if device_id == 'all':
+            return export_all_devices_power_analysis(request)
         
         device = get_object_or_404(Device, id=device_id)
         power_service = UnifiedPowerManagementService()
@@ -1566,4 +1624,172 @@ def device_power_history(request, device_id):
         
     except Exception as e:
         messages.error(request, f'Error loading device history: {str(e)}')
-        return redirect('device_detailed_power_analysis', device_id=device_id) 
+        return redirect('device_detailed_power_analysis', device_id=device_id)
+
+def export_all_devices_power_analysis(request):
+    """Export all devices power analysis to Excel - Super admin only"""
+    try:
+        import pandas as pd
+        from io import BytesIO
+        from django.http import HttpResponse
+        from datetime import datetime
+        
+        power_service = UnifiedPowerManagementService()
+        all_devices = power_service.get_all_devices_without_power()
+        
+        # Get filter parameters (same as in all_devices_without_power view)
+        severity_filter = request.GET.get('severity', '')
+        factory_filter = request.GET.get('factory', '')
+        production_filter = request.GET.get('production', '')
+        downtime_filter = request.GET.get('downtime', '')
+        
+        # Apply filters to get filtered devices
+        filtered_devices = all_devices
+        
+        if severity_filter:
+            if severity_filter == 'critical':
+                filtered_devices = [d for d in filtered_devices if d['severity'] == 'critical']
+            elif severity_filter == 'warning':
+                filtered_devices = [d for d in filtered_devices if d['severity'] == 'warning']
+        
+        if factory_filter:
+            filtered_devices = [d for d in filtered_devices if d['factory'] and factory_filter.lower() in d['factory'].name.lower()]
+        
+        if production_filter:
+            if production_filter == 'with_production':
+                filtered_devices = [d for d in filtered_devices if d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0) > 0]
+            elif production_filter == 'no_production':
+                filtered_devices = [d for d in filtered_devices if d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0) == 0]
+        
+        if downtime_filter:
+            now = timezone.now()
+            if downtime_filter == 'less_1h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and d['downtime_duration'].total_seconds() < 3600]
+            elif downtime_filter == '1h_6h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and 3600 <= d['downtime_duration'].total_seconds() < 21600]
+            elif downtime_filter == '6h_24h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and 21600 <= d['downtime_duration'].total_seconds() < 86400]
+            elif downtime_filter == 'more_24h':
+                filtered_devices = [d for d in filtered_devices if d['downtime_duration'] and d['downtime_duration'].total_seconds() >= 86400]
+        
+        # Use filtered devices for export
+        devices_to_export = filtered_devices
+        
+        # Create Excel writer
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            
+            # Summary Sheet
+            summary_data = []
+            total_devices = len(devices_to_export)
+            critical_devices = len([d for d in devices_to_export if d['severity'] == 'critical'])
+            warning_devices = len([d for d in devices_to_export if d['severity'] == 'warning'])
+            total_production = sum(
+                d['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0)
+                for d in devices_to_export
+            )
+            
+            # Add filter information
+            filter_info = []
+            if severity_filter:
+                filter_info.append(f"Severity: {severity_filter.title()}")
+            if factory_filter:
+                filter_info.append(f"Factory: {factory_filter}")
+            if production_filter:
+                filter_info.append(f"Production: {'Met Productie' if production_filter == 'with_production' else 'Zonder Productie'}")
+            if downtime_filter:
+                downtime_labels = {
+                    'less_1h': 'Minder dan 1 uur',
+                    '1h_6h': '1-6 uur',
+                    '6h_24h': '6-24 uur',
+                    'more_24h': 'Meer dan 24 uur'
+                }
+                filter_info.append(f"Downtime: {downtime_labels.get(downtime_filter, downtime_filter)}")
+            
+            summary_data.append(['Export Type', 'Gefilterde Devices' if any([severity_filter, factory_filter, production_filter, downtime_filter]) else 'Alle Devices'])
+            summary_data.append(['Applied Filters', '; '.join(filter_info) if filter_info else 'Geen filters'])
+            summary_data.append(['Total Devices Zonder Stroom', total_devices])
+            summary_data.append(['Critical Devices (Met Counter Activiteit)', critical_devices])
+            summary_data.append(['Warning Devices (Alleen Geen Stroom)', warning_devices])
+            summary_data.append(['Total Productie Zonder Stroom', total_production])
+            summary_data.append(['Export Datum', datetime.now().strftime('%d/%m/%Y %H:%M:%S')])
+            
+            summary_df = pd.DataFrame(summary_data, columns=['Metric', 'Value'])
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
+            # Devices Overview Sheet
+            devices_data = []
+            for device_info in devices_to_export:
+                device = device_info['device']
+                factory = device_info['factory']
+                downtime_duration = device_info['downtime_duration']
+                
+                # Format downtime
+                if downtime_duration:
+                    if downtime_duration.days > 0:
+                        downtime_str = f"{downtime_duration.days}d {downtime_duration.seconds // 3600}h"
+                    elif downtime_duration.seconds > 3600:
+                        downtime_str = f"{downtime_duration.seconds // 3600}h {(downtime_duration.seconds % 3600) // 60}m"
+                    elif downtime_duration.seconds > 60:
+                        downtime_str = f"{downtime_duration.seconds // 60}m"
+                    else:
+                        downtime_str = f"{downtime_duration.seconds}s"
+                else:
+                    downtime_str = "Onbekend"
+                
+                devices_data.append([
+                    device.name,
+                    device.id,
+                    factory.name if factory else "Geen factory",
+                    device_info['severity'].title(),
+                    device_info['power_loss_detected_at'].strftime('%d/%m/%Y %H:%M') if device_info['power_loss_detected_at'] else "Onbekend",
+                    downtime_str,
+                    device_info['detailed_analysis'].get('statistics', {}).get('total_production_without_power', 0),
+                    device_info['detailed_analysis'].get('statistics', {}).get('total_incidents', 0),
+                    device_info['detailed_analysis'].get('statistics', {}).get('incidents_with_counter', 0)
+                ])
+            
+            devices_df = pd.DataFrame(devices_data, columns=[
+                'Device Name', 'Device ID', 'Factory', 'Severity', 'Stroom Verloren', 
+                'Downtime', 'Productie Zonder Stroom', 'Total Incidenten', 'Incidenten Met Counter'
+            ])
+            devices_df.to_excel(writer, sheet_name='Devices Overview', index=False)
+            
+            # Power Outages Sheet
+            outages_data = []
+            for device_info in devices_to_export:
+                device = device_info['device']
+                analysis = device_info['detailed_analysis']
+                
+                if analysis.get('power_outages_with_production'):
+                    for outage in analysis['power_outages_with_production']:
+                        outages_data.append([
+                            device.name,
+                            device.id,
+                            outage.get('date_range', 'N/A'),
+                            outage.get('time_range', 'N/A'),
+                            outage.get('total_production', 0),
+                            outage.get('outage_count', 1),
+                            'Ongoing' if outage.get('is_ongoing') else 'Resolved'
+                        ])
+            
+            if outages_data:
+                outages_df = pd.DataFrame(outages_data, columns=[
+                    'Device Name', 'Device ID', 'Date Range', 'Time Range', 
+                    'Total Production', 'Outage Count', 'Status'
+                ])
+                outages_df.to_excel(writer, sheet_name='Power Outages', index=False)
+        
+        # Prepare response
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="all_devices_power_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Error exporting all devices analysis: {str(e)}')
+        return redirect('all_devices_without_power') 

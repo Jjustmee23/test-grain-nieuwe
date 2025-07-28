@@ -21,40 +21,192 @@
     
     .summary-card {
         background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 3px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .summary-card.active {
+        border-color: #007bff;
+        box-shadow: 0 8px 25px rgba(0,123,255,0.3);
     }
     
     .summary-card.critical {
         border-left: 5px solid #dc3545;
+        background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
     }
     
     .summary-card.warning {
         border-left: 5px solid #ffc107;
+        background: linear-gradient(135deg, #fffbf0 0%, #ffffff 100%);
     }
     
     .summary-card.info {
         border-left: 5px solid #17a2b8;
+        background: linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%);
+    }
+    
+    .summary-card.production {
+        border-left: 5px solid #28a745;
+        background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
     }
     
     .summary-card h3 {
         margin: 0 0 10px 0;
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: bold;
+        color: #333;
     }
     
     .summary-card p {
         margin: 0;
         color: #666;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    
+    .summary-card .filter-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #007bff;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .filters-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .filters-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .filters-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+    
+    .clear-filters {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
         font-size: 0.9rem;
+        transition: background 0.3s;
+    }
+    
+    .clear-filters:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    
+    .filter-select {
+        padding: 10px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        background: white;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .active-filter-tag {
+        background: #007bff;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .active-filter-tag .remove-filter {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .active-filter-tag .remove-filter:hover {
+        background: rgba(255,255,255,0.3);
     }
     
     .devices-table {
         background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         overflow: hidden;
     }
     
@@ -65,15 +217,17 @@
     
     .devices-table th {
         background: #f8f9fa;
-        padding: 15px;
+        padding: 18px 15px;
         text-align: left;
         font-weight: 600;
         border-bottom: 2px solid #dee2e6;
+        color: #495057;
+        font-size: 0.95rem;
     }
     
     .devices-table td {
-        padding: 15px;
-        border-bottom: 1px solid #dee2e6;
+        padding: 18px 15px;
+        border-bottom: 1px solid #e9ecef;
         vertical-align: middle;
     }
     
@@ -87,12 +241,17 @@
         border-left: 4px solid #ffc107;
     }
     
+    .device-row:hover {
+        background-color: #f8f9fa;
+    }
+    
     .status-badge {
-        padding: 5px 10px;
+        padding: 6px 12px;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .status-badge.critical {
@@ -109,28 +268,80 @@
         background: #007bff;
         color: white;
         padding: 8px 16px;
-        border-radius: 5px;
+        border-radius: 8px;
         text-decoration: none;
         font-size: 0.9rem;
-        transition: background 0.3s;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
     }
     
     .btn-details:hover {
         background: #0056b3;
         color: white;
         text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
     
     .no-devices {
         text-align: center;
-        padding: 50px;
+        padding: 60px;
         color: #666;
     }
     
     .no-devices i {
-        font-size: 3rem;
+        font-size: 4rem;
         color: #28a745;
         margin-bottom: 20px;
+    }
+    
+    .no-devices h3 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .results-info {
+        background: #e9ecef;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .results-count {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .export-section {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-export {
+        background: #28a745;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-export:hover {
+        background: #218838;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 </style>
 
@@ -144,23 +355,145 @@
 
     <!-- Summary Cards -->
     <div class="summary-cards">
-        <div class="summary-card critical">
-            <h3>{{ summary.total_devices }}</h3>
-            <p>Total Devices Zonder Stroom</p>
-        </div>
-        <div class="summary-card critical">
-            <h3>{{ summary.critical_devices }}</h3>
+        <div class="summary-card {% if filters.severity == 'critical' %}active{% endif %} critical" 
+             onclick="applyFilter('severity', 'critical')">
+            {% if filters.severity == 'critical' %}
+                <div class="filter-indicator">✓</div>
+            {% endif %}
+            <h3>{{ summary.critical_all_devices }}</h3>
             <p>Critical (Met Counter Activiteit)</p>
         </div>
-        <div class="summary-card warning">
-            <h3>{{ summary.warning_devices }}</h3>
+        
+        <div class="summary-card {% if filters.severity == 'warning' %}active{% endif %} warning" 
+             onclick="applyFilter('severity', 'warning')">
+            {% if filters.severity == 'warning' %}
+                <div class="filter-indicator">✓</div>
+            {% endif %}
+            <h3>{{ summary.warning_all_devices }}</h3>
             <p>Warning (Alleen Geen Stroom)</p>
         </div>
-        <div class="summary-card info">
-            <h3>{{ summary.total_production_without_power }}</h3>
+        
+        <div class="summary-card {% if filters.production == 'with_production' %}active{% endif %} production" 
+             onclick="applyFilter('production', 'with_production')">
+            {% if filters.production == 'with_production' %}
+                <div class="filter-indicator">✓</div>
+            {% endif %}
+            <h3>{{ summary.total_production_all_devices }}</h3>
             <p>Total Productie Zonder Stroom</p>
         </div>
+        
+        <div class="summary-card info">
+            <h3>{{ summary.total_all_devices }}</h3>
+            <p>Total Devices Zonder Stroom</p>
+        </div>
     </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="filters-header">
+            <h3 class="filters-title"><i class="bi bi-funnel"></i> Filters</h3>
+            {% if filters.severity or filters.factory or filters.production or filters.downtime %}
+                <a href="{% url 'all_devices_without_power' %}" class="clear-filters">
+                    <i class="bi bi-x-circle"></i> Clear All Filters
+                </a>
+            {% endif %}
+        </div>
+        
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label class="filter-label">Severity</label>
+                <select class="filter-select" onchange="applyFilter('severity', this.value)">
+                    <option value="">Alle Severities</option>
+                    <option value="critical" {% if filters.severity == 'critical' %}selected{% endif %}>Critical</option>
+                    <option value="warning" {% if filters.severity == 'warning' %}selected{% endif %}>Warning</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Factory</label>
+                <select class="filter-select" onchange="applyFilter('factory', this.value)">
+                    <option value="">Alle Factories</option>
+                    {% for factory in factories %}
+                        <option value="{{ factory.name }}" {% if filters.factory == factory.name %}selected{% endif %}>
+                            {{ factory.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Productie Status</label>
+                <select class="filter-select" onchange="applyFilter('production', this.value)">
+                    <option value="">Alle Devices</option>
+                    <option value="with_production" {% if filters.production == 'with_production' %}selected{% endif %}>Met Productie</option>
+                    <option value="no_production" {% if filters.production == 'no_production' %}selected{% endif %}>Zonder Productie</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Downtime Duur</label>
+                <select class="filter-select" onchange="applyFilter('downtime', this.value)">
+                    <option value="">Alle Duraties</option>
+                    <option value="less_1h" {% if filters.downtime == 'less_1h' %}selected{% endif %}>Minder dan 1 uur</option>
+                    <option value="1h_6h" {% if filters.downtime == '1h_6h' %}selected{% endif %}>1-6 uur</option>
+                    <option value="6h_24h" {% if filters.downtime == '6h_24h' %}selected{% endif %}>6-24 uur</option>
+                    <option value="more_24h" {% if filters.downtime == 'more_24h' %}selected{% endif %}>Meer dan 24 uur</option>
+                </select>
+            </div>
+        </div>
+        
+        {% if filters.severity or filters.factory or filters.production or filters.downtime %}
+            <div class="active-filters">
+                {% if filters.severity %}
+                    <div class="active-filter-tag">
+                        Severity: {{ filters.severity|title }}
+                        <button class="remove-filter" onclick="removeFilter('severity')">×</button>
+                    </div>
+                {% endif %}
+                {% if filters.factory %}
+                    <div class="active-filter-tag">
+                        Factory: {{ filters.factory }}
+                        <button class="remove-filter" onclick="removeFilter('factory')">×</button>
+                    </div>
+                {% endif %}
+                {% if filters.production %}
+                    <div class="active-filter-tag">
+                        Productie: {% if filters.production == 'with_production' %}Met Productie{% else %}Zonder Productie{% endif %}
+                        <button class="remove-filter" onclick="removeFilter('production')">×</button>
+                    </div>
+                {% endif %}
+                {% if filters.downtime %}
+                    <div class="active-filter-tag">
+                        Downtime: 
+                        {% if filters.downtime == 'less_1h' %}Minder dan 1 uur
+                        {% elif filters.downtime == '1h_6h' %}1-6 uur
+                        {% elif filters.downtime == '6h_24h' %}6-24 uur
+                        {% elif filters.downtime == 'more_24h' %}Meer dan 24 uur
+                        {% endif %}
+                        <button class="remove-filter" onclick="removeFilter('downtime')">×</button>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Results Info -->
+    {% if devices_without_power %}
+        <div class="results-info">
+            <div class="results-count">
+                <i class="bi bi-list-ul"></i> 
+                {{ devices_without_power|length }} device{{ devices_without_power|length|pluralize:"s" }} gevonden
+                {% if filters.severity or filters.factory or filters.production or filters.downtime %}
+                    (gefilterd van {{ summary.total_all_devices }} totaal)
+                {% endif %}
+            </div>
+            <div class="export-section">
+                <a href="{% url 'export_device_power_analysis' 'all' %}?{% if filters.severity %}severity={{ filters.severity }}{% endif %}{% if filters.factory %}{% if filters.severity %}&{% endif %}factory={{ filters.factory }}{% endif %}{% if filters.production %}{% if filters.severity or filters.factory %}&{% endif %}production={{ filters.production }}{% endif %}{% if filters.downtime %}{% if filters.severity or filters.factory or filters.production %}&{% endif %}downtime={{ filters.downtime }}{% endif %}" class="btn-export">
+                    <i class="bi bi-file-earmark-excel"></i> Export naar Excel
+                </a>
+            </div>
+        </div>
+    {% endif %}
 
     <!-- Devices Table -->
     <div class="devices-table">
@@ -214,7 +547,7 @@
                                     {{ device_info.downtime_duration.days }}d 
                                 {% endif %}
                                 {% if device_info.downtime_duration.seconds > 3600 %}
-                                    {{ device_info.downtime_duration.seconds|floatformat:0|add:"-3600"|floatformat:0 }}h
+                                    {{ device_info.downtime_duration.seconds|floatformat:0|add:"-3600"|floatformat:0|div:3600|floatformat:0 }}h
                                 {% elif device_info.downtime_duration.seconds > 60 %}
                                     {{ device_info.downtime_duration.seconds|floatformat:0|div:60|floatformat:0 }}m
                                 {% else %}
@@ -253,14 +586,39 @@
         {% else %}
             <div class="no-devices">
                 <i class="bi bi-check-circle"></i>
-                <h3>Geen Devices Zonder Stroom</h3>
-                <p>Alle devices hebben momenteel stroom. Uitstekend!</p>
+                <h3>Geen Devices Gevonden</h3>
+                <p>
+                    {% if filters.severity or filters.factory or filters.production or filters.downtime %}
+                        Er zijn geen devices die voldoen aan de geselecteerde filters.
+                        <br><a href="{% url 'all_devices_without_power' %}" class="btn btn-outline-primary mt-2">Clear All Filters</a>
+                    {% else %}
+                        Alle devices hebben momenteel stroom. Uitstekend!
+                    {% endif %}
+                </p>
             </div>
         {% endif %}
     </div>
 </div>
 
 <script>
+function applyFilter(filterType, value) {
+    const url = new URL(window.location);
+    
+    if (value) {
+        url.searchParams.set(filterType, value);
+    } else {
+        url.searchParams.delete(filterType);
+    }
+    
+    window.location.href = url.toString();
+}
+
+function removeFilter(filterType) {
+    const url = new URL(window.location);
+    url.searchParams.delete(filterType);
+    window.location.href = url.toString();
+}
+
 // Auto-refresh every 30 seconds
 setInterval(function() {
     location.reload();
