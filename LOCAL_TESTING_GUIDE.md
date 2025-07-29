@@ -22,7 +22,7 @@ cd /path/to/project-mill-application
 # Stop alle draaiende containers
 docker-compose down
 
-# Verwijder containers, netwerken en volumes (optioneel)
+# Verwijder containers, netwerken en voluccccccmes (optioneel)
 docker-compose down -v --remove-orphans
 ```
 
