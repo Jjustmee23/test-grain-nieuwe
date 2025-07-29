@@ -20,7 +20,7 @@ class City(models.Model):
 # Factory model
 class Factory(models.Model):
     GROUP_CHOICES = [
-        ('Public', 'Public'),
+        ('government', 'Government'),
         ('private', 'Private'),
         ('commercial', 'Commercial')
     ]
@@ -29,7 +29,7 @@ class Factory(models.Model):
     city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True, related_name='factories')
     status = models.BooleanField(default=True)
     error = models.BooleanField(default=False)
-    group = models.CharField(max_length=30, choices=GROUP_CHOICES, default='Public')
+    group = models.CharField(max_length=30, choices=GROUP_CHOICES, default='government')
     
     # Address fields for map functionality
     address = models.TextField(blank=True, null=True, help_text="Full address of the factory")
