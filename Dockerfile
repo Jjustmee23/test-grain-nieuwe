@@ -8,7 +8,7 @@ ENV DJANGO_DISABLE_MIGRATIONS False
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev gcc python3-dev gettext cron \
+    libpq-dev gcc python3-dev gettext cron dos2unix \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -27,9 +27,6 @@ COPY . /app
 # Create staticfiles directory
 RUN mkdir -p /app/staticfiles
 
-# Make startup script executable (do this before other operations)
-RUN chmod +x /app/start.sh
-
 # Compile translations
 RUN python manage.py compilemessages
 
@@ -40,4 +37,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # Define the command to run on container start
-CMD ["/app/start.sh"]
+CMD ["sh", "-c", "service cron start && echo '*/5 * * * * cd /app && /usr/local/bin/python manage.py auto_update_power_status --create-events >> /var/log/cron.log 2>&1' | crontab - && python manage.py runserver 0.0.0.0:8000"]

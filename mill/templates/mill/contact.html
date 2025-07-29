@@ -6,148 +6,352 @@
 
 {% block extra_head %}
 <style>
+    /* Main Container */
+    .contact-page {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
     .contact-form-container {
-        max-width: 800px;
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 2rem;
-        background: var(--primary-dark);
-        color: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-md);
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
     }
     
-    .contact-form-container label {
-        color: white;
-    }
-    
-    .contact-form {
-        margin-top: 1.5rem;
-    }
-    
+    /* Header Section */
     .contact-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        padding: 3rem 2rem;
         text-align: center;
-        margin-bottom: 2rem;
     }
     
+    .contact-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .contact-header p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+    
+    /* Contact Options */
     .contact-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+        background: #f8f9fa;
     }
     
     .contact-option {
-        flex: 1;
-        min-width: 200px;
-        background: var(--primary-color);
-        border-radius: var(--border-radius);
-        padding: 1.5rem;
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
         text-align: center;
-        transition: transform 0.3s, box-shadow 0.3s;
+        transition: all 0.3s ease;
         cursor: pointer;
+        border: 2px solid transparent;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     }
     
     .contact-option:hover {
         transform: translateY(-5px);
-        box-shadow: var(--shadow-md);
-        background: var(--primary-dark);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        border-color: #0d6efd;
     }
     
     .contact-option.active {
-        background: var(--primary-dark);
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
         transform: translateY(-5px);
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 15px 35px rgba(13, 110, 253, 0.3);
     }
     
     .contact-option i {
-        font-size: 2rem;
-        color: white;
-        margin-bottom: 1rem;
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
         display: block;
+        color: #0d6efd;
     }
     
-    .contact-option h4 {
-        margin-bottom: 0.5rem;
+    .contact-option.active i {
+        color: white;
+    }
+    
+    .contact-option h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #212529;
+    }
+    
+    .contact-option.active h3 {
         color: white;
     }
     
     .contact-option p {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: #6c757d;
+    }
+    
+    .contact-option.active p {
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .contact-option .email-address {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #0d6efd;
+        word-break: break-all;
+    }
+    
+    .contact-option.active .email-address {
         color: white;
     }
     
-    .form-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1rem;
+    /* Form Sections */
+    .form-section {
+        padding: 3rem 2rem;
+        display: none;
     }
     
-    .form-col {
-        flex: 1;
-        min-width: 200px;
+    .form-section.active {
+        display: block;
+    }
+    
+    .form-section h2 {
+        font-size: 2rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    /* Form Styling */
+    .contact-form {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
     }
     
     .form-group label {
         display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 0.75rem;
     }
     
-    .form-info {
-        font-size: 0.875rem;
-        color: white;
-        margin-top: 0.5rem;
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
     }
     
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0d6efd;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+    
+    .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    /* Required Field Indicator */
     .required-field::after {
-        content: "*";
-        color: var(--danger-color);
-        margin-left: 0.25rem;
+        content: " *";
+        color: #dc3545;
+        font-weight: 700;
     }
     
+    /* Form Info */
+    .form-info {
+        font-size: 0.95rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+        font-style: italic;
+    }
+    
+    /* Submit Button */
     .submit-container {
-        margin-top: 2rem;
         text-align: center;
+        margin-top: 3rem;
     }
     
     .btn-submit {
-        padding: 0.75rem 2rem;
+        padding: 1rem 3rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(13, 110, 253, 0.4);
+        background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    }
+    
+    /* Alert Messages */
+    .alert {
         font-size: 1.1rem;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    /* Error Messages */
+    .text-danger {
+        font-size: 1rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .contact-header h1 {
+            font-size: 2rem;
+        }
+        
+        .contact-header p {
+            font-size: 1rem;
+        }
+        
+        .contact-options {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .form-section {
+            padding: 2rem 1rem;
+        }
+        
+        .btn-submit {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+    }
+    
+    /* Success Animation */
+    .success-animation {
+        animation: successPulse 0.6s ease-in-out;
+    }
+    
+    @keyframes successPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<div class="contact-page">
     <div class="contact-form-container">
+        <!-- Header -->
         <div class="contact-header">
-            <h2>{% trans "Contact Us" %}</h2>
+            <h1>{% trans "Contact Us" %}</h1>
             <p>{% trans "We're here to help. Let us know how we can assist you." %}</p>
         </div>
         
+        <!-- Contact Options -->
         <div class="contact-options">
-            <div class="contact-option" id="email-option" onclick="showEmailForm()">
-                <i class="bi bi-envelope"></i>
-                <h4>{% trans "Email Support" %}</h4>
-                <p>support@millmanagement.com</p>
-                <p class="text-white small">{% trans "We respond within 24 hours" %}</p>
+            <div class="contact-option active" id="email-option" onclick="showEmailForm()">
+                <i class="bi bi-envelope-fill"></i>
+                <h3>{% trans "Email Support" %}</h3>
+                <p class="email-address">support@millmanagement.com</p>
+                <p>{% trans "We respond within 24 hours" %}</p>
             </div>
             
             <div class="contact-option" id="ticket-option" onclick="showTicketForm()">
-                <i class="bi bi-ticket-perforated"></i>
-                <h4>{% trans "Ticket System" %}</h4>
+                <i class="bi bi-ticket-perforated-fill"></i>
+                <h3>{% trans "Support Ticket" %}</h3>
                 <p>{% trans "Submit your issue below" %}</p>
-                <p class="text-white small">{% trans "Efficient tracking & resolution" %}</p>
+                <p>{% trans "Efficient tracking & resolution" %}</p>
             </div>
         </div>
         
-        <div class="ticket-system-section">
-            <h3 class="mb-4">{% trans "Submit a Support Ticket" %}</h3>
+        <!-- Email Form Section -->
+        <div class="form-section active" id="email-section">
+            <h2>{% trans "Send us an Email" %}</h2>
+            <form class="contact-form" id="email-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="required-field">{% trans "Your Name" %}</label>
+                        <input type="text" class="form-control" id="email-name" value="{{ user.get_full_name|default:'' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="required-field">{% trans "Your Email" %}</label>
+                        <input type="email" class="form-control" id="email-address" value="{{ user.email|default:'' }}" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required-field">{% trans "Subject" %}</label>
+                    <input type="text" class="form-control" id="email-subject" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required-field">{% trans "Message" %}</label>
+                    <textarea class="form-control" id="email-message" rows="6" required></textarea>
+                </div>
+                
+                <div class="submit-container">
+                    <button type="button" onclick="sendEmail()" class="btn btn-primary btn-submit">
+                        <i class="bi bi-send"></i> {% trans "Send Email" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Ticket Form Section -->
+        <div class="form-section" id="ticket-section">
+            <h2>{% trans "Submit a Support Ticket" %}</h2>
             
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        <i class="bi bi-info-circle"></i> {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
@@ -157,86 +361,70 @@
                 {% csrf_token %}
                 
                 <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="required-field" for="{{ form.name.id_for_label }}">{% trans "Your Name" %}</label>
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                                <div class="text-danger">{{ form.name.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label class="required-field" for="{{ form.name.id_for_label }}">{% trans "Your Name" %}</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
                     </div>
                     
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="required-field" for="{{ form.email.id_for_label }}">{% trans "Email Address" %}</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                                <div class="text-danger">{{ form.email.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label class="required-field" for="{{ form.email.id_for_label }}">{% trans "Email Address" %}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger">{{ form.email.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 
                 <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="{{ form.phone.id_for_label }}">{% trans "Phone Number" %}</label>
-                            {{ form.phone }}
-                            <small class="form-info">{% trans "Optional" %}</small>
-                            {% if form.phone.errors %}
-                                <div class="text-danger">{{ form.phone.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label for="{{ form.phone.id_for_label }}">{% trans "Phone Number" %}</label>
+                        {{ form.phone }}
+                        <small class="form-info">{% trans "Optional" %}</small>
+                        {% if form.phone.errors %}
+                            <div class="text-danger">{{ form.phone.errors }}</div>
+                        {% endif %}
                     </div>
                     
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="required-field" for="{{ form.ticket_type.id_for_label }}">{% trans "Issue Type" %}</label>
-                            {{ form.ticket_type }}
-                            {% if form.ticket_type.errors %}
-                                <div class="text-danger">{{ form.ticket_type.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label class="required-field" for="{{ form.ticket_type.id_for_label }}">{% trans "Issue Type" %}</label>
+                        {{ form.ticket_type }}
+                        {% if form.ticket_type.errors %}
+                            <div class="text-danger">{{ form.ticket_type.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 
                 <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label class="required-field" for="{{ form.subject.id_for_label }}">{% trans "Subject" %}</label>
-                            {{ form.subject }}
-                            {% if form.subject.errors %}
-                                <div class="text-danger">{{ form.subject.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label class="required-field" for="{{ form.subject.id_for_label }}">{% trans "Subject" %}</label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                            <div class="text-danger">{{ form.subject.errors }}</div>
+                        {% endif %}
                     </div>
                     
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="{{ form.priority.id_for_label }}">{% trans "Priority" %}</label>
-                            {{ form.priority }}
-                            {% if form.priority.errors %}
-                                <div class="text-danger">{{ form.priority.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group">
+                        <label for="{{ form.priority.id_for_label }}">{% trans "Priority" %}</label>
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                            <div class="text-danger">{{ form.priority.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="{{ form.factory.id_for_label }}">{% trans "Related Factory" %}</label>
-                            {{ form.factory }}
-                            <small class="form-info">{% trans "If your issue is related to a specific factory" %}</small>
-                            {% if form.factory.errors %}
-                                <div class="text-danger">{{ form.factory.errors }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="form-group">
+                    <label for="{{ form.factory.id_for_label }}">{% trans "Related Factory" %}</label>
+                    {{ form.factory }}
+                    <small class="form-info">{% trans "If your issue is related to a specific factory" %}</small>
+                    {% if form.factory.errors %}
+                        <div class="text-danger">{{ form.factory.errors }}</div>
+                    {% endif %}
                 </div>
                 
-                <div class="form-group mt-3">
+                <div class="form-group">
                     <label class="required-field" for="{{ form.message.id_for_label }}">{% trans "Message" %}</label>
                     {{ form.message }}
                     {% if form.message.errors %}
@@ -245,7 +433,9 @@
                 </div>
                 
                 <div class="submit-container">
-                    <button type="submit" class="btn btn-primary btn-submit">{% trans "Submit Ticket" %}</button>
+                    <button type="submit" class="btn btn-primary btn-submit">
+                        <i class="bi bi-ticket-perforated"></i> {% trans "Submit Ticket" %}
+                    </button>
                 </div>
             </form>
         </div>
@@ -253,94 +443,94 @@
 </div>
 
 <script>
-    // E-mailformulier sectie
-    let emailFormSection;
-    // Ticketsysteem sectie
-    let ticketFormSection = document.querySelector('.ticket-system-section');
-    // De contactopties
-    let emailOption = document.getElementById('email-option');
-    let ticketOption = document.getElementById('ticket-option');
-    
-    // Bij het laden van de pagina, voeg het e-mailformulier toe en verberg het
-    document.addEventListener('DOMContentLoaded', function() {
-        // Maak een e-mailformulier sectie aan
-        emailFormSection = document.createElement('div');
-        emailFormSection.className = 'email-form-section';
-        emailFormSection.innerHTML = `
-            <h3 class="mb-4">{% trans "Send us an Email" %}</h3>
-            <div class="email-form">
-                <div class="form-group mb-3">
-                    <label class="required-field">{% trans "Your Name" %}</label>
-                    <input type="text" class="form-control" id="email-name" value="{{ user.get_full_name }}">
-                </div>
-                <div class="form-group mb-3">
-                    <label class="required-field">{% trans "Your Email" %}</label>
-                    <input type="email" class="form-control" id="email-address" value="{{ user.email }}">
-                </div>
-                <div class="form-group mb-3">
-                    <label class="required-field">{% trans "Subject" %}</label>
-                    <input type="text" class="form-control" id="email-subject">
-                </div>
-                <div class="form-group mb-3">
-                    <label class="required-field">{% trans "Message" %}</label>
-                    <textarea class="form-control" id="email-message" rows="5"></textarea>
-                </div>
-                <div class="submit-container">
-                    <button onclick="sendEmail()" class="btn btn-primary btn-submit">{% trans "Send Email" %}</button>
-                </div>
-            </div>
-        `;
-        
-        // Voeg het e-mailformulier toe aan de pagina na de contactopties
-        let contactOptions = document.querySelector('.contact-options');
-        contactOptions.parentNode.insertBefore(emailFormSection, ticketFormSection);
-        
-        // Verberg het e-mailformulier
-        emailFormSection.style.display = 'none';
-        
-        // Maak ticket systeem de standaardoptie
-        ticketOption.classList.add('active');
-    });
-    
-    // Toon het e-mailformulier en verberg het ticketformulier
+    // Form switching functionality
     function showEmailForm() {
-        emailFormSection.style.display = 'block';
-        ticketFormSection.style.display = 'none';
+        document.getElementById('email-section').classList.add('active');
+        document.getElementById('ticket-section').classList.remove('active');
         
-        // Update actieve status
-        emailOption.classList.add('active');
-        ticketOption.classList.remove('active');
+        document.getElementById('email-option').classList.add('active');
+        document.getElementById('ticket-option').classList.remove('active');
     }
     
-    // Toon het ticketformulier en verberg het e-mailformulier
     function showTicketForm() {
-        emailFormSection.style.display = 'none';
-        ticketFormSection.style.display = 'block';
+        document.getElementById('ticket-section').classList.add('active');
+        document.getElementById('email-section').classList.remove('active');
         
-        // Update actieve status
-        ticketOption.classList.add('active');
-        emailOption.classList.remove('active');
+        document.getElementById('ticket-option').classList.add('active');
+        document.getElementById('email-option').classList.remove('active');
     }
     
-    // Functie om een e-mail te verzenden (simulatie)
+    // Email sending functionality
     function sendEmail() {
-        const name = document.getElementById('email-name').value;
-        const email = document.getElementById('email-address').value;
-        const subject = document.getElementById('email-subject').value;
-        const message = document.getElementById('email-message').value;
+        const name = document.getElementById('email-name').value.trim();
+        const email = document.getElementById('email-address').value.trim();
+        const subject = document.getElementById('email-subject').value.trim();
+        const message = document.getElementById('email-message').value.trim();
         
-        // Validatie
+        // Validation
         if (!name || !email || !subject || !message) {
             alert('{% trans "Please fill in all required fields." %}');
             return;
         }
         
-        // Hier zou je normaal gesproken een API-call doen naar de server, maar we simuleren succes
-        alert('{% trans "Your email has been sent successfully! We will respond within 24 hours." %}');
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert('{% trans "Please enter a valid email address." %}');
+            return;
+        }
         
-        // Maak de velden leeg
-        document.getElementById('email-subject').value = '';
-        document.getElementById('email-message').value = '';
+        // Simulate email sending
+        const submitBtn = document.querySelector('#email-section .btn-submit');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> {% trans "Sending..." %}';
+        submitBtn.disabled = true;
+        
+        setTimeout(() => {
+            // Success animation
+            submitBtn.classList.add('success-animation');
+            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> {% trans "Email Sent!" %}';
+            
+            // Show success message
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <i class="bi bi-check-circle"></i> 
+                {% trans "Your email has been sent successfully! We will respond within 24 hours." %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.getElementById('email-section').insertBefore(successAlert, document.querySelector('#email-section h2'));
+            
+            // Reset form
+            document.getElementById('email-subject').value = '';
+            document.getElementById('email-message').value = '';
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                submitBtn.classList.remove('success-animation');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+            
+        }, 2000);
     }
+    
+    // Auto-fill user data if available
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pre-fill ticket form if user is logged in
+        if ('{{ user.is_authenticated }}' === 'True') {
+            const nameField = document.querySelector('#ticket-section input[name="name"]');
+            const emailField = document.querySelector('#ticket-section input[name="email"]');
+            
+            if (nameField && '{{ user.get_full_name }}') {
+                nameField.value = '{{ user.get_full_name }}';
+            }
+            if (emailField && '{{ user.email }}') {
+                emailField.value = '{{ user.email }}';
+            }
+        }
+    });
 </script>
 {% endblock %}

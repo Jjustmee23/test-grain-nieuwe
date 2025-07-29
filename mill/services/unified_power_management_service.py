@@ -116,8 +116,8 @@ class UnifiedPowerManagementService:
             
             # Get DevicePowerStatus for accurate last check time
             device_power_status = DevicePowerStatus.objects.filter(device=device).first()
-            if device_power_status and device_power_status.last_power_check:
-                last_update = device_power_status.last_power_check
+            if device_power_status and device_power_status.updated_at:
+                last_update = device_power_status.updated_at
             
             # Determine power status based on AIN1 value
             has_power = False
