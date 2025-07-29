@@ -14,8 +14,8 @@ class BatchProductionService:
     Consolideert alle data bronnen naar één consistente methode
     """
     
-    # Conversion factor: 1 counter unit = 1 kg flour
-    CONVERSION_FACTOR = 1.0  # kg per counter unit
+    # Conversion factor: 1 counter unit = 50 kg flour (based on template usage)
+    CONVERSION_FACTOR = 50.0  # kg per counter unit
     TONS_PER_KG = 1000.0    # 1000 kg = 1 ton
     
     def __init__(self):
@@ -115,15 +115,31 @@ class BatchProductionService:
         Haal RawData op voor device counter berekeningen
         """
         try:
+            # Validate inputs
+            if not device or not counter_field or not batch:
+                self.logger.warning(f"Invalid parameters for _get_raw_data_for_device: device={device}, counter_field={counter_field}, batch={batch}")
+                return None
+            
             # Get current counter value
             current_raw = RawData.objects.filter(
                 device=device
             ).order_by('-timestamp').first()
             
             if not current_raw:
+                self.logger.info(f"No RawData found for device {device.id}")
+                return None
+            
+            # Validate counter field exists
+            if not hasattr(current_raw, counter_field):
+                self.logger.error(f"Counter field '{counter_field}' not found on RawData for device {device.id}")
                 return None
             
             current_value = getattr(current_raw, counter_field, 0) or 0
+            
+            # Validate counter value is reasonable
+            if current_value < 0:
+                self.logger.warning(f"Negative counter value {current_value} for device {device.id}, field {counter_field}")
+                current_value = 0
             
             # Get counter value at batch start
             start_raw = RawData.objects.filter(
@@ -133,9 +149,19 @@ class BatchProductionService:
             
             if start_raw:
                 start_value = getattr(start_raw, counter_field, 0) or 0
+                if start_value < 0:
+                    self.logger.warning(f"Negative start value {start_value} for device {device.id}, using 0")
+                    start_value = 0
             else:
                 # If no data at start, use batch start_value
                 start_value = batch.start_value
+                self.logger.info(f"No RawData at batch start for device {device.id}, using batch start_value: {start_value}")
+            
+            # Ensure current_value >= start_value (counters should only increase)
+            if current_value < start_value:
+                self.logger.warning(f"Current value {current_value} < start value {start_value} for device {device.id}, counter may have been reset")
+                # In this case, assume counter was reset and current_value is the total production
+                start_value = 0
             
             return {
                 'current_value': current_value,
@@ -143,8 +169,11 @@ class BatchProductionService:
                 'timestamp': current_raw.timestamp
             }
             
+        except AttributeError as e:
+            self.logger.error(f"Attribute error getting RawData for device {device.id}: {e}")
+            return None
         except Exception as e:
-            self.logger.error(f"Error getting RawData for device {device.id}: {e}")
+            self.logger.error(f"Unexpected error getting RawData for device {device.id}: {e}")
             return None
     
     def _get_production_data_for_device(self, device, batch):

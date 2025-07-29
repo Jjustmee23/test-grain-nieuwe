@@ -42,7 +42,7 @@ class BatchForm(forms.ModelForm):
     
     class Meta:
         model = Batch
-        fields = ['batch_number', 'wheat_amount', 'waste_factor']
+        fields = ['batch_number', 'wheat_amount', 'waste_factor', 'expected_flour_output']
         widgets = {
             'waste_factor': forms.NumberInput(
                 attrs={

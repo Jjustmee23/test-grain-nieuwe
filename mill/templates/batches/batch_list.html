@@ -197,8 +197,8 @@
                             <th>{% trans "Batch Number" %}</th>
                             <th>{% trans "Factory" %}</th>
                             <th>{% trans "Start Date" %}</th>
-                            <th>{% trans "Target Amount" %}</th>
-                            <th>{% trans "Current Amount" %}</th>
+                            <th>{% trans "Expected Output" %}</th>
+                            <th>{% trans "Actual Output" %}</th>
                             <th>{% trans "Progress" %}</th>
                             <th>{% trans "Status" %}</th>
                             <th>{% trans "Actions" %}</th>
@@ -223,8 +223,8 @@
                                 <br><small class="text-muted">{{ batch.factory.city.name }}</small>
                             </td>
                             <td>{{ batch.start_date|date:"d/m/Y" }}</td>
-                            <td>{{ batch.target_amount|floatformat:1 }} tons</td>
-                            <td>{{ batch.current_amount|floatformat:1 }} tons</td>
+                            <td>{{ batch.expected_flour_output|floatformat:1 }} tons</td>
+                            <td>{{ batch.actual_flour_output|floatformat:1 }} tons</td>
                             <td>
                                 <div class="progress" style="height: 20px;">
                                     <div class="progress-bar {% if batch.progress_percentage >= 100 %}bg-success{% elif batch.progress_percentage >= 75 %}bg-warning{% else %}bg-info{% endif %}" 

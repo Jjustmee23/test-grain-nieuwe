@@ -131,9 +131,9 @@ class Command(BaseCommand):
         new_current_value = total_current_production
         
         # Calculate actual flour output based on current production
-        # Assuming 1 unit of production = 1 kg of flour (adjust as needed)
+        # Assuming 1 unit of production = 50 kg of flour (consistent with template)
         from decimal import Decimal
-        actual_flour_output = Decimal(str(new_current_value)) / Decimal('1000')  # Convert to tons
+        actual_flour_output = Decimal(str(new_current_value)) * Decimal('50') / Decimal('1000')  # Convert to tons
         
         if not dry_run:
             with transaction.atomic():

@@ -30,6 +30,9 @@ class BatchListView(LoginRequiredMixin, ListView):
         allowed_factories_list = allowed_factories(self.request)
         queryset = queryset.filter(factory__in=allowed_factories_list)
         
+        # Optimize database queries with select_related
+        queryset = queryset.select_related('factory', 'factory__city', 'approved_by')
+        
         # Add filtering
         status_filter = self.request.GET.get('status')
         if status_filter:
@@ -53,6 +56,13 @@ class BatchListView(LoginRequiredMixin, ListView):
         # Add summary statistics
         service = BatchProductionService()
         context['summary_stats'] = self._get_summary_stats()
+        
+        # Add individual stats to context for template
+        stats = self._get_summary_stats()
+        context['total_batches'] = stats['total_batches']
+        context['pending_batches'] = self.get_queryset().filter(status='pending').count()
+        context['in_process_batches'] = stats['active_batches']
+        context['completed_batches'] = stats['completed_batches']
         
         return context
     
@@ -144,6 +154,19 @@ class BatchDetailView(LoginRequiredMixin, DetailView):
     model = Batch
     template_name = 'batches/batch_detail.html'
     context_object_name = 'batch'
+    
+    def get_queryset(self):
+        # Optimize database queries with select_related and prefetch_related
+        return super().get_queryset().select_related(
+            'factory', 
+            'factory__city', 
+            'approved_by'
+        ).prefetch_related(
+            'factory__devices',
+            'factory__responsible_users',
+            'notifications',
+            'flour_bag_counts'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -164,7 +187,47 @@ class BatchDetailView(LoginRequiredMixin, DetailView):
         if batch.factory:
             context['devices'] = batch.factory.devices.all()
         
+        # Add template variables for batch_detail.html
+        context['yield_rate'] = batch.progress_percentage
+        context['batch_start_date'] = batch.start_date
+        context['today_production'] = batch.current_value  # Today's production units
+        context['cumulative_units'] = batch.current_value  # Total units produced
+        context['cumulative_tons'] = float(batch.actual_flour_output)  # Total tons
+        context['remaining_tons'] = float(batch.expected_flour_output - batch.actual_flour_output)
+        context['progress_percentage'] = batch.progress_percentage
+        context['conversion_factor'] = 50  # kg per unit
+        
+        # Get production entries for the table
+        context['production_entries'] = self._get_production_entries(batch)
+        
         return context
+    
+    def _get_production_entries(self, batch):
+        """Get production entries for the batch detail table"""
+        entries = []
+        if batch.factory and batch.factory.devices.exists():
+            # Get production data for each day since batch start
+            from django.db.models import Q
+            from datetime import timedelta
+            
+            device = batch.factory.devices.first()
+            production_data = ProductionData.objects.filter(
+                device=device,
+                created_at__gte=batch.start_date
+            ).order_by('created_at')
+            
+            cumulative_value = 0
+            for data in production_data:
+                cumulative_value += data.daily_production
+                entries.append({
+                    'date': data.created_at.date(),
+                    'start_value': cumulative_value - data.daily_production,
+                    'end_value': cumulative_value,
+                    'difference': data.daily_production,
+                    'cumulative_tons': cumulative_value * 50 / 1000  # Convert to tons
+                })
+        
+        return entries
 
 class BatchUpdateView(LoginRequiredMixin, UpdateView):
     model = Batch
@@ -532,36 +595,38 @@ class BatchApprovalView(LoginRequiredMixin, View):
     
     def post(self, request, pk):
         try:
-            batch = Batch.objects.get(pk=pk)
-            
-            # Check if user is responsible for this factory
-            if batch.factory not in request.user.responsible_factories.all():
+            with transaction.atomic():
+                # Use select_for_update to prevent race conditions
+                batch = Batch.objects.select_for_update().get(pk=pk)
+                
+                # Check if user is responsible for this factory
+                if batch.factory not in request.user.responsible_factories.all():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'You are not authorized to approve this batch'
+                    }, status=403)
+                
+                # Check if batch is in pending status
+                if batch.status != 'pending':
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Batch is not in pending status'
+                    }, status=400)
+                
+                # Approve the batch
+                batch.status = 'approved'
+                batch.approved_by = request.user
+                batch.approved_at = timezone.now()
+                batch.save()
+                
+                # Send notifications
+                notification_service = BatchNotificationService()
+                notification_service.notify_batch_approved(batch, request.user)
+                
                 return JsonResponse({
-                    'success': False,
-                    'error': 'You are not authorized to approve this batch'
-                }, status=403)
-            
-            # Check if batch is in pending status
-            if batch.status != 'pending':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Batch is not in pending status'
-                }, status=400)
-            
-            # Approve the batch
-            batch.status = 'approved'
-            batch.approved_by = request.user
-            batch.approved_at = timezone.now()
-            batch.save()
-            
-            # Send notifications
-            notification_service = BatchNotificationService()
-            notification_service.notify_batch_approved(batch, request.user)
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Batch {batch.batch_number} has been approved'
-            })
+                    'success': True,
+                    'message': f'Batch {batch.batch_number} has been approved'
+                })
             
         except Batch.DoesNotExist:
             return JsonResponse({
@@ -590,37 +655,39 @@ class BatchStartView(LoginRequiredMixin, View):
     
     def post(self, request, pk):
         try:
-            batch = Batch.objects.get(pk=pk)
-            
-            # Check if user is responsible for this factory
-            if batch.factory not in request.user.responsible_factories.all():
+            with transaction.atomic():
+                # Use select_for_update to prevent race conditions
+                batch = Batch.objects.select_for_update().get(pk=pk)
+                
+                # Check if user is responsible for this factory
+                if batch.factory not in request.user.responsible_factories.all():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'You are not authorized to start this batch'
+                    }, status=403)
+                
+                # Check if batch is in approved status
+                if batch.status != 'approved':
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Batch is not in approved status'
+                    }, status=400)
+                
+                # Auto-complete previous batches for this factory
+                batch.auto_complete_previous_batches()
+                
+                # Start the batch
+                batch.status = 'in_process'
+                batch.save()
+                
+                # Send notifications
+                notification_service = BatchNotificationService()
+                notification_service.notify_batch_started(batch, request.user)
+                
                 return JsonResponse({
-                    'success': False,
-                    'error': 'You are not authorized to start this batch'
-                }, status=403)
-            
-            # Check if batch is in approved status
-            if batch.status != 'approved':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Batch is not in approved status'
-                }, status=400)
-            
-            # Auto-complete previous batches for this factory
-            batch.auto_complete_previous_batches()
-            
-            # Start the batch
-            batch.status = 'in_process'
-            batch.save()
-            
-            # Send notifications
-            notification_service = BatchNotificationService()
-            notification_service.notify_batch_started(batch, request.user)
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Batch {batch.batch_number} has been started'
-            })
+                    'success': True,
+                    'message': f'Batch {batch.batch_number} has been started'
+                })
             
         except Batch.DoesNotExist:
             return JsonResponse({
@@ -652,36 +719,38 @@ class BatchStopView(LoginRequiredMixin, View):
     
     def post(self, request, pk):
         try:
-            batch = Batch.objects.get(pk=pk)
-            
-            # Check if user is responsible for this factory
-            if batch.factory not in request.user.responsible_factories.all():
+            with transaction.atomic():
+                # Use select_for_update to prevent race conditions
+                batch = Batch.objects.select_for_update().get(pk=pk)
+                
+                # Check if user is responsible for this factory
+                if batch.factory not in request.user.responsible_factories.all():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'You are not authorized to stop this batch'
+                    }, status=403)
+                
+                # Check if batch is in in_process status
+                if batch.status != 'in_process':
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Batch is not in process'
+                    }, status=400)
+                
+                # Stop the batch
+                batch.status = 'completed'
+                batch.is_completed = True
+                batch.end_date = timezone.now()
+                batch.save()
+                
+                # Send notifications
+                notification_service = BatchNotificationService()
+                notification_service.notify_batch_completed(batch, request.user)
+                
                 return JsonResponse({
-                    'success': False,
-                    'error': 'You are not authorized to stop this batch'
-                }, status=403)
-            
-            # Check if batch is in in_process status
-            if batch.status != 'in_process':
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Batch is not in process'
-                }, status=400)
-            
-            # Stop the batch
-            batch.status = 'completed'
-            batch.is_completed = True
-            batch.end_date = timezone.now()
-            batch.save()
-            
-            # Send notifications
-            notification_service = BatchNotificationService()
-            notification_service.notify_batch_completed(batch, request.user)
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Batch {batch.batch_number} has been stopped and completed'
-            })
+                    'success': True,
+                    'message': f'Batch {batch.batch_number} has been stopped and completed'
+                })
             
         except Batch.DoesNotExist:
             return JsonResponse({
