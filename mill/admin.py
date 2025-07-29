@@ -12,7 +12,7 @@ from django.db.models import Q
 # Register your models here.
 from .models import (
     Device, Notification, NotificationCategory, ProductionData, City, Factory, 
-    UserProfile, Batch, FlourBagCount, Alert, BatchNotification, TVDashboardSettings,
+    UserProfile, Batch, BatchTemplate, FlourBagCount, Alert, BatchNotification, TVDashboardSettings,
     UserNotificationPreference, EmailTemplate, Microsoft365Settings, NotificationLog,
     EmailHistory, MassMessage, PowerEvent, DevicePowerStatus, PowerNotificationSettings,
     PowerManagementPermission, DoorStatus, DoorOpenLogs, PowerData
@@ -521,7 +521,7 @@ class MassMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Batch)
 class BatchAdmin(admin.ModelAdmin):
-    list_display = ('batch_number', 'factory', 'wheat_amount', 'expected_flour_output', 'actual_flour_output', 'status', 'is_completed', 'created_at')
+    list_display = ('batch_number', 'factory', 'wheat_amount', 'expected_flour_output', 'actual_flour_output', 'status', 'progress_percentage', 'is_completed', 'created_at')
     list_filter = ('status', 'is_completed', 'factory', 'created_at')
     search_fields = ('batch_number', 'factory__name')
     date_hierarchy = 'created_at'
@@ -531,14 +531,53 @@ class BatchAdmin(admin.ModelAdmin):
             'fields': ('batch_number', 'factory', 'status', 'is_completed')
         }),
         ('Production Data', {
-            'fields': ('wheat_amount', 'waste_factor', 'expected_flour_output', 'actual_flour_output')
+            'fields': ('wheat_amount', 'waste_factor', 'expected_flour_output', 'actual_flour_output', 'start_value', 'current_value')
         }),
         ('Timestamps', {
             'fields': ('start_date', 'end_date', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
+        ('Approval', {
+            'fields': ('approved_by', 'approved_at'),
+            'classes': ('collapse',)
+        }),
     )
-    readonly_fields = ('expected_flour_output', 'created_at', 'updated_at')
+    readonly_fields = ('expected_flour_output', 'progress_percentage', 'created_at', 'updated_at')
+    
+    def progress_percentage(self, obj):
+        return f"{obj.progress_percentage:.1f}%"
+    progress_percentage.short_description = 'Progress'
+
+@admin.register(BatchTemplate)
+class BatchTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'wheat_amount', 'waste_factor', 'expected_duration_days', 'is_active', 'is_default', 'created_by')
+    list_filter = ('is_active', 'is_default', 'created_at')
+    search_fields = ('name', 'description')
+    ordering = ('-is_default', 'name')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'description')
+        }),
+        ('Production Parameters', {
+            'fields': ('wheat_amount', 'waste_factor', 'expected_duration_days')
+        }),
+        ('Factory Assignments', {
+            'fields': ('applicable_factories',)
+        }),
+        ('Settings', {
+            'fields': ('is_active', 'is_default')
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Only on creation
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 @admin.register(FlourBagCount)
 class FlourBagCountAdmin(admin.ModelAdmin):

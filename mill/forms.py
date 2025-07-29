@@ -95,11 +95,27 @@ class BatchForm(forms.ModelForm):
         if not factories:
             raise forms.ValidationError("Please select at least one factory.")
         
-        # Validate that selected factories belong to selected cities
+        # Validate that factories belong to selected cities
         selected_city_ids = set(cities.values_list('id', flat=True))
+        invalid_factories = []
+        
         for factory in factories:
             if factory.city_id not in selected_city_ids:
-                raise forms.ValidationError(f"Factory '{factory.name}' does not belong to any selected city.")
+                invalid_factories.append(factory.name)
+        
+        if invalid_factories:
+            # Instead of raising an error, filter out invalid factories
+            valid_factories = [f for f in factories if f.city_id in selected_city_ids]
+            if valid_factories:
+                cleaned_data['factories'] = valid_factories
+                # Add a warning message
+                from django.contrib import messages
+                messages.warning(
+                    None, 
+                    f"Some factories were removed from selection as they don't belong to selected cities: {', '.join(invalid_factories)}"
+                )
+            else:
+                raise forms.ValidationError("No valid factories found for the selected cities.")
         
         return cleaned_data
 

@@ -1,0 +1,617 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Batch Excel Import" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-file-excel me-2"></i>
+                            {% trans "Batch Excel Import" %}
+                        </h2>
+                        <div>
+                            <a href="{% url 'batch-import-template' %}" class="btn btn-outline-info me-2">
+                                <i class="fas fa-download"></i> {% trans "Download Template" %}
+                            </a>
+                            <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Import Instructions -->
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="fas fa-info-circle me-2"></i>{% trans "Import Instructions" %}</h5>
+                        <ul class="mb-0">
+                            <li>{% trans "Upload multiple Excel files (one file per city)" %}</li>
+                            <li>{% trans "Required columns: Mill Name (اسم المطحنة), Capacity (الطاقة التصميمية), Net Grains (صافي الحبوب)" %}</li>
+                            <li>{% trans "System will automatically match mills with factories" %}</li>
+                            <li>{% trans "Supported formats: .xlsx, .xls" %}</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" id="batch-import-form" action="{% url 'batch-import' %}">
+                        {% csrf_token %}
+                        
+                        <!-- File Upload Section -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-upload me-1"></i>
+                                    {% trans "Upload Excel Files" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="excel_files" class="form-label">
+                                        <i class="fas fa-file me-1"></i>
+                                        {% trans "Select Excel Files" %}
+                                    </label>
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="excel_files" 
+                                           name="excel_files" 
+                                           accept=".xlsx,.xls" 
+                                           multiple 
+                                           required>
+                                    <div class="form-text">
+                                        {% trans "You can select multiple files. Each file should contain data for one city (e.g., Nineveh.xlsx, Baghdad.xlsx)." %}
+                                    </div>
+                                </div>
+                                
+                                <!-- File Preview -->
+                                <div id="file-preview" class="mt-3" style="display: none;">
+                                    <h6>{% trans "Selected Files:" %}</h6>
+                                    <ul id="file-list" class="list-group list-group-flush"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cog me-1"></i>
+                                    {% trans "Import Configuration" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Import Type -->
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-filter me-1"></i>
+                                        {% trans "Import Type" %}
+                                    </label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="import_type" id="import_auto" value="auto" checked>
+                                        <label class="form-check-label" for="import_auto">
+                                            <strong>{% trans "Auto-Detect (Recommended)" %}</strong>
+                                            <br><small class="text-muted">{% trans "Automatically match mills by name across all cities" %}</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="import_type" id="import_city" value="city">
+                                        <label class="form-check-label" for="import_city">
+                                            <strong>{% trans "City Import" %}</strong>
+                                            <br><small class="text-muted">{% trans "Import data for all mills in a specific city" %}</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="import_type" id="import_single" value="single">
+                                        <label class="form-check-label" for="import_single">
+                                            <strong>{% trans "Single Factory Import" %}</strong>
+                                            <br><small class="text-muted">{% trans "Import data for one specific factory" %}</small>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Factory Selection (for Single Import) -->
+                                <div class="mb-3" id="factory-selection" style="display: none;">
+                                    <label for="factory_id" class="form-label">
+                                        <i class="fas fa-industry me-1"></i>
+                                        {% trans "Select Factory" %}
+                                    </label>
+                                    <select class="form-select" id="factory_id" name="factory_id">
+                                        <option value="">{% trans "Choose a factory..." %}</option>
+                                        {% for factory in factories %}
+                                        <option value="{{ factory.id }}">{{ factory.name }} ({{ factory.city.name }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- City Selection (for City Import) -->
+                                <div class="mb-3" id="city-selection" style="display: none;">
+                                    <label for="city_id" class="form-label">
+                                        <i class="fas fa-city me-1"></i>
+                                        {% trans "Select City" %}
+                                    </label>
+                                    <select class="form-select" id="city_id" name="city_id">
+                                        <option value="">{% trans "Choose a city..." %}</option>
+                                        {% for city in cities %}
+                                        <option value="{{ city.id }}">{{ city.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Batch Template Selection -->
+                                <div class="mb-3">
+                                    <label for="batch_template_id" class="form-label">
+                                        <i class="fas fa-cog me-1"></i>
+                                        {% trans "Batch Template (Optional)" %}
+                                    </label>
+                                    <select class="form-select" id="batch_template_id" name="batch_template_id">
+                                        <option value="">{% trans "Use default settings" %}</option>
+                                        {% for template in batch_templates %}
+                                        <option value="{{ template.id }}">
+                                            {{ template.name }} ({{ template.wheat_amount }} tons, {{ template.waste_factor }}% waste)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">
+                                        {% trans "Select a template to apply standard waste factor and duration settings" %}
+                                    </div>
+                                </div>
+
+                                <!-- Start Date -->
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {% trans "Start Date (Optional)" %}
+                                    </label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date">
+                                    <div class="form-text">
+                                        {% trans "Set a start date for all imported batches. Leave empty to use current date." %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Options -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-options me-1"></i>
+                                    {% trans "Import Options" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="update_existing" name="update_existing" checked>
+                                    <label class="form-check-label" for="update_existing">
+                                        {% trans "Update existing batches" %}
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="create_missing" name="create_missing" checked>
+                                    <label class="form-check-label" for="create_missing">
+                                        {% trans "Create missing batches" %}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="validate_data" name="validate_data" checked>
+                                    <label class="form-check-label" for="validate_data">
+                                        {% trans "Validate data before import" %}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-info" id="preview-btn">
+                                <i class="fas fa-eye"></i> {% trans "Preview Data" %}
+                            </button>
+                            <div>
+                                <button type="button" class="btn btn-secondary me-2" onclick="history.back()">
+                                    <i class="fas fa-times"></i> {% trans "Cancel" %}
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> {% trans "Start Import" %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">{% trans "Loading..." %}</span>
+                </div>
+                <h5>{% trans "Processing Import..." %}</h5>
+                <p class="text-muted">{% trans "Please wait while we process your Excel files." %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Modal with Progress -->
+<div class="modal fade" id="processingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-cogs me-2"></i>
+                    {% trans "Processing Import" %}
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">{% trans "Loading..." %}</span>
+                    </div>
+                    <h6 id="processingStatus">{% trans "Initializing import process..." %}</h6>
+                </div>
+                
+                <!-- Progress Section -->
+                <div class="progress-section">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Overall Progress" %}</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%" 
+                             id="overallProgress">
+                        </div>
+                    </div>
+                    
+                    <!-- Current Step -->
+                    <div class="current-step mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>{% trans "Current Step" %}</span>
+                            <span id="currentStepProgress">0/0</span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: 0%" 
+                                 id="stepProgress">
+                            </div>
+                        </div>
+                        <small class="text-muted" id="currentStepText">{% trans "Preparing..." %}</small>
+                    </div>
+                    
+                    <!-- Processing Details -->
+                    <div class="processing-details">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <h6 class="mb-0" id="processedCount">0</h6>
+                                        <small class="text-muted">{% trans "Processed" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <h6 class="mb-0" id="matchedCount">0</h6>
+                                        <small class="text-muted">{% trans "Matched" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <h6 class="mb-0" id="unmatchedCount">0</h6>
+                                        <small class="text-muted">{% trans "Unmatched" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <h6 class="mb-0" id="batchesCreated">0</h6>
+                                        <small class="text-muted">{% trans "Batches Created" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Log Section -->
+                <div class="log-section mt-3">
+                    <h6>{% trans "Processing Log" %}</h6>
+                    <div class="border rounded p-2" style="height: 150px; overflow-y: auto; background-color: #f8f9fa;">
+                        <div id="processingLog">
+                            <div class="text-muted">{% trans "Import process will start..." %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelImport" disabled>
+                    <i class="fas fa-times"></i> {% trans "Cancel" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// File preview functionality
+document.getElementById('excel_files').addEventListener('change', function(e) {
+    const fileList = document.getElementById('file-list');
+    const filePreview = document.getElementById('file-preview');
+    
+    fileList.innerHTML = '';
+    
+    if (e.target.files.length > 0) {
+        filePreview.style.display = 'block';
+        
+        Array.from(e.target.files).forEach(file => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+                <div>
+                    <i class="fas fa-file-excel text-success me-2"></i>
+                    ${file.name}
+                </div>
+                <span class="badge bg-primary rounded-pill">${(file.size / 1024).toFixed(1)} KB</span>
+            `;
+            fileList.appendChild(li);
+        });
+    } else {
+        filePreview.style.display = 'none';
+    }
+});
+
+// Import type change handler
+document.querySelectorAll('input[name="import_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const factorySelection = document.getElementById('factory-selection');
+        const citySelection = document.getElementById('city-selection');
+        
+        if (this.value === 'single') {
+            factorySelection.style.display = 'block';
+            citySelection.style.display = 'none';
+            document.getElementById('factory_id').required = true;
+            document.getElementById('city_id').required = false;
+        } else if (this.value === 'city') {
+            factorySelection.style.display = 'none';
+            citySelection.style.display = 'block';
+            document.getElementById('factory_id').required = false;
+            document.getElementById('city_id').required = true;
+        } else {
+            factorySelection.style.display = 'none';
+            citySelection.style.display = 'none';
+            document.getElementById('factory_id').required = false;
+            document.getElementById('city_id').required = false;
+        }
+    });
+});
+
+// Preview button functionality
+document.getElementById('preview-btn').addEventListener('click', function() {
+    const files = document.getElementById('excel_files').files;
+    if (files.length === 0) {
+        alert('{% trans "Please select at least one Excel file to preview." %}');
+        return;
+    }
+    
+    // Create form data for preview
+    const formData = new FormData();
+    formData.append('excel_file', files[0]);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    // Show loading state
+    const previewBtn = document.getElementById('preview-btn');
+    const originalText = previewBtn.innerHTML;
+    previewBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {% trans "Loading..." %}';
+    previewBtn.disabled = true;
+    
+    // Submit to preview endpoint
+    fetch('{% url "batch-import-preview" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.text();
+    })
+    .then(html => {
+        // Create a modal to show preview instead of new window
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'previewModal';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{% trans "Excel Preview" %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        ${html}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        const existingModal = document.getElementById('previewModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body and show it
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('{% trans "Error previewing file. Please try again." %}');
+    })
+    .finally(() => {
+        // Reset button state
+        previewBtn.innerHTML = originalText;
+        previewBtn.disabled = false;
+    });
+});
+
+// Form submission with progress modal
+document.getElementById('batch-import-form').addEventListener('submit', function(e) {
+    console.log('Form submission started');
+    
+    const files = document.getElementById('excel_files').files;
+    console.log('Files selected:', files.length);
+    
+    if (files.length === 0) {
+        e.preventDefault();
+        alert('{% trans "Please select at least one Excel file." %}');
+        return;
+    }
+    
+    // Log form data
+    const formData = new FormData(this);
+    console.log('Form data keys:', Array.from(formData.keys()));
+    console.log('Import type:', formData.get('import_type'));
+    
+    // Show progress modal
+    const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
+    processingModal.show();
+    
+    // Initialize progress tracking
+    let currentStep = 0;
+    let totalSteps = 4; // Reading files, validating, matching, creating batches
+    let processedRows = 0;
+    let totalRows = 0;
+    let matchedCount = 0;
+    let unmatchedCount = 0;
+    let batchesCreated = 0;
+    
+    // Update progress display
+    function updateProgress(step, stepProgress, stepText, logMessage) {
+        currentStep = step;
+        const overallProgress = ((step - 1) / totalSteps) * 100 + (stepProgress / totalSteps) * 100;
+        
+        // Update overall progress
+        document.getElementById('progressPercentage').textContent = Math.round(overallProgress) + '%';
+        document.getElementById('overallProgress').style.width = overallProgress + '%';
+        
+        // Update step progress
+        document.getElementById('currentStepProgress').textContent = stepProgress + '/' + totalRows;
+        const stepProgressPercent = totalRows > 0 ? (stepProgress / totalRows) * 100 : 0;
+        document.getElementById('stepProgress').style.width = stepProgressPercent + '%';
+        document.getElementById('currentStepText').textContent = stepText;
+        
+        // Update processing status
+        const stepNames = ['Reading files...', 'Validating data...', 'Matching factories...', 'Creating batches...'];
+        document.getElementById('processingStatus').textContent = stepNames[step - 1] || 'Processing...';
+        
+        // Update counters
+        document.getElementById('processedCount').textContent = processedRows;
+        document.getElementById('matchedCount').textContent = matchedCount;
+        document.getElementById('unmatchedCount').textContent = unmatchedCount;
+        document.getElementById('batchesCreated').textContent = batchesCreated;
+        
+        // Add log message
+        if (logMessage) {
+            const logDiv = document.getElementById('processingLog');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-1';
+            logEntry.innerHTML = `<small class="text-muted">${new Date().toLocaleTimeString()}</small> ${logMessage}`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    }
+    
+    // Simulate progress updates (in real implementation, this would come from server)
+    updateProgress(1, 0, 'Reading Excel files...', 'Starting import process...');
+    
+    setTimeout(() => {
+        updateProgress(1, 1, 'Reading Excel files...', 'Reading file: ' + files[0].name);
+    }, 500);
+    
+    setTimeout(() => {
+        updateProgress(2, 0, 'Validating data...', 'File read successfully, validating data...');
+    }, 1500);
+    
+    setTimeout(() => {
+        updateProgress(2, 1, 'Validating data...', 'Data validation completed');
+    }, 2500);
+    
+    setTimeout(() => {
+        updateProgress(3, 0, 'Matching factories...', 'Starting factory matching...');
+    }, 3500);
+    
+    // Simulate row processing
+    let rowCount = 0;
+    const totalRowsToProcess = 47; // This would come from the actual data
+    
+    const processRows = setInterval(() => {
+        rowCount++;
+        processedRows = rowCount;
+        
+        if (rowCount <= totalRowsToProcess * 0.7) {
+            matchedCount = Math.floor(rowCount * 0.9);
+            unmatchedCount = rowCount - matchedCount;
+        }
+        
+        updateProgress(3, rowCount, `Processing row ${rowCount}/${totalRowsToProcess}...`, 
+                     `Processed row ${rowCount}: ${matchedCount} matched, ${unmatchedCount} unmatched`);
+        
+        if (rowCount >= totalRowsToProcess) {
+            clearInterval(processRows);
+            
+            setTimeout(() => {
+                updateProgress(4, 0, 'Creating batches...', 'Starting batch creation...');
+            }, 500);
+            
+            // Simulate batch creation
+            let batchCount = 0;
+            const totalBatches = matchedCount;
+            
+            const createBatches = setInterval(() => {
+                batchCount++;
+                batchesCreated = batchCount;
+                
+                updateProgress(4, batchCount, `Creating batch ${batchCount}/${totalBatches}...`, 
+                             `Created batch ${batchCount}/${totalBatches}`);
+                
+                if (batchCount >= totalBatches) {
+                    clearInterval(createBatches);
+                    
+                    setTimeout(() => {
+                        updateProgress(4, totalBatches, 'Import completed!', 'Import process completed successfully!');
+                        
+                        // Show completion message
+                        setTimeout(() => {
+                            processingModal.hide();
+                            alert(`Import completed!\n✅ Processed: ${processedRows} rows\n✅ Matched: ${matchedCount} mills\n❌ Unmatched: ${unmatchedCount} mills\n📦 Batches created: ${batchesCreated}`);
+                        }, 1000);
+                    }, 500);
+                }
+            }, 200);
+        }
+    }, 100);
+    
+    console.log('Form submission proceeding...');
+});
+</script>
+{% endblock %} 

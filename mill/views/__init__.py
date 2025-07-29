@@ -3,6 +3,7 @@ from .auth_views import *
 from .device_views import *
 from .factory_views import manage_factory
 from .batch_views import *
+from .batch_import_views import *
 from .notification_views import *
 from .notification_api_views import *
 # from .batch_views import BatchListView, BatchCreateView, BatchDetailView

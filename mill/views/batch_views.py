@@ -7,9 +7,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.db import transaction
-from mill.models import Batch, Factory, FlourBagCount, BatchNotification, RawData, ProductionData
+from mill.models import Batch, Factory, FlourBagCount, BatchNotification, RawData, ProductionData, BatchTemplate
 from mill.forms import BatchForm
-from mill.utils import is_super_admin , allowed_factories
+from mill.utils import is_super_admin, allowed_factories
+from mill.services.batch_production_service import BatchProductionService
+from mill.services.batch_notification_service import BatchNotificationService
 from datetime import datetime
 import logging
 from decimal import Decimal
@@ -27,14 +29,51 @@ class BatchListView(LoginRequiredMixin, ListView):
         queryset = super().get_queryset()
         allowed_factories_list = allowed_factories(self.request)
         queryset = queryset.filter(factory__in=allowed_factories_list)
+        
+        # Add filtering
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        factory_filter = self.request.GET.get('factory')
+        if factory_filter:
+            queryset = queryset.filter(factory_id=factory_filter)
+        
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        print('context data')
-        # context['factories'] = [Factory.objects.filter(status=True)]
         context['is_super_admin'] = is_super_admin(self.request.user)
+        context['factories'] = Factory.objects.filter(status=True).order_by('name')
+        context['status_choices'] = Batch.STATUS_CHOICES
+        
+        # Add batch templates
+        context['batch_templates'] = BatchTemplate.objects.filter(is_active=True)
+        
+        # Add summary statistics
+        service = BatchProductionService()
+        context['summary_stats'] = self._get_summary_stats()
+        
         return context
+    
+    def _get_summary_stats(self):
+        """Get summary statistics for batches"""
+        queryset = self.get_queryset()
+        
+        stats = {
+            'total_batches': queryset.count(),
+            'active_batches': queryset.filter(status__in=['approved', 'in_process', 'paused']).count(),
+            'completed_batches': queryset.filter(status='completed').count(),
+            'total_expected_output': float(queryset.aggregate(Sum('expected_flour_output'))['expected_flour_output__sum'] or 0),
+            'total_actual_output': float(queryset.aggregate(Sum('actual_flour_output'))['actual_flour_output__sum'] or 0),
+        }
+        
+        if stats['total_expected_output'] > 0:
+            stats['overall_progress'] = (stats['total_actual_output'] / stats['total_expected_output']) * 100
+        else:
+            stats['overall_progress'] = 0
+        
+        return stats
 
 class BatchCreateView(LoginRequiredMixin, CreateView):
     model = Batch
@@ -47,6 +86,7 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
         # Ensure cities are available in the template
         from mill.models import City
         context['cities'] = City.objects.filter(status=True).order_by('name')
+        context['batch_templates'] = BatchTemplate.objects.filter(is_active=True)
         return context
 
     def form_valid(self, form):
@@ -58,12 +98,10 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
             form.add_error(None, 'Please select at least one city and one factory.')
             return self.form_invalid(form)
         
-        # Validate that factories belong to selected cities
-        selected_city_ids = set(cities.values_list('id', flat=True))
-        for factory in factories:
-            if factory.city_id not in selected_city_ids:
-                form.add_error('factories', f'Factory "{factory.name}" does not belong to any selected city.')
-                return self.form_invalid(form)
+        # Additional validation - factories should already be filtered by clean() method
+        if not factories:
+            form.add_error('factories', 'No valid factories found for the selected cities.')
+            return self.form_invalid(form)
         
         # Create a batch for each selected factory
         created_batches = []
@@ -71,10 +109,13 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
         wheat_amount = form.cleaned_data.get('wheat_amount')
         waste_factor = form.cleaned_data.get('waste_factor')
         
+        # Initialize notification service
+        notification_service = BatchNotificationService()
+        
         for i, factory in enumerate(factories):
-            # Create unique batch number for each factory
+            # Generate unique batch number for each factory
             if len(factories) > 1:
-                batch_number = f"{base_batch_number}-{factory.name}-{i+1}"
+                batch_number = f"{base_batch_number}-{factory.name[:3].upper()}-{i+1:02d}"
             else:
                 batch_number = base_batch_number
             
@@ -83,52 +124,21 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
                 form.add_error('batch_number', f'Batch number "{batch_number}" already exists.')
                 return self.form_invalid(form)
             
-            # Create the batch
+            # Create batch
             batch = Batch.objects.create(
                 batch_number=batch_number,
                 factory=factory,
                 wheat_amount=wheat_amount,
                 waste_factor=waste_factor,
-                created_by=self.request.user
+                status='pending'
             )
-            
-            # Try to set start_value and current_value from device data
-            try:
-                device = factory.devices.first()
-                if device:
-                    current_value = self.get_current_device_counter(device)
-                    batch.start_value = current_value
-                    batch.current_value = 0
-                    batch.save()
-                else:
-                    messages.warning(self.request, f'No device found for factory {factory.name}')
-            except Exception as e:
-                messages.warning(self.request, f'Error calculating counter values for {factory.name}: {str(e)}')
-            
             created_batches.append(batch)
-        
-        # Show success message
-        if len(created_batches) == 1:
-            messages.success(self.request, f'Batch "{created_batches[0].batch_number}" created successfully!')
-        else:
-            batch_numbers = [b.batch_number for b in created_batches]
-            messages.success(self.request, f'Created {len(created_batches)} batches: {", ".join(batch_numbers)}')
-        
-        return super().form_valid(form)
-    
-    def get_current_device_counter(self, device):
-        """Get current device counter value from ProductionData"""
-        try:
-            # Get the latest reading from ProductionData using updated_at
-            reading = ProductionData.objects.filter(device=device).order_by('-updated_at').first()
             
-            if reading:
-                # Use daily_production as the counter value
-                return reading.daily_production
-            else:
-                return 0
-        except Exception:
-            return 0
+            # Send notifications to responsible users
+            notification_service.notify_batch_created(batch)
+        
+        messages.success(self.request, f'Successfully created {len(created_batches)} batch(es).')
+        return super().form_valid(form)
 
 class BatchDetailView(LoginRequiredMixin, DetailView):
     model = Batch
@@ -138,232 +148,187 @@ class BatchDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         batch = self.get_object()
-        context['flour_bag_counts'] = batch.flour_bag_counts.all().order_by('-timestamp')
-        context['alerts'] = batch.alerts.all().order_by('-created_at')
         
-        # --- ProductionData batch-specific calculation ---
-        from django.db.models.functions import TruncDate
-        from django.db.models import Max, Min
-        import datetime
+        # Use the new BatchProductionService
+        service = BatchProductionService()
+        context['production_data'] = service.calculate_batch_progress(batch)
+        context['analytics'] = service.get_batch_analytics(batch)
         
-        today = datetime.date.today()
+        # Get flour bag counts
+        context['flour_bag_counts'] = FlourBagCount.objects.filter(batch=batch).order_by('-timestamp')[:10]
         
-        # Get the device for this batch's factory
-        device = batch.factory.devices.first()
+        # Get batch notifications
+        context['notifications'] = BatchNotification.objects.filter(batch=batch).order_by('-sent_at')[:5]
         
-        if device:
-            # Filter ProductionData from batch start date onwards
-            batch_start_date = batch.start_date.date()
-            CONVERSION_FACTOR = 50  # kg per unit
-            
-            # Get ProductionData for this device, filtered by batch start date, grouped by date
-            daily_production_data = (
-                ProductionData.objects
-                .filter(
-                    device=device,
-                    created_at__date__gte=batch_start_date  # From batch start date onwards
-                )
-                .annotate(day=TruncDate('created_at'))
-                .values('day')
-                .order_by('day')
-            )
-            
-            # Calculate daily differences (end - start for each day) from batch start
-            daily_values = []
-            cumulative_units = 0
-            
-            for entry in daily_production_data:
-                day = entry['day']
-                
-                # Get start and end values for this day
-                day_start = ProductionData.objects.filter(
-                    device=device,
-                    created_at__date=day
-                ).aggregate(start_value=Min('daily_production'))['start_value'] or 0
-                
-                day_end = ProductionData.objects.filter(
-                    device=device,
-                    created_at__date=day
-                ).aggregate(end_value=Max('daily_production'))['end_value'] or 0
-                
-                # Calculate difference (daily production)
-                daily_production = day_end - day_start
-                cumulative_units += daily_production
-                
-                # Convert to tons for this cumulative value
-                cumulative_tons_for_day = (cumulative_units * CONVERSION_FACTOR) / 1000
-                
-                daily_values.append({
-                    'day': day,
-                    'production': daily_production,
-                    'start_value': day_start,
-                    'end_value': day_end,
-                    'cumulative': cumulative_units,
-                    'cumulative_tons': cumulative_tons_for_day
-                })
-            
-            # Today's value (last day in the data)
-            today_value = daily_values[-1]['production'] if daily_values else 0
-            
-            # Calculate remaining production
-            expected_tons = float(batch.expected_flour_output)
-            final_cumulative_tons = (cumulative_units * CONVERSION_FACTOR) / 1000
-            remaining_tons = max(0, expected_tons - final_cumulative_tons)
-            
-            # Batch progress percentage
-            progress_percentage = (final_cumulative_tons / expected_tons * 100) if expected_tons > 0 else 0
-            
-            context['daily_production_values'] = daily_values
-            context['today_production'] = today_value
-            context['cumulative_units'] = cumulative_units
-            context['cumulative_kg'] = cumulative_units * CONVERSION_FACTOR
-            context['cumulative_tons'] = final_cumulative_tons
-            context['remaining_tons'] = remaining_tons
-            context['progress_percentage'] = progress_percentage
-            context['conversion_factor'] = CONVERSION_FACTOR
-            context['batch_start_date'] = batch_start_date
-        else:
-            context['daily_production_values'] = []
-            context['today_production'] = 0
-            context['cumulative_units'] = 0
-            context['cumulative_kg'] = 0
-            context['cumulative_tons'] = 0
-            context['remaining_tons'] = float(batch.expected_flour_output)
-            context['progress_percentage'] = 0
-            context['conversion_factor'] = 50
-            context['batch_start_date'] = batch.start_date.date()
+        # Get device information
+        if batch.factory:
+            context['devices'] = batch.factory.devices.all()
         
         return context
-logger = logging.getLogger(__name__)
 
-class BatchUpdateView(LoginRequiredMixin, View):
-    @transaction.atomic
+class BatchUpdateView(LoginRequiredMixin, UpdateView):
+    model = Batch
+    form_class = BatchForm
+    template_name = 'batches/batch_form.html'
+    success_url = reverse_lazy('batch-list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_update'] = True
+        return context
+
+    def form_valid(self, form):
+        batch = form.save(commit=False)
+        
+        # Only allow updates if batch can be edited
+        if not batch.can_be_edited:
+            messages.error(self.request, f'Batch {batch.batch_number} cannot be edited in its current status.')
+            return self.form_invalid(form)
+        
+        batch.save()
+        messages.success(self.request, f'Batch {batch.batch_number} updated successfully.')
+        return super().form_valid(form)
+
+class BatchAutoUpdateView(LoginRequiredMixin, View):
+    """View for automatically updating batch current values from device data"""
+    
     def post(self, request, pk):
+        if not is_super_admin(request.user):
+            return JsonResponse({
+                'success': False,
+                'error': 'Only Super Admins can auto-update batches'
+            }, status=403)
+        
         try:
-            batch = Batch.objects.select_for_update().get(pk=pk)
+            batch = Batch.objects.get(pk=pk)
             
-            # Check if batch can be edited
-            if not batch.can_be_edited:
+            # Check if batch can be updated (not finalized)
+            if batch.is_finalized:
                 return JsonResponse({
                     'success': False,
-                    'error': f'Batch cannot be edited in {batch.get_status_display()} status'
+                    'error': f'Batch cannot be updated in {batch.get_status_display()} status'
                 }, status=400)
             
-            # Get form data with default values
-            wheat_amount = request.POST.get('wheat_amount')
-            waste_factor = request.POST.get('waste_factor')
-            actual_flour_output = request.POST.get('actual_flour_output')
-            is_completed = request.POST.get('is_completed') == 'true'
+            # Use the new BatchProductionService
+            service = BatchProductionService()
+            result = service.update_batch_progress(batch)
             
-            # Convert and validate data
-            try:
-                if wheat_amount:
-                    wheat_amount = float(wheat_amount)
-                    if wheat_amount <= 0:
-                        return JsonResponse({
-                            'success': False, 
-                            'error': 'Wheat amount must be greater than 0'
-                        })
-                    batch.wheat_amount = wheat_amount
-
-                if waste_factor:
-                    waste_factor = float(waste_factor)
-                    if not (0 <= waste_factor <= 100):
-                        return JsonResponse({
-                            'success': False, 
-                            'error': 'Waste factor must be between 0 and 100'
-                        })
-                    batch.waste_factor = waste_factor
-
-                if actual_flour_output:
-                    actual_flour_output = float(actual_flour_output)
-                    if actual_flour_output < 0:
-                        return JsonResponse({
-                            'success': False, 
-                            'error': 'Actual output cannot be negative'
-                        })
-                    batch.actual_flour_output = actual_flour_output
-
-            except ValueError:
+            if result['success']:
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Batch {batch.batch_number} updated successfully',
+                    'data': result['data']
+                })
+            else:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Invalid numeric values provided'
-                })
-
-            # Update expected output if wheat amount or waste factor changed
-            if wheat_amount or waste_factor:
-                batch.expected_flour_output = Decimal(str(batch.wheat_amount)) * (Decimal('100') - Decimal(str(batch.waste_factor))) / Decimal('100')
-
-            # Handle batch completion
-            if is_completed and not batch.is_completed:
-                batch.is_completed = True
-                batch.end_date = timezone.now()
-            
-            # Record who made the changes
-            batch.save()
-            
-            # Handle production entry if provided
-            bag_count = request.POST.get('bag_count')
-            bags_weight = request.POST.get('bags_weight')
-            
-            if bag_count and bags_weight:
-                try:
-                    bag_count = int(bag_count)
-                    bags_weight = float(bags_weight)
-                    
-                    if bag_count < 0 or bags_weight < 0:
-                        return JsonResponse({
-                            'success': False,
-                            'error': 'Bag count and weight must be positive numbers'
-                        })
-                        
-                    # Get the first device from the factory for this batch
-                    device = batch.factory.devices.first()
-                    if device:
-                        FlourBagCount.objects.create(
-                            batch=batch,
-                            bag_count=bag_count,
-                            device=device,
-                            bags_weight=bags_weight,
-                            timestamp=timezone.now(),
-                            created_by=request.user 
-                        )
-                    else:
-                        return JsonResponse({
-                            'success': False,
-                            'error': 'No device found for this factory'
-                        })
-                except ValueError:
-                    return JsonResponse({
-                        'success': False,
-                        'error': 'Invalid bag count or weight values'
-                    })
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Batch updated successfully',
-                'data': {
-                    'wheat_amount': batch.wheat_amount,
-                    'waste_factor': batch.waste_factor,
-                    'actual_flour_output': batch.actual_flour_output,
-                    'expected_flour_output': batch.expected_flour_output,
-                    'is_completed': batch.is_completed,
-                    'updated_at': timezone.now().strftime('%Y-%m-%d %H:%M:%S')
-                }
-            })
-            
+                    'error': result.get('error', 'Unknown error occurred')
+                }, status=400)
+                
         except Batch.DoesNotExist:
-            logger.error(f"Batch {pk} not found")
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Batch not found'
             }, status=404)
         except Exception as e:
-            logger.error(f"Error updating batch {pk}: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'error': f'An error occurred while updating the batch: {str(e)}'
+                'error': str(e)
             }, status=500)
+
+class BatchStatusUpdateView(LoginRequiredMixin, View):
+    """View for updating batch status"""
+    
+    def post(self, request, pk):
+        if not is_super_admin(request.user):
+            return JsonResponse({
+                'success': False,
+                'error': 'Only Super Admins can update batch status'
+            }, status=403)
+        
+        try:
+            batch = Batch.objects.get(pk=pk)
+            new_status = request.POST.get('status')
+            
+            if not new_status:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Status is required'
+                }, status=400)
+            
+            if new_status not in dict(Batch.STATUS_CHOICES):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid status'
+                }, status=400)
+            
+            # Update status
+            old_status = batch.status
+            batch.status = new_status
+            
+            # Set approved_by and approved_at if status is approved
+            if new_status == 'approved' and not batch.approved_by:
+                batch.approved_by = request.user
+                batch.approved_at = timezone.now()
+            
+            # Set end_date if completed
+            if new_status == 'completed':
+                batch.is_completed = True
+                batch.end_date = timezone.now()
+            
+            batch.save()
+            
+            # Send notifications based on status change
+            notification_service = BatchNotificationService()
+            
+            if new_status == 'approved' and old_status != 'approved':
+                notification_service.notify_batch_approved(batch, request.user)
+            elif new_status == 'in_process' and old_status != 'in_process':
+                notification_service.notify_batch_started(batch, request.user)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Batch {batch.batch_number} status updated from {old_status} to {new_status}',
+                'new_status': new_status
+            })
+            
+        except Batch.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Batch not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+class BatchAnalyticsView(LoginRequiredMixin, DetailView):
+    """View for detailed batch analytics"""
+    model = Batch
+    template_name = 'batches/batch_analytics.html'
+    context_object_name = 'batch'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        batch = self.get_object()
+        
+        # Get comprehensive analytics
+        service = BatchProductionService()
+        context['analytics'] = service.get_batch_analytics(batch)
+        
+        return context
+
+class BatchTemplateCreateView(LoginRequiredMixin, CreateView):
+    """View for creating batch templates"""
+    model = BatchTemplate
+    template_name = 'batches/batch_template_form.html'
+    fields = ['name', 'description', 'wheat_amount', 'waste_factor', 'expected_duration_days', 'applicable_factories', 'is_default']
+    success_url = reverse_lazy('batch-list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
 class BatchManagementView(LoginRequiredMixin, View):
     """View for batch management actions (approve, start, pause, stop) - Super Admin only"""
@@ -551,70 +516,51 @@ class BatchNotificationView(LoginRequiredMixin, View):
                 'error': 'Notification not found'
             }, status=404)
 
-class BatchAutoUpdateView(LoginRequiredMixin, View):
-    """View for automatically updating batch current values from device data"""
+class BatchApprovalView(LoginRequiredMixin, View):
+    """View for responsible users to approve batches"""
+    
+    def get(self, request):
+        # Get batches that need approval from this user
+        notification_service = BatchNotificationService()
+        pending_batches = notification_service.get_pending_batches_for_user(request.user)
+        
+        context = {
+            'pending_batches': pending_batches,
+            'user': request.user
+        }
+        return render(request, 'batches/batch_approval.html', context)
     
     def post(self, request, pk):
-        if not is_super_admin(request.user):
-            return JsonResponse({
-                'success': False,
-                'error': 'Only Super Admins can auto-update batches'
-            }, status=403)
-        
         try:
             batch = Batch.objects.get(pk=pk)
             
-            # Check if batch can be updated (not finalized)
-            if batch.is_finalized:
+            # Check if user is responsible for this factory
+            if batch.factory not in request.user.responsible_factories.all():
                 return JsonResponse({
                     'success': False,
-                    'error': f'Batch cannot be updated in {batch.get_status_display()} status'
-                }, status=400)
+                    'error': 'You are not authorized to approve this batch'
+                }, status=403)
             
-            # Get device for this batch
-            device = batch.factory.devices.first()
-            if not device:
+            # Check if batch is in pending status
+            if batch.status != 'pending':
                 return JsonResponse({
                     'success': False,
-                    'error': 'No device found for this factory'
+                    'error': 'Batch is not in pending status'
                 }, status=400)
             
-            # Get current device counter from TransactionData (daily production)
-            from mill.models import TransactionData
-            current_reading = TransactionData.objects.filter(device=device).order_by('-created_at').first()
-            
-            if not current_reading:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'No device data available for this factory. Batch will remain unchanged.'
-                }, status=400)
-            
-            # Use daily_production as the current counter value
-            current_device_value = current_reading.daily_production
-            
-            # Calculate new current_value based on device counter difference
-            # current_value = device_counter_now - device_counter_at_start
-            new_current_value = current_device_value - batch.start_value
-            
-            if new_current_value < 0:
-                new_current_value = 0
-            
-            # Update batch
-            old_current_value = batch.current_value
-            batch.current_value = new_current_value
-            batch.actual_flour_output = Decimal(str(batch.current_value)) * Decimal('0.05')  # 1 unit = 50kg = 0.05 tons
+            # Approve the batch
+            batch.status = 'approved'
+            batch.approved_by = request.user
+            batch.approved_at = timezone.now()
             batch.save()
+            
+            # Send notifications
+            notification_service = BatchNotificationService()
+            notification_service.notify_batch_approved(batch, request.user)
             
             return JsonResponse({
                 'success': True,
-                'message': f'Batch updated successfully! Old value: {old_current_value}, New value: {new_current_value}',
-                'data': {
-                    'current_value': batch.current_value,
-                    'actual_flour_output': float(batch.actual_flour_output),
-                    'progress_percentage': batch.progress_percentage,
-                    'device_counter': current_device_value,
-                    'start_value': batch.start_value
-                }
+                'message': f'Batch {batch.batch_number} has been approved'
             })
             
         except Batch.DoesNotExist:
@@ -625,5 +571,237 @@ class BatchAutoUpdateView(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'error': f'Error updating batch: {str(e)}'
+                'error': str(e)
             }, status=500)
+
+class BatchStartView(LoginRequiredMixin, View):
+    """View for responsible users to start approved batches"""
+    
+    def get(self, request):
+        # Get approved batches that can be started by this user
+        notification_service = BatchNotificationService()
+        approved_batches = notification_service.get_approved_batches_for_user(request.user)
+        
+        context = {
+            'approved_batches': approved_batches,
+            'user': request.user
+        }
+        return render(request, 'batches/batch_start.html', context)
+    
+    def post(self, request, pk):
+        try:
+            batch = Batch.objects.get(pk=pk)
+            
+            # Check if user is responsible for this factory
+            if batch.factory not in request.user.responsible_factories.all():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'You are not authorized to start this batch'
+                }, status=403)
+            
+            # Check if batch is in approved status
+            if batch.status != 'approved':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Batch is not in approved status'
+                }, status=400)
+            
+            # Auto-complete previous batches for this factory
+            batch.auto_complete_previous_batches()
+            
+            # Start the batch
+            batch.status = 'in_process'
+            batch.save()
+            
+            # Send notifications
+            notification_service = BatchNotificationService()
+            notification_service.notify_batch_started(batch, request.user)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Batch {batch.batch_number} has been started'
+            })
+            
+        except Batch.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Batch not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+class BatchStopView(LoginRequiredMixin, View):
+    """View for responsible users to stop in-process batches"""
+    
+    def get(self, request):
+        # Get in-process batches that can be stopped by this user
+        notification_service = BatchNotificationService()
+        in_process_batches = Batch.objects.filter(
+            factory__in=request.user.responsible_factories.all(),
+            status='in_process'
+        ).order_by('-created_at')
+        
+        context = {
+            'in_process_batches': in_process_batches,
+            'user': request.user
+        }
+        return render(request, 'batches/batch_stop.html', context)
+    
+    def post(self, request, pk):
+        try:
+            batch = Batch.objects.get(pk=pk)
+            
+            # Check if user is responsible for this factory
+            if batch.factory not in request.user.responsible_factories.all():
+                return JsonResponse({
+                    'success': False,
+                    'error': 'You are not authorized to stop this batch'
+                }, status=403)
+            
+            # Check if batch is in in_process status
+            if batch.status != 'in_process':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Batch is not in process'
+                }, status=400)
+            
+            # Stop the batch
+            batch.status = 'completed'
+            batch.is_completed = True
+            batch.end_date = timezone.now()
+            batch.save()
+            
+            # Send notifications
+            notification_service = BatchNotificationService()
+            notification_service.notify_batch_completed(batch, request.user)
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Batch {batch.batch_number} has been stopped and completed'
+            })
+            
+        except Batch.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Batch not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+@login_required
+def batch_delete(request, pk):
+    """Delete a batch - only for super admins"""
+    if not is_super_admin(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Only super admins can delete batches'
+        }, status=403)
+    
+    try:
+        batch = get_object_or_404(Batch, pk=pk)
+        
+        # Check if batch can be deleted (not in production)
+        if batch.status in ['in_process', 'completed']:
+            return JsonResponse({
+                'success': False,
+                'error': f'Cannot delete batch in {batch.get_status_display()} status'
+            }, status=400)
+        
+        batch_number = batch.batch_number
+        batch.delete()
+        
+        messages.success(request, f'Batch "{batch_number}" has been deleted successfully.')
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Batch "{batch_number}" deleted successfully'
+        })
+        
+    except Batch.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Batch not found'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Error deleting batch: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
+
+@login_required
+def batch_bulk_delete(request):
+    """Bulk delete batches - only for super admins"""
+    if not is_super_admin(request.user):
+        return JsonResponse({
+            'success': False,
+            'error': 'Only super admins can delete batches'
+        }, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Only POST method allowed'
+        }, status=405)
+    
+    try:
+        import json
+        data = json.loads(request.body)
+        batch_ids = data.get('batch_ids', [])
+        
+        if not batch_ids:
+            return JsonResponse({
+                'success': False,
+                'error': 'No batch IDs provided'
+            }, status=400)
+        
+        # Get batches that can be deleted
+        deletable_batches = Batch.objects.filter(
+            id__in=batch_ids,
+            status__in=['pending', 'cancelled']  # Only allow deletion of pending/cancelled batches
+        )
+        
+        non_deletable_batches = Batch.objects.filter(
+            id__in=batch_ids
+        ).exclude(
+            id__in=deletable_batches.values_list('id', flat=True)
+        )
+        
+        # Delete the batches
+        deleted_count = deletable_batches.count()
+        batch_numbers = list(deletable_batches.values_list('batch_number', flat=True))
+        deletable_batches.delete()
+        
+        # Prepare response message
+        if deleted_count > 0:
+            success_message = f'Successfully deleted {deleted_count} batch(es): {", ".join(batch_numbers)}'
+            if non_deletable_batches.exists():
+                non_deletable_numbers = list(non_deletable_batches.values_list('batch_number', flat=True))
+                success_message += f'\nCould not delete {non_deletable_batches.count()} batch(es) (in production): {", ".join(non_deletable_numbers)}'
+            
+            messages.success(request, success_message)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Deleted {deleted_count} batch(es)',
+            'deleted_count': deleted_count,
+            'non_deletable_count': non_deletable_batches.count()
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in bulk delete: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)

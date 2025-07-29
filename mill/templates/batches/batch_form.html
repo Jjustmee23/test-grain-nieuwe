@@ -63,7 +63,7 @@
                         <label class="form-label" style="margin-left: -15%;">Select Factories</label>
                         <div id="factory-selector" class="factory-selector border rounded p-3" style="max-height: 200px; overflow-y: auto;">
                             <div class="text-muted text-center">
-                                First select cities to see available factories
+                                Select cities above to see available factories
                             </div>
                         </div>
                         <div class="mt-2">
@@ -180,6 +180,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set min date for date inputs to prevent selecting future dates
     const today = new Date().toISOString().split('T')[0];
     
+    // Initialize with empty factory selector
+    const factorySelector = document.getElementById('factory-selector');
+    factorySelector.innerHTML = '<div class="text-muted text-center">Select cities above to see available factories</div>';
+    
     // Validate form submission
     document.getElementById('batch-form').onsubmit = function(e) {
         const selectedCities = document.querySelectorAll('input[name="cities"]:checked');
@@ -197,6 +201,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
+        // Validate that factories belong to selected cities
+        const cityIds = Array.from(selectedCities).map(cb => parseInt(cb.value));
+        const factoryIds = Array.from(selectedFactories).map(cb => parseInt(cb.value));
+        
+        // Get all available factories for selected cities
+        const availableFactoryIds = [];
+        selectedCities.forEach(cityCheckbox => {
+            const cityId = parseInt(cityCheckbox.value);
+            // Get factories for this city from the DOM
+            const cityFactories = document.querySelectorAll(`input[name="factories"][data-city="${cityId}"]`);
+            cityFactories.forEach(factoryCheckbox => {
+                availableFactoryIds.push(parseInt(factoryCheckbox.value));
+            });
+        });
+        
+        // Check if all selected factories are available
+        const invalidFactories = factoryIds.filter(id => !availableFactoryIds.includes(id));
+        if (invalidFactories.length > 0) {
+            alert('Some selected factories are not available for the selected cities. Please review your selection.');
+            e.preventDefault();
+            return false;
+        }
+
         return true;
     };
 });
@@ -207,7 +234,8 @@ function handleCitySelection() {
     const factorySelector = document.getElementById('factory-selector');
     
     if (selectedCities.length === 0) {
-        factorySelector.innerHTML = '<div class="text-muted text-center">First select cities to see available factories</div>';
+        // If no cities selected, show message
+        factorySelector.innerHTML = '<div class="text-muted text-center">Select cities above to see available factories</div>';
         return;
     }
     
@@ -248,7 +276,7 @@ function handleCitySelection() {
                 div.className = 'form-check mb-2';
                 div.innerHTML = `
                     <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
-                        name="factories" value="${factory.id}">
+                        name="factories" value="${factory.id}" data-city="${factory.city_id}">
                     <label class="form-check-label" for="factory${factory.id}">
                         ${factory.name} (${factory.city_name || 'Unknown City'})
                     </label>
@@ -258,6 +286,8 @@ function handleCitySelection() {
         }
     });
 }
+
+
 
 // City selection functions
 function selectAllCities() {

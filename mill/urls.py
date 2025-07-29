@@ -23,11 +23,34 @@ urlpatterns = [
     path('batches/create/', views.BatchCreateView.as_view(), name='batch-create'),
     path('batches/<int:pk>/', views.BatchDetailView.as_view(), name='batch-detail'),
     path('batches/<int:pk>/update/', views.BatchUpdateView.as_view(), name='batch-update'),
+    path('batches/<int:pk>/analytics/', views.BatchAnalyticsView.as_view(), name='batch-analytics'),
+    path('batches/<int:pk>/delete/', views.batch_delete, name='batch-delete'),
+    path('batches/bulk-delete/', views.batch_bulk_delete, name='batch-bulk-delete'),
+    path('batches/<int:pk>/status/', views.BatchStatusUpdateView.as_view(), name='batch-status-update'),
+    path('batches/<int:pk>/auto-update/', views.BatchAutoUpdateView.as_view(), name='batch-auto-update'),
     path('batches/<int:pk>/manage/', views.BatchManagementView.as_view(), name='batch-manage'),
     path('batches/<int:pk>/counter/', views.BatchCounterUpdateView.as_view(), name='batch-counter'),
-    path('batches/<int:pk>/auto-update/', views.BatchAutoUpdateView.as_view(), name='batch-auto-update'),
     path('api/batch/<int:batch_id>/chart-data/', views.batch_chart_data, name='batch_chart_data'),
     path('api/batch-notifications/', views.BatchNotificationView.as_view(), name='batch-notifications'),
+    
+    # Batch Approval, Start, and Stop URLs (for responsible users)
+    path('batches/approval/', views.BatchApprovalView.as_view(), name='batch-approval'),
+    path('batches/<int:pk>/approve/', views.BatchApprovalView.as_view(), name='batch-approve'),
+    path('batches/start/', views.BatchStartView.as_view(), name='batch-start'),
+    path('batches/<int:pk>/start/', views.BatchStartView.as_view(), name='batch-start-batch'),
+    path('batches/stop/', views.BatchStopView.as_view(), name='batch-stop'),
+    path('batches/<int:pk>/stop/', views.BatchStopView.as_view(), name='batch-stop-batch'),
+    
+    # Batch Template URLs
+    path('batch-templates/create/', views.BatchTemplateCreateView.as_view(), name='batch-template-create'),
+    
+    # Batch Import URLs
+    path('batches/import/', views.batch_import_view, name='batch-import'),
+    path('batches/import/preview/', views.batch_import_preview, name='batch-import-preview'),
+    path('batches/import/process-preview/', views.process_preview_data, name='batch-import-process-preview'),
+    path('batches/import/matched-only/', views.process_matched_batches_only, name='batch-import-matched-only'),
+    path('batches/manual-process/', views.batch_manual_process, name='batch-manual-process'),
+    path('batches/import/template/', views.download_batch_template, name='batch-import-template'),
     
     # Sensor URLs
     path('sensor/data/', views.sensor_data_receiver, name='sensor-data'),
@@ -180,6 +203,7 @@ urlpatterns = [
     path('api/chart_data/', apis.chart_data, name='chart_data'),
     path('api/batch_chart_data/', apis.batch_chart_data, name='batch_chart_data'),
     path('api/cities/<int:city_id>/factories/', apis.get_city_factories, name='get_city_factories'),
+    path('api/factories/', apis.get_all_factories, name='get_all_factories'),
 
     path('api/devices/',apis.get_devices,name='get-devices'),
     path('resolve-door-alert/<int:log_id>/', views.resolve_door_alert, name='resolve_door_alert'),

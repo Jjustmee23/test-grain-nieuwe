@@ -1,0 +1,168 @@
+{% extends 'mill/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Batch Start" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-play-circle me-2"></i>
+            {% trans "Batch Start" %}
+        </h1>
+        <div>
+            <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+            </a>
+        </div>
+    </div>
+
+    {% if approved_batches %}
+        <div class="row">
+            {% for batch in approved_batches %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check me-2"></i>
+                            {% trans "Ready to Start" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ batch.batch_number }}</h6>
+                        <p class="card-text">
+                            <strong>{% trans "Factory" %}:</strong> {{ batch.factory.name }}<br>
+                            <strong>{% trans "City" %}:</strong> {{ batch.factory.city.name }}<br>
+                            <strong>{% trans "Wheat Amount" %}:</strong> {{ batch.wheat_amount }} {% trans "tons" %}<br>
+                            <strong>{% trans "Expected Output" %}:</strong> {{ batch.expected_flour_output }} {% trans "tons" %}<br>
+                            <strong>{% trans "Approved By" %}:</strong> {{ batch.approved_by.get_full_name|default:batch.approved_by.username }}<br>
+                            <strong>{% trans "Approved At" %}:</strong> {{ batch.approved_at|date:"Y-m-d H:i" }}
+                        </p>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" 
+                                    onclick="startBatch({{ batch.pk }}, '{{ batch.batch_number }}')">
+                                <i class="fas fa-play"></i> {% trans "Start Production" %}
+                            </button>
+                            <a href="{% url 'batch-detail' batch.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i> {% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-play-circle fa-4x text-primary"></i>
+            </div>
+            <h4 class="text-muted">{% trans "No Approved Batches" %}</h4>
+            <p class="text-muted">{% trans "No approved batches are available to start production." %}</p>
+            <a href="{% url 'batch-approval' %}" class="btn btn-warning me-2">
+                <i class="fas fa-check-circle"></i> {% trans "Approve Batches" %}
+            </a>
+            <a href="{% url 'batch-list' %}" class="btn btn-primary">
+                <i class="fas fa-list"></i> {% trans "View All Batches" %}
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Start Confirmation Modal -->
+<div class="modal fade" id="startModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-play-circle me-2"></i>
+                    {% trans "Confirm Production Start" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Are you sure you want to start production for batch" %} <strong id="batchNumber"></strong>?</p>
+                <p class="text-muted">{% trans "This will change the batch status to 'In Process' and begin counter tracking." %}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmStart">
+                    <i class="fas fa-play"></i> {% trans "Start Production" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentBatchId = null;
+
+function startBatch(batchId, batchNumber) {
+    currentBatchId = batchId;
+    document.getElementById('batchNumber').textContent = batchNumber;
+    
+    const modal = new bootstrap.Modal(document.getElementById('startModal'));
+    modal.show();
+}
+
+document.getElementById('confirmStart').addEventListener('click', function() {
+    if (!currentBatchId) return;
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    this.disabled = true;
+    
+    // Send start request
+    fetch(`/batches/${currentBatchId}/start/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-primary border-0 position-fixed top-0 end-0 m-3';
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-play-circle me-2"></i>
+                        ${data.message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Close modal and reload page
+            bootstrap.Modal.getInstance(document.getElementById('startModal')).hide();
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert('Error: ' + data.error);
+            this.innerHTML = '<i class="fas fa-play"></i> {% trans "Start Production" %}';
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('{% trans "An error occurred while starting the batch." %}');
+        this.innerHTML = '<i class="fas fa-play"></i> {% trans "Start Production" %}';
+        this.disabled = false;
+    });
+});
+</script>
+{% endblock %} 

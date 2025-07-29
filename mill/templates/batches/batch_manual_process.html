@@ -1,0 +1,257 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Manual Batch Processing" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{% trans "Manual Batch Processing" %}</h2>
+            <p class="text-muted">{% trans "Process unmatched mills from Excel import" %}</p>
+        </div>
+        <div>
+            <a href="{% url 'batch-list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                {% trans "Processing Summary" %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 class="text-warning">{{ total_unmatched }}</h4>
+                        <small class="text-muted">{% trans "Unmatched Mills" %}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 class="text-info">{{ factories.count }}</h4>
+                        <small class="text-muted">{% trans "Available Factories" %}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center">
+                        <h4 class="text-success">{{ unmatched_data|length }}</h4>
+                        <small class="text-muted">{% trans "Files to Process" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Processing Form -->
+    <form method="post" id="manual-process-form">
+        {% csrf_token %}
+        
+        {% for file_data in unmatched_data %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-excel me-2"></i>
+                    {{ file_data.filename }}
+                    <span class="badge bg-warning ms-2">{{ file_data.unmatched_rows|length }} {% trans "unmatched" %}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Mill Name" %}</th>
+                                <th>{% trans "Net Grains (tons)" %}</th>
+                                <th>{% trans "Factory Suggestions" %}</th>
+                                <th>{% trans "Select Factory" %}</th>
+                                <th>{% trans "Adjust Grains" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row_data in file_data.unmatched_rows %}
+                            <tr>
+                                <td>
+                                    <strong>{{ row_data.mill_name }}</strong>
+                                </td>
+                                <td>
+                                    <input type="number" 
+                                           class="form-control form-control-sm" 
+                                           name="grains_{{ row_data.mill_name }}"
+                                           value="{{ row_data.net_grains|floatformat:2 }}"
+                                           step="0.01" 
+                                           min="0"
+                                           required>
+                                </td>
+                                <td>
+                                    {% if row_data.suggestions %}
+                                    <div class="small">
+                                        {% for suggestion in row_data.suggestions %}
+                                        <div class="mb-1">
+                                            <span class="badge bg-light text-dark me-1">
+                                                {{ suggestion.score|floatformat:2 }}
+                                            </span>
+                                            <small>{{ suggestion.factory_name }} ({{ suggestion.city_name }})</small>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <small class="text-muted">{% trans "No suggestions" %}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm" 
+                                            name="factory_{{ row_data.mill_name }}" 
+                                            required>
+                                        <option value="">{% trans "Choose factory..." %}</option>
+                                        {% for factory in factories %}
+                                        <option value="{{ factory.id }}" 
+                                                {% for suggestion in row_data.suggestions %}
+                                                    {% if suggestion.factory_id == factory.id %}selected{% endif %}
+                                                {% endfor %}>
+                                            {{ factory.name }} ({{ factory.city.name }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary"
+                                                onclick="adjustGrains('{{ row_data.mill_name }}', 0.1)">
+                                            +0.1
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary"
+                                                onclick="adjustGrains('{{ row_data.mill_name }}', -0.1)">
+                                            -0.1
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="skipRow(this)">
+                                        <i class="fas fa-times"></i> {% trans "Skip" %}
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Action Buttons -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" onclick="selectAllSuggestions()">
+                            <i class="fas fa-magic"></i> {% trans "Auto-Select Suggestions" %}
+                        </button>
+                        <button type="button" class="btn btn-outline-info" onclick="resetAll()">
+                            <i class="fas fa-undo"></i> {% trans "Reset All" %}
+                        </button>
+                    </div>
+                    <div>
+                        <a href="{% url 'batch-list' %}" class="btn btn-secondary me-2">
+                            <i class="fas fa-times"></i> {% trans "Cancel" %}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> {% trans "Process Selected Batches" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Processing Modal -->
+<div class="modal fade" id="processingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Processing Batches" %}</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">{% trans "Loading..." %}</span>
+                </div>
+                <p>{% trans "Creating batches for unmatched mills..." %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function adjustGrains(millName, adjustment) {
+    const input = document.querySelector(`input[name="grains_${millName}"]`);
+    const currentValue = parseFloat(input.value) || 0;
+    input.value = (currentValue + adjustment).toFixed(2);
+}
+
+function skipRow(button) {
+    const row = button.closest('tr');
+    row.style.opacity = '0.5';
+    row.style.backgroundColor = '#f8f9fa';
+    
+    // Disable inputs in this row
+    const inputs = row.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.name = input.name + '_skipped';
+    });
+}
+
+function selectAllSuggestions() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const select = row.querySelector('select');
+        if (select && !select.value) {
+            // Find the first suggestion and select it
+            const options = select.querySelectorAll('option');
+            for (let option of options) {
+                if (option.value && option.selected) {
+                    break;
+                }
+            }
+        }
+    });
+}
+
+function resetAll() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        row.style.opacity = '1';
+        row.style.backgroundColor = '';
+        
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.disabled = false;
+            input.name = input.name.replace('_skipped', '');
+        });
+    });
+}
+
+// Show processing modal on form submit
+document.getElementById('manual-process-form').addEventListener('submit', function() {
+    const modal = new bootstrap.Modal(document.getElementById('processingModal'));
+    modal.show();
+});
+</script>
+{% endblock %} 

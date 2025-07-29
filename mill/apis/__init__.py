@@ -15,7 +15,7 @@ def get_city_factories(request, city_id):
         factories = Factory.objects.filter(city=city, status=True).order_by('name')
         
         factories_list = [
-            {"id": factory.id, "name": factory.name, "city_name": city.name} 
+            {"id": factory.id, "name": factory.name, "city_name": city.name, "city_id": city.id} 
             for factory in factories
         ]
         
@@ -25,6 +25,22 @@ def get_city_factories(request, city_id):
         })
     except City.DoesNotExist:
         return JsonResponse({'error': 'City not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def get_all_factories(request):
+    """Get all factories"""
+    try:
+        factories = Factory.objects.filter(status=True).order_by('name')
+        
+        factories_list = [
+            {"id": factory.id, "name": factory.name, "city_name": factory.city.name if factory.city else "Unknown", "city_id": factory.city.id if factory.city else None} 
+            for factory in factories
+        ]
+        
+        return JsonResponse({
+            "factories": factories_list
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

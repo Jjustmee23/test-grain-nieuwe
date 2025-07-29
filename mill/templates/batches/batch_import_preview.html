@@ -1,0 +1,318 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Batch Import Preview" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-eye me-2"></i>
+                            {% trans "Batch Import Preview" %}
+                        </h2>
+                        <div>
+                            <a href="{% url 'batch-import' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> {% trans "Back to Import" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- File Info -->
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="fas fa-file-excel me-2"></i>{{ filename }}</h5>
+                        <p class="mb-0">
+                            <strong>{% trans "Total Rows:" %}</strong> {{ total_rows }} | 
+                            <strong>{% trans "Preview Showing:" %}</strong> {{ preview_data|length }} {% trans "rows" %}
+                        </p>
+                    </div>
+
+                    <!-- Data Preview Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>{% trans "Mill Name" %}</th>
+                                    <th>{% trans "Capacity" %}</th>
+                                    <th>{% trans "Net Grains" %}</th>
+                                    <th>{% trans "Factory Match" %}</th>
+                                    <th>{% trans "Match Score" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in preview_data %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ row.mill_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ row.capacity }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ row.net_grains }}</span>
+                                    </td>
+                                    <td>
+                                        {% if row.factory_match != 'No match' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> {{ row.factory_match }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> {% trans "No match" %}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if row.match_score != '0.00' %}
+                                            <span class="badge bg-primary">{{ row.match_score }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if row.factory_match != 'No match' %}
+                                            <span class="badge bg-success">{% trans "Ready" %}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{% trans "No Factory" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Import Summary -->
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        {% trans "Data Summary" %}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <h4 class="text-primary">{{ total_rows }}</h4>
+                                        <small class="text-muted">{% trans "Total Rows" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-industry me-1"></i>
+                                        {% trans "Factory Matching" %}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <h4 class="text-success">{{ total_matches }}</h4>
+                                        <small class="text-muted">{% trans "Matched" %} ({{ match_percentage|floatformat:1 }}%)</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        {% trans "Unmatched" %}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <h4 class="text-warning">{{ total_unmatched }}</h4>
+                                        <small class="text-muted">{% trans "No Factory" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-wheat-awn me-1"></i>
+                                        {% trans "Total Grains" %}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <h4 class="text-info">{{ total_grains|floatformat:0 }}</h4>
+                                        <small class="text-muted">{% trans "Tons" %}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Matching Details -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {% trans "Matching Summary" %}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-success">{% trans "✅ Overall Results:" %}</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success me-2"></i>{% trans "Total mills in file" %}: <strong>{{ total_rows }}</strong></li>
+                                        <li><i class="fas fa-industry text-success me-2"></i>{% trans "Successfully matched" %}: <strong>{{ total_matches }}</strong> ({{ match_percentage|floatformat:1 }}%)</li>
+                                        <li><i class="fas fa-times text-danger me-2"></i>{% trans "No factory found" %}: <strong>{{ total_unmatched }}</strong></li>
+                                        <li><i class="fas fa-wheat-awn text-info me-2"></i>{% trans "Total grains to import" %}: <strong>{{ total_grains|floatformat:0 }} tons</strong></li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-info">{% trans "📊 Preview Sample (First 10 rows):" %}</h6>
+                                    <ul class="list-unstyled">
+                                        {% for row in preview_data %}
+                                            {% if row.factory_match != 'No match' %}
+                                                <li><i class="fas fa-check text-success me-2"></i>{{ row.mill_name }} → {{ row.factory_match }} ({{ row.match_score }})</li>
+                                            {% else %}
+                                                <li><i class="fas fa-times text-danger me-2"></i>{{ row.mill_name }} → {% trans "No factory found" %}</li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            {% if match_percentage >= 80 %}
+                                <div class="alert alert-success mt-3">
+                                    <i class="fas fa-thumbs-up me-2"></i>
+                                    <strong>{% trans "Excellent matching results!" %}</strong> 
+                                    {% trans "You can proceed with confidence." %}
+                                </div>
+                            {% elif match_percentage >= 60 %}
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>{% trans "Good matching results." %}</strong> 
+                                    {% trans "Review unmatched mills before proceeding." %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-danger mt-3">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    <strong>{% trans "Low matching results." %}</strong> 
+                                    {% trans "Please check factory names in the system." %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Next Steps -->
+                    <div class="alert alert-warning mt-4">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>{% trans "Next Steps" %}</h6>
+                        <ol class="mb-0">
+                            <li>{% trans "Review the factory matching results above" %}</li>
+                            <li>{% trans "If matches look good, proceed with import" %}</li>
+                            <li>{% trans "If many mills are unmatched, check factory names in the system" %}</li>
+                            <li>{% trans "Use Auto-Detect mode for best matching results" %}</li>
+                        </ol>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <a href="{% url 'batch-import' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-left"></i> {% trans "Back to Import" %}
+                            </a>
+                            <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> {% trans "Cancel" %}
+                            </a>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-success btn-lg" onclick="startImport()">
+                                <i class="fas fa-play"></i> {% trans "Start Import" %}
+                                <span class="badge bg-light text-dark ms-2">{{ total_rows }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function startImport() {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    button.disabled = true;
+    
+    // Create a form to submit to the process-preview endpoint
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{% url 'batch-import-process-preview' %}";
+    form.style.display = 'none';
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    // Add import type
+    const importTypeInput = document.createElement('input');
+    importTypeInput.type = 'hidden';
+    importTypeInput.name = 'import_type';
+    importTypeInput.value = 'auto';
+    form.appendChild(importTypeInput);
+    
+    // Add other form fields
+    const batchTemplateInput = document.createElement('input');
+    batchTemplateInput.type = 'hidden';
+    batchTemplateInput.name = 'batch_template_id';
+    batchTemplateInput.value = '';
+    form.appendChild(batchTemplateInput);
+    
+    const startDateInput = document.createElement('input');
+    startDateInput.type = 'hidden';
+    startDateInput.name = 'start_date';
+    startDateInput.value = '';
+    form.appendChild(startDateInput);
+    
+    // Add form to page and submit
+    document.body.appendChild(form);
+    
+    // Show processing modal
+    const processingModal = new bootstrap.Modal(document.getElementById('processingModal'));
+    processingModal.show();
+    
+    // Submit the form
+    setTimeout(() => {
+        form.submit();
+    }, 500);
+}
+
+// Show processing modal when buttons are clicked
+document.addEventListener('DOMContentLoaded', function() {
+    const proceedButton = document.querySelector('button[onclick="startImport()"]');
+    if (proceedButton) {
+        proceedButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            startImport();
+        });
+    }
+});
+</script>
+{% endblock %} 

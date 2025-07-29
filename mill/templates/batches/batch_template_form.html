@@ -1,0 +1,263 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Create Batch Template" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            {% trans "Create Batch Template" %}
+                        </h2>
+                        <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="batch-template-form">
+                        {% csrf_token %}
+                        
+                        <!-- Template Name -->
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag me-1"></i>
+                                {{ form.name.label }}
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.help_text %}
+                            <div class="form-text">{{ form.name.help_text }}</div>
+                            {% endif %}
+                            {% if form.name.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {{ form.name.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>
+                                {{ form.description.label }}
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                            <div class="form-text">{{ form.description.help_text }}</div>
+                            {% endif %}
+                            {% if form.description.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {{ form.description.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Production Parameters -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-industry me-1"></i>
+                                    {% trans "Production Parameters" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Wheat Amount -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.wheat_amount.id_for_label }}" class="form-label">
+                                            <i class="fas fa-wheat-awn me-1"></i>
+                                            {{ form.wheat_amount.label }}
+                                        </label>
+                                        {{ form.wheat_amount }}
+                                        {% if form.wheat_amount.help_text %}
+                                        <div class="form-text">{{ form.wheat_amount.help_text }}</div>
+                                        {% endif %}
+                                        {% if form.wheat_amount.errors %}
+                                        <div class="alert alert-danger mt-1">
+                                            {{ form.wheat_amount.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Waste Factor -->
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.waste_factor.id_for_label }}" class="form-label">
+                                            <i class="fas fa-percentage me-1"></i>
+                                            {{ form.waste_factor.label }}
+                                        </label>
+                                        {{ form.waste_factor }}
+                                        {% if form.waste_factor.help_text %}
+                                        <div class="form-text">{{ form.waste_factor.help_text }}</div>
+                                        {% endif %}
+                                        {% if form.waste_factor.errors %}
+                                        <div class="alert alert-danger mt-1">
+                                            {{ form.waste_factor.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Expected Duration -->
+                                <div class="mb-3">
+                                    <label for="{{ form.expected_duration_days.id_for_label }}" class="form-label">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ form.expected_duration_days.label }}
+                                    </label>
+                                    {{ form.expected_duration_days }}
+                                    {% if form.expected_duration_days.help_text %}
+                                    <div class="form-text">{{ form.expected_duration_days.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.expected_duration_days.errors %}
+                                    <div class="alert alert-danger mt-1">
+                                        {{ form.expected_duration_days.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Expected Output Preview -->
+                                <div class="alert alert-info">
+                                    <i class="fas fa-calculator me-1"></i>
+                                    <strong>{% trans "Expected Output Preview" %}:</strong>
+                                    <span id="expected-output-preview">0.00 tons</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Factory Assignments -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-building me-1"></i>
+                                    {% trans "Factory Assignments" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.applicable_factories.id_for_label }}" class="form-label">
+                                        {{ form.applicable_factories.label }}
+                                    </label>
+                                    <div class="row">
+                                        {% for choice in form.applicable_factories %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                {{ choice.tag }}
+                                                <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                    {{ choice.choice_label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if form.applicable_factories.help_text %}
+                                    <div class="form-text">{{ form.applicable_factories.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.applicable_factories.errors %}
+                                    <div class="alert alert-danger mt-1">
+                                        {{ form.applicable_factories.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Template Settings -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cogs me-1"></i>
+                                    {% trans "Template Settings" %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- Is Active -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            {{ form.is_active }}
+                                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                                <i class="fas fa-toggle-on me-1"></i>
+                                                {{ form.is_active.label }}
+                                            </label>
+                                        </div>
+                                        {% if form.is_active.help_text %}
+                                        <div class="form-text">{{ form.is_active.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Is Default -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            {{ form.is_default }}
+                                            <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                                <i class="fas fa-star me-1"></i>
+                                                {{ form.is_default.label }}
+                                            </label>
+                                        </div>
+                                        {% if form.is_default.help_text %}
+                                        <div class="form-text">{{ form.is_default.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'batch-list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {% trans "Create Template" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Real-time calculation of expected output
+function calculateExpectedOutput() {
+    const wheatAmount = parseFloat(document.getElementById('{{ form.wheat_amount.id_for_label }}').value) || 0;
+    const wasteFactor = parseFloat(document.getElementById('{{ form.waste_factor.id_for_label }}').value) || 0;
+    
+    const expectedOutput = wheatAmount * ((100 - wasteFactor) / 100);
+    document.getElementById('expected-output-preview').textContent = expectedOutput.toFixed(2) + ' tons';
+}
+
+// Add event listeners for real-time calculation
+document.getElementById('{{ form.wheat_amount.id_for_label }}').addEventListener('input', calculateExpectedOutput);
+document.getElementById('{{ form.waste_factor.id_for_label }}').addEventListener('input', calculateExpectedOutput);
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', calculateExpectedOutput);
+
+// Form validation
+document.getElementById('batch-template-form').addEventListener('submit', function(e) {
+    const wheatAmount = parseFloat(document.getElementById('{{ form.wheat_amount.id_for_label }}').value);
+    const wasteFactor = parseFloat(document.getElementById('{{ form.waste_factor.id_for_label }}').value);
+    
+    if (wheatAmount <= 0) {
+        e.preventDefault();
+        alert('{% trans "Wheat amount must be greater than 0" %}');
+        return false;
+    }
+    
+    if (wasteFactor < 0 || wasteFactor > 100) {
+        e.preventDefault();
+        alert('{% trans "Waste factor must be between 0 and 100" %}');
+        return false;
+    }
+});
+</script>
+{% endblock %} 

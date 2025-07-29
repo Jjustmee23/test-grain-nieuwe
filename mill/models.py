@@ -202,6 +202,30 @@ class Batch(models.Model):
             self.expected_flour_output = self.wheat_amount * ((100 - self.waste_factor) / 100)
             
         super().save(*args, **kwargs)
+    
+    def auto_complete_previous_batches(self):
+        """Auto-complete all previous in_process batches for this factory"""
+        if not self.factory:
+            return
+        
+        # Get all in_process batches for this factory (excluding current batch)
+        previous_batches = Batch.objects.filter(
+            factory=self.factory,
+            status='in_process'
+        ).exclude(pk=self.pk)
+        
+        for batch in previous_batches:
+            batch.status = 'completed'
+            batch.is_completed = True
+            batch.end_date = timezone.now()
+            batch.save()
+            
+            # Create notification
+            BatchNotification.objects.create(
+                batch=batch,
+                notification_type='batch_completed',
+                message=f"Batch {batch.batch_number} automatically completed when new batch started"
+            )
 
     def __str__(self):
         return f"Batch {self.batch_number} - {self.factory.name}"
@@ -2260,3 +2284,89 @@ class RawDataCounter(models.Model):
         return cls.objects.using('default').filter(
             counter_id=device_id
         ).values('timestamp', counter_field).order_by('timestamp')
+
+class BatchTemplate(models.Model):
+    """
+    Vooraf gedefinieerde batch templates voor herbruikbare configuraties
+    """
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    
+    # Production parameters
+    wheat_amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        validators=[MinValueValidator(0.0)],
+        help_text="Standard wheat amount in tons"
+    )
+    waste_factor = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=20.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="Standard waste factor percentage"
+    )
+    expected_duration_days = models.IntegerField(
+        default=30,
+        validators=[MinValueValidator(1)],
+        help_text="Expected batch duration in days"
+    )
+    
+    # Factory assignments
+    applicable_factories = models.ManyToManyField(
+        Factory, 
+        blank=True,
+        related_name='batch_templates',
+        help_text="Factories where this template can be used"
+    )
+    
+    # Template settings
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False, help_text="Default template for new batches")
+    
+    # Metadata
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_batch_templates'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_default', 'name']
+        verbose_name = 'Batch Template'
+        verbose_name_plural = 'Batch Templates'
+    
+    def __str__(self):
+        return f"{self.name} ({self.wheat_amount} tons, {self.waste_factor}% waste)"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one default template
+        if self.is_default:
+            BatchTemplate.objects.exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    @property
+    def expected_flour_output(self):
+        """Calculate expected flour output based on template parameters"""
+        return self.wheat_amount * ((100 - self.waste_factor) / 100)
+    
+    def create_batch(self, batch_number, factory, **kwargs):
+        """
+        Create a new batch from this template
+        """
+        batch_data = {
+            'batch_number': batch_number,
+            'factory': factory,
+            'wheat_amount': kwargs.get('wheat_amount', self.wheat_amount),
+            'waste_factor': kwargs.get('waste_factor', self.waste_factor),
+            'expected_flour_output': self.expected_flour_output,
+        }
+        
+        # Override with any provided kwargs
+        batch_data.update(kwargs)
+        
+        return Batch.objects.create(**batch_data)

@@ -1,67 +1,583 @@
 {% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load math_filters %}
 
-{% block title %}Batches{% endblock %}
+{% block title %}{% trans "Batch Management" %}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Batches</h1>
-{% if is_super_admin %}
-    <a href="{% url 'batch-create' %}" class="action-button">
-        <i class="fas fa-plus"></i> Create New Batch
-    </a>
-    {% endif %}
-</div>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{% trans "Batch Management" %}</h2>
+            <p class="text-muted">{% trans "Monitor and manage production batches" %}</p>
+        </div>
+        <div>
+                            <a href="{% url 'batch-approval' %}" class="btn btn-warning me-2">
+                    <i class="fas fa-check-circle"></i> {% trans "Batch Approval" %}
+                </a>
+                <a href="{% url 'batch-start' %}" class="btn btn-success me-2">
+                    <i class="fas fa-play-circle"></i> {% trans "Start Batches" %}
+                </a>
+                <a href="{% url 'batch-stop' %}" class="btn btn-danger me-2">
+                    <i class="fas fa-stop-circle"></i> {% trans "Stop Batches" %}
+                </a>
+                <a href="{% url 'batch-import' %}" class="btn btn-info me-2">
+                    <i class="fas fa-file-excel"></i> {% trans "Import from Excel" %}
+                </a>
+            <a href="{% url 'batch-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {% trans "Create Batch" %}
+            </a>
+        </div>
+    </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Batch Number</th>
-                        <th>Factory</th>
-                        <th>Wheat Amount (tons)</th>
-                        <th>Expected Output</th>
-                        <th>Actual Output</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for batch in batches %}
-                    <tr>
-                        <td>{{ batch.batch_number }}</td>
-                        <td>{{ batch.factory.name }}</td>
-                        <td>{{ batch.wheat_amount }}</td>
-                        <td>{{ batch.expected_flour_output }}</td>
-                        <td>{{ batch.actual_flour_output }}</td>
-                        <td>
-                            {% if batch.status == "completed" %}
-                            <span class="badge bg-success">Completed</span>
-                            {% elif batch.status == "pending" %}
-                            <span class="badge bg-warning">Pending</span>
-                            {% elif batch.status == "rejected" %}
-                            <span class="badge bg-danger">Rejected</span>
-                            {% else %}
-                            <span class="badge bg-primary">In Progress {{ batch.status }}</span>
+    <!-- Bulk Actions Section -->
+    {% if is_super_admin %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-tasks me-2"></i>
+                {% trans "Bulk Actions" %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAllBatches">
+                        <label class="form-check-label" for="selectAllBatches">
+                            {% trans "Select All Batches" %}
+                        </label>
+                    </div>
+                    <small class="text-muted">{% trans "Selected batches:" %} <span id="selectedCount">0</span></small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-danger" id="bulkDeleteBtn" disabled>
+                        <i class="fas fa-trash"></i> {% trans "Delete Selected" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                {% trans "Filters" %}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">{% trans "Status" %}</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">{% trans "All Statuses" %}</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Pending" %}</option>
+                        <option value="in_process" {% if request.GET.status == 'in_process' %}selected{% endif %}>{% trans "In Process" %}</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="factory" class="form-label">{% trans "Factory" %}</label>
+                    <select name="factory" id="factory" class="form-select">
+                        <option value="">{% trans "All Factories" %}</option>
+                        {% for factory in factories %}
+                        <option value="{{ factory.id }}" {% if request.GET.factory == factory.id|stringformat:"s" %}selected{% endif %}>{{ factory.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">{% trans "Date From" %}</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">{% trans "Date To" %}</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> {% trans "Apply Filters" %}
+                    </button>
+                    <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> {% trans "Clear Filters" %}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ total_batches }}</h4>
+                            <small>{% trans "Total Batches" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ pending_batches }}</h4>
+                            <small>{% trans "Pending" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ in_process_batches }}</h4>
+                            <small>{% trans "In Process" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ completed_batches }}</h4>
+                            <small>{% trans "Completed" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batches Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                {% trans "Batches" %}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if batches %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            {% if is_super_admin %}
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" id="selectAll">
+                            </th>
                             {% endif %}
-                        </td>
-                        <td>{{ batch.created_at|date:"Y-m-d H:i" }}</td>
-                        <td>
-                            <a href="{% url 'batch-detail' batch.pk %}" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center">No batches found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <th>{% trans "Batch Number" %}</th>
+                            <th>{% trans "Factory" %}</th>
+                            <th>{% trans "Start Date" %}</th>
+                            <th>{% trans "Target Amount" %}</th>
+                            <th>{% trans "Current Amount" %}</th>
+                            <th>{% trans "Progress" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                        <tr>
+                            {% if is_super_admin %}
+                            <td>
+                                <input type="checkbox" class="form-check-input batch-checkbox" value="{{ batch.id }}" data-batch-number="{{ batch.batch_number }}">
+                            </td>
+                            {% endif %}
+                            <td>
+                                <strong>{{ batch.batch_number }}</strong>
+                                {% if batch.batch_template %}
+                                <br><small class="text-muted">{{ batch.batch_template.name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ batch.factory.name }}
+                                <br><small class="text-muted">{{ batch.factory.city.name }}</small>
+                            </td>
+                            <td>{{ batch.start_date|date:"d/m/Y" }}</td>
+                            <td>{{ batch.target_amount|floatformat:1 }} tons</td>
+                            <td>{{ batch.current_amount|floatformat:1 }} tons</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if batch.progress_percentage >= 100 %}bg-success{% elif batch.progress_percentage >= 75 %}bg-warning{% else %}bg-info{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ batch.progress_percentage }}%"
+                                         aria-valuenow="{{ batch.progress_percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ batch.progress_percentage|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {% if batch.status == 'completed' %}bg-success{% elif batch.status == 'in_process' %}bg-warning{% elif batch.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ batch.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group" aria-label="Batch actions">
+                                    <a href="{% url 'batch-detail' batch.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="{% trans 'View Details' %}">
+                                        <i class="fas fa-eye"></i>
+                                        <span class="d-none d-md-inline ms-1">{% trans "View" %}</span>
+                                    </a>
+                                    {% if is_super_admin %}
+                                    <a href="{% url 'batch-analytics' batch.pk %}" 
+                                       class="btn btn-sm btn-outline-info" 
+                                       title="{% trans 'Analytics' %}">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span class="d-none d-md-inline ms-1">{% trans "Analytics" %}</span>
+                                    </a>
+                                    {% if batch.can_be_edited %}
+                                    <a href="{% url 'batch-update' batch.pk %}" 
+                                       class="btn btn-sm btn-outline-warning" 
+                                       title="{% trans 'Edit Batch' %}">
+                                        <i class="fas fa-edit"></i>
+                                        <span class="d-none d-md-inline ms-1">{% trans "Edit" %}</span>
+                                    </a>
+                                    {% endif %}
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDeleteBatch({{ batch.pk }}, '{{ batch.batch_number }}')"
+                                            title="{% trans 'Delete Batch' %}">
+                                        <i class="fas fa-trash"></i>
+                                        <span class="d-none d-md-inline ms-1">{% trans "Delete" %}</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Batch pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {% trans "Page" %} {{ page_obj.number }} {% trans "of" %} {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.factory %}&factory={{ request.GET.factory }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">{% trans "No batches found" %}</h5>
+                <p class="text-muted">{% trans "Create your first batch or import from Excel" %}</p>
+                <a href="{% url 'batch-create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> {% trans "Create Batch" %}
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Confirm Bulk Delete" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Are you sure you want to delete" %} <strong id="deleteCount">0</strong> {% trans "selected batches?" %}</p>
+                <p class="text-danger"><small>{% trans "This action cannot be undone!" %}</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-danger" id="confirmBulkDelete">{% trans "Delete Selected" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Action buttons styling */
+.btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin: 0 1px;
+    min-width: 40px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-group .btn-outline-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.btn-group .btn-outline-primary:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-group .btn-outline-info {
+    color: #0dcaf0;
+    border-color: #0dcaf0;
+    background-color: rgba(13, 202, 240, 0.1);
+}
+
+.btn-group .btn-outline-info:hover {
+    background-color: #0dcaf0;
+    color: white;
+}
+
+.btn-group .btn-outline-warning {
+    color: #ffc107;
+    border-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.btn-group .btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: white;
+}
+
+.btn-group .btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.btn-group .btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Responsive text for buttons */
+@media (max-width: 768px) {
+    .btn-group .btn span {
+        display: none;
+    }
+    
+    .btn-group .btn {
+        min-width: 35px;
+        padding: 0.375rem 0.5rem;
+    }
+}
+
+/* Table improvements */
+.table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Progress bar improvements */
+.progress {
+    border-radius: 10px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Bulk actions styling */
+.bulk-actions {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Bulk delete functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAll');
+    const selectAllBatches = document.getElementById('selectAllBatches');
+    const batchCheckboxes = document.querySelectorAll('.batch-checkbox');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const deleteCountSpan = document.getElementById('deleteCount');
+    const confirmBulkDeleteBtn = document.getElementById('confirmBulkDelete');
+
+    // Select all functionality
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            batchCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (selectAllBatches) {
+        selectAllBatches.addEventListener('change', function() {
+            batchCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    // Individual checkbox change
+    batchCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    function updateSelectedCount() {
+        const selectedCount = document.querySelectorAll('.batch-checkbox:checked').length;
+        selectedCountSpan.textContent = selectedCount;
+        deleteCountSpan.textContent = selectedCount;
+        
+        if (bulkDeleteBtn) {
+            bulkDeleteBtn.disabled = selectedCount === 0;
+        }
+    }
+
+    // Bulk delete confirmation
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', function() {
+            const selectedCount = document.querySelectorAll('.batch-checkbox:checked').length;
+            if (selectedCount > 0) {
+                const modal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+                modal.show();
+            }
+        });
+    }
+
+    // Confirm bulk delete
+    if (confirmBulkDeleteBtn) {
+        confirmBulkDeleteBtn.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.batch-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (selectedIds.length > 0) {
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                this.disabled = true;
+                
+                // Send bulk delete request
+                fetch('{% url "batch-bulk-delete" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        batch_ids: selectedIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                        this.innerHTML = '{% trans "Delete Selected" %}';
+                        this.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting batches.');
+                    this.innerHTML = '{% trans "Delete Selected" %}';
+                    this.disabled = false;
+                });
+            }
+        });
+    }
+});
+
+// Individual batch delete
+function confirmDeleteBatch(batchId, batchNumber) {
+    if (confirm('{% trans "Are you sure you want to delete batch" %} "' + batchNumber + '"?')) {
+        $.post(`/batches/${batchId}/delete/`, {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        })
+        .done(function(response) {
+            if (response.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + response.error);
+            }
+        })
+        .fail(function() {
+            alert('An error occurred while deleting the batch.');
+        });
+    }
+}
+</script>
 {% endblock %}

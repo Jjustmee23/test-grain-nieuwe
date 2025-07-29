@@ -1,0 +1,184 @@
+{% extends 'mill/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Batch Stop" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-stop-circle me-2"></i>
+            {% trans "Batch Stop" %}
+        </h1>
+        <div>
+            <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+            </a>
+        </div>
+    </div>
+
+    {% if in_process_batches %}
+        <div class="row">
+            {% for batch in in_process_batches %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            {% trans "In Process" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ batch.batch_number }}</h6>
+                        <p class="card-text">
+                            <strong>{% trans "Factory" %}:</strong> {{ batch.factory.name }}<br>
+                            <strong>{% trans "City" %}:</strong> {{ batch.factory.city.name }}<br>
+                            <strong>{% trans "Wheat Amount" %}:</strong> {{ batch.wheat_amount }} {% trans "tons" %}<br>
+                            <strong>{% trans "Expected Output" %}:</strong> {{ batch.expected_flour_output }} {% trans "tons" %}<br>
+                            <strong>{% trans "Actual Output" %}:</strong> {{ batch.actual_flour_output }} {% trans "tons" %}<br>
+                            <strong>{% trans "Progress" %}:</strong> {{ batch.progress_percentage|floatformat:1 }}%<br>
+                            <strong>{% trans "Started" %}:</strong> {{ batch.start_date|date:"Y-m-d H:i" }}
+                        </p>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {{ batch.progress_percentage }}%" 
+                                 aria-valuenow="{{ batch.progress_percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ batch.progress_percentage|floatformat:1 }}%
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-danger" 
+                                    onclick="stopBatch({{ batch.pk }}, '{{ batch.batch_number }}')">
+                                <i class="fas fa-stop"></i> {% trans "Stop & Complete Batch" %}
+                            </button>
+                            <a href="{% url 'batch-detail' batch.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i> {% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-stop-circle fa-4x text-muted"></i>
+            </div>
+            <h4 class="text-muted">{% trans "No Active Batches" %}</h4>
+            <p class="text-muted">{% trans "No batches are currently in process for your factories." %}</p>
+            <a href="{% url 'batch-start' %}" class="btn btn-primary me-2">
+                <i class="fas fa-play-circle"></i> {% trans "Start Batches" %}
+            </a>
+            <a href="{% url 'batch-list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list"></i> {% trans "View All Batches" %}
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Stop Confirmation Modal -->
+<div class="modal fade" id="stopModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-stop-circle me-2"></i>
+                    {% trans "Confirm Batch Stop" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Are you sure you want to stop and complete batch" %} <strong id="batchNumber"></strong>?</p>
+                <p class="text-muted">{% trans "This will change the batch status to 'Completed' and end production tracking." %}</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% trans "This action cannot be undone. All production data will be finalized." %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {% trans "Cancel" %}
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmStop">
+                    <i class="fas fa-stop"></i> {% trans "Stop & Complete" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentBatchId = null;
+
+function stopBatch(batchId, batchNumber) {
+    currentBatchId = batchId;
+    document.getElementById('batchNumber').textContent = batchNumber;
+    
+    const modal = new bootstrap.Modal(document.getElementById('stopModal'));
+    modal.show();
+}
+
+document.getElementById('confirmStop').addEventListener('click', function() {
+    if (!currentBatchId) return;
+    
+    // Show loading state
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Stopping...';
+    this.disabled = true;
+    
+    // Send stop request
+    fetch('/batches/' + currentBatchId + '/stop/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = 
+                '<div class="d-flex">' +
+                    '<div class="toast-body">' +
+                        '<i class="fas fa-check-circle me-2"></i>' +
+                        data.message +
+                    '</div>' +
+                    '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+                '</div>';
+            document.body.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            // Close modal and reload page
+            bootstrap.Modal.getInstance(document.getElementById('stopModal')).hide();
+            setTimeout(function() {
+                location.reload();
+            }, 1000);
+        } else {
+            alert('Error: ' + data.error);
+            this.innerHTML = '<i class="fas fa-stop"></i> {% trans "Stop & Complete" %}';
+            this.disabled = false;
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        alert('{% trans "An error occurred while stopping the batch." %}');
+        this.innerHTML = '<i class="fas fa-stop"></i> {% trans "Stop & Complete" %}';
+        this.disabled = false;
+    });
+});
+</script>
+{% endblock %} 

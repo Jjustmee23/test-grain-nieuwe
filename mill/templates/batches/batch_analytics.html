@@ -1,0 +1,320 @@
+{% extends 'mill/base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Batch Analytics" %} - {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-chart-bar me-2"></i>
+                {% trans "Batch Analytics" %}
+            </h2>
+            <p class="text-muted mb-0">{{ batch.batch_number }} - {{ batch.factory.name }}</p>
+        </div>
+        <div>
+            <a href="{% url 'batch-detail' batch.pk %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-eye"></i> {% trans "View Details" %}
+            </a>
+            <a href="{% url 'batch-list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> {% trans "Back to Batches" %}
+            </a>
+        </div>
+    </div>
+
+    {% if analytics %}
+    <!-- Batch Info Card -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ analytics.batch_info.status }}</h4>
+                            <small>{% trans "Status" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ analytics.production_summary.progress_percentage|floatformat:1 }}%</h4>
+                            <small>{% trans "Progress" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ analytics.production_summary.actual_flour_output|floatformat:2 }} tons</h4>
+                            <small>{% trans "Actual Output" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-weight-scale fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ analytics.efficiency_metrics.overall_efficiency|floatformat:1 }}%</h4>
+                            <small>{% trans "Efficiency" %}</small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tachometer-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-industry me-1"></i>
+                        {% trans "Production Summary" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Expected Output" %}</small>
+                            <div class="fw-bold">{{ analytics.batch_info.expected_output|floatformat:2 }} tons</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Actual Output" %}</small>
+                            <div class="fw-bold">{{ analytics.production_summary.actual_flour_output|floatformat:2 }} tons</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Waste Factor" %}</small>
+                            <div class="fw-bold">{{ analytics.batch_info.waste_factor }}%</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Data Source" %}</small>
+                            <div class="fw-bold text-capitalize">{{ analytics.production_summary.data_source|replace:"_":" " }}</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: {{ analytics.production_summary.progress_percentage }}%"
+                             aria-valuenow="{{ analytics.production_summary.progress_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ analytics.production_summary.progress_percentage|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Summary -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-microchip me-1"></i>
+                        {% trans "Device Summary" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Total Devices" %}</small>
+                            <div class="fw-bold">{{ analytics.device_summary.total_devices }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">{% trans "Active Devices" %}</small>
+                            <div class="fw-bold">{{ analytics.device_summary.active_devices }}</div>
+                        </div>
+                    </div>
+                    <hr>
+                    {% if analytics.device_summary.device_details %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Device" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Data Source" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for device in analytics.device_summary.device_details %}
+                                <tr>
+                                    <td>{{ device.device_name }}</td>
+                                    <td>
+                                        {% if device.status %}
+                                        <span class="badge bg-success">{% trans "Active" %}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-capitalize">{{ device.data_source|replace:"_":" " }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Efficiency Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-1"></i>
+                        {% trans "Efficiency Metrics" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <h3 class="text-primary">{{ analytics.efficiency_metrics.duration_days }}</h3>
+                                <small class="text-muted">{% trans "Days Running" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <h3 class="text-success">{{ analytics.efficiency_metrics.production_efficiency|floatformat:1 }}%</h3>
+                                <small class="text-muted">{% trans "Production Efficiency" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <h3 class="text-info">{{ analytics.efficiency_metrics.time_efficiency|floatformat:1 }}%</h3>
+                                <small class="text-muted">{% trans "Time Efficiency" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <h3 class="text-warning">{{ analytics.efficiency_metrics.overall_efficiency|floatformat:1 }}%</h3>
+                                <small class="text-muted">{% trans "Overall Efficiency" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-1"></i>
+                        {% trans "Batch Timeline" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if analytics.timeline %}
+                    <div class="timeline">
+                        {% for event in analytics.timeline %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">{{ event.event }}</h6>
+                                <p class="text-muted mb-1">{{ event.description }}</p>
+                                <small class="text-muted">{{ event.date|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">{% trans "No timeline events available" %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Analytics Available -->
+    <div class="text-center py-5">
+        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">{% trans "No Analytics Available" %}</h5>
+        <p class="text-muted">{% trans "Analytics data is not available for this batch" %}</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %} 
