@@ -120,7 +120,7 @@ DATABASES = {
             'NAME': 'counter',
             'USER': 'root',
             'PASSWORD': 'testpassword',
-            'HOST': 'counter-postgres',
+            'HOST': '45.154.238.114',
             'PORT': '5432',
         },
 }

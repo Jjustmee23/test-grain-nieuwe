@@ -27,7 +27,10 @@ COPY . /app
 # Create staticfiles directory
 RUN mkdir -p /app/staticfiles
 
-    # Compile translations
+# Make startup script executable (do this before other operations)
+RUN chmod +x /app/start.sh
+
+# Compile translations
 RUN python manage.py compilemessages
 
 # Collect static files
@@ -35,9 +38,6 @@ RUN python manage.py collectstatic --noinput
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
-
-# Make startup script executable
-RUN chmod +x /app/start.sh
 
 # Define the command to run on container start
 CMD ["/app/start.sh"]
