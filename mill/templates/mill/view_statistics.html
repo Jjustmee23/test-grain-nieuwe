@@ -2184,7 +2184,7 @@ function loadDoorHistory() {
     const currentStatus = document.getElementById('currentDoorStatus');
     const summary = document.getElementById('doorSummary');
     
-    fetch(`/api/door-status/{{ factory.id }}/`)
+    fetch(`/api/door-history-modal/{{ factory.id }}/`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -2225,6 +2225,7 @@ function loadDoorHistory() {
                     <h4 class="text-primary">${todayEvents.length}</h4>
                     <p class="mb-0">Events Today</p>
                     <small class="text-muted">Open: ${open_doors} | Closed: ${closed_doors}</small>
+                    <br><small class="text-info">Total Events: ${recent_logs.length}</small>
                 `;
             }
             
@@ -2247,6 +2248,7 @@ function loadDoorHistory() {
                 const eventDate = new Date(log.timestamp);
                 const isToday = eventDate.toDateString() === new Date().toDateString();
                 const timeAgo = getTimeAgo(eventDate);
+                const duration = log.duration_minutes ? `${log.duration_minutes.toFixed(1)} min` : 'Still Open';
                 
                 return `
                 <div class="card mb-2 border-${log.is_resolved ? 'success' : 'warning'}">
@@ -2262,14 +2264,13 @@ function loadDoorHistory() {
                                 <strong>${log.din_data || 'N/A'}</strong>
                             </div>
                             <div class="col-md-3">
-                                <small class="text-muted">Input Index:</small><br>
-                                <strong>${log.door_input_index || 'N/A'}</strong>
+                                <small class="text-muted">Duration:</small><br>
+                                <strong>${duration}</strong>
                             </div>
                             <div class="col-md-3 text-end">
                                 <span class="badge ${log.is_resolved ? 'bg-success' : 'bg-warning'}">
-                                    ${log.is_resolved ? 'Resolved' : 'Open'}
+                                    ${log.is_resolved ? 'Closed' : 'Open'}
                                 </span>
-                                ${log.resolved_by ? `<br><small class="text-muted">by ${log.resolved_by}</small>` : ''}
                             </div>
                         </div>
                     </div>

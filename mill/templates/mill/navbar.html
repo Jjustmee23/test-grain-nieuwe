@@ -49,6 +49,10 @@
                             <li><a class="dropdown-item" href="{% url 'power_notification_settings' %}">
                                 <i class="bi bi-gear me-2"></i>{% trans "Notification Settings" %}
                             </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'all_doors_history' %}">
+                                <i class="bi bi-door-open me-2"></i>{% trans "Door History" %}
+                            </a></li>
                         </ul>
                     </li>
                     {% endif %}

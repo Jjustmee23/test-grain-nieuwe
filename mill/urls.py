@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.contrib import admin
 # from mill. import profile_views
 from mill import views, apis
-from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views, language_views, test_views
+from mill.views import tv_dashboard_views, factory_map_views, notification_api_views, power_management_views, language_views, test_views, door_views
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -57,6 +57,13 @@ urlpatterns = [
     path('factory/<int:factory_id>/power-events/', power_management_views.factory_power_events, name='factory_power_events'),
     path('factory/<int:factory_id>/power-analytics/', power_management_views.factory_power_analytics, name='factory_power_analytics'),
     path('factory/<int:factory_id>/power-overview/', power_management_views.factory_power_overview, name='factory_power_overview'),
+    
+    # Door History URLs
+    path('door-history/<str:device_id>/', door_views.door_history, name='door_history'),
+    path('all-doors-history/', door_views.all_doors_history, name='all_doors_history'),
+    path('api/door-history-modal/<int:factory_id>/', door_views.door_history_modal_api, name='door_history_modal_api'),
+    
+
     
     # Analytics URLs
     path('analytics/', views.analytics_dashboard, name='analytics-dashboard'),

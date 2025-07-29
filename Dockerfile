@@ -37,4 +37,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # Define the command to run on container start
-CMD ["sh", "-c", "service cron start && echo '*/5 * * * * cd /app && /usr/local/bin/python manage.py auto_update_power_status --create-events >> /var/log/cron.log 2>&1' | crontab - && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "service cron start && (echo '*/5 * * * * cd /app && /usr/local/bin/python manage.py auto_update_power_status --create-events >> /var/log/cron.log 2>&1'; echo '*/2 * * * * cd /app && /usr/local/bin/python manage.py generate_door_history --update-current >> /var/log/cron.log 2>&1') | crontab - && python manage.py runserver 0.0.0.0:8000"]

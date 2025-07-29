@@ -1,0 +1,118 @@
+{% extends 'mill/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Door History" %} - {{ device.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="bi bi-door-open"></i>
+                        {% trans "Door History" %} - {{ device.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Statistics Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5>{% trans "Total Opens" %}</h5>
+                                    <h3>{{ total_opens }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5>{% trans "Total Duration" %}</h5>
+                                    <h3>{{ total_duration|floatformat:1 }} {% trans "min" %}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5>{% trans "Average Duration" %}</h5>
+                                    <h3>{{ avg_duration|floatformat:1 }} {% trans "min" %}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h5>{% trans "Today's Opens" %}</h5>
+                                    <h3>{{ today_opens }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Filter -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="btn-group" role="group">
+                                {% for days in days_options %}
+                                <a href="?days={{ days }}" 
+                                   class="btn btn-outline-primary {% if days == selected_days %}active{% endif %}">
+                                    {% if days == 1 %}
+                                        {% trans "Last 24 Hours" %}
+                                    {% else %}
+                                        {% trans "Last" %} {{ days }} {% trans "Days" %}
+                                    {% endif %}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Door History Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Date" %}</th>
+                                    <th>{% trans "Time" %}</th>
+                                    <th>{% trans "Duration" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in door_logs %}
+                                <tr>
+                                    <td>{{ log.timestamp|date:"d/m/Y" }}</td>
+                                    <td>{{ log.timestamp|time:"H:i:s" }}</td>
+                                    <td>
+                                        {% if log.is_resolved and log.resolved_at %}
+                                            {{ log.resolved_at|timeuntil:log.timestamp }}
+                                        {% else %}
+                                            <span class="badge badge-warning">{% trans "Still Open" %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.is_resolved %}
+                                            <span class="badge badge-success">{% trans "Closed" %}</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">{% trans "Open" %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        {% trans "No door events found for this period" %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
