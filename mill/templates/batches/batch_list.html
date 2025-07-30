@@ -596,9 +596,9 @@ function confirmDeleteBatch(batchId, batchNumber) {
                             alert('An error occurred during force delete.');
                         });
                     }
-                } else {
-                    alert('Error: ' + response.error);
-                }
+            } else {
+                alert('Error: ' + response.error);
+            }
             }
         })
         .fail(function(xhr, status, error) {
@@ -638,7 +638,7 @@ function confirmDeleteBatch(batchId, batchNumber) {
                 }
             } catch (e) {
                 console.error('❌ Could not parse response:', e);
-                alert('An error occurred while deleting the batch.');
+            alert('An error occurred while deleting the batch.');
             }
         });
     }

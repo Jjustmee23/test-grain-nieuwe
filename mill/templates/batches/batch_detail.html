@@ -731,18 +731,18 @@ function updateCharts(batchData) {
                 }
             };
             
-            // Update wheat amount
+        // Update wheat amount
             updateElement('[data-batch-wheat]', `${data.wheat_amount}`, ' tons');
-            
-            // Update expected output  
+
+        // Update expected output
             updateElement('[data-batch-expected]', `${data.expected_flour_output}`, ' tons');
-            
-            // Update actual output
+
+        // Update actual output
             updateElement('[data-batch-actual]', `${data.actual_flour_output}`, ' tons');
-            
-            // Update yield rate
+
+        // Update yield rate
             if (data.expected_flour_output > 0) {
-                const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
+        const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
                 updateElement('[data-batch-yield]', `${yieldRate}`, '%');
             }
             
@@ -758,19 +758,19 @@ function updateCharts(batchData) {
         }
     }
     
-    // Get the batch data from the template
-    const batchData = {
-        wheatAmount: {{ batch.wheat_amount }},
-        expectedOutput: {{ batch.expected_flour_output }},
-        actualOutput: {{ batch.actual_flour_output }},
-        wasteFactor: {{ batch.waste_factor }},
-    };
-
-    // Production Timeline Progress Bar Animation
-    function updateProductionProgress() {
-        const expectedOutput = batchData.expectedOutput;
-        const actualOutput = batchData.actualOutput;
-        const progressPercentage = Math.min((actualOutput / expectedOutput) * 100, 100);
+        // Get the batch data from the template
+        const batchData = {
+            wheatAmount: {{ batch.wheat_amount }},
+            expectedOutput: {{ batch.expected_flour_output }},
+            actualOutput: {{ batch.actual_flour_output }},
+            wasteFactor: {{ batch.waste_factor }},
+        };
+    
+        // Production Timeline Progress Bar Animation
+        function updateProductionProgress() {
+            const expectedOutput = batchData.expectedOutput;
+            const actualOutput = batchData.actualOutput;
+            const progressPercentage = Math.min((actualOutput / expectedOutput) * 100, 100);
             
             // Update progress bar
             const progressBar = document.getElementById('productionProgressBar');

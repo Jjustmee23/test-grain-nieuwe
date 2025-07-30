@@ -302,12 +302,12 @@ function handleCitySelection() {
     .then(data => {
         if (data.success && data.all_factories) {
             const factories = data.all_factories;
-            
-            // Populate factory selector
-            if (factories.length === 0) {
-                factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
-            } else {
-                factorySelector.innerHTML = '';
+        
+        // Populate factory selector
+        if (factories.length === 0) {
+            factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
+        } else {
+            factorySelector.innerHTML = '';
                 
                 // Group factories by city for better display
                 const factoriesByCity = data.factories_by_city || {};
@@ -323,18 +323,18 @@ function handleCitySelection() {
                         
                         // City factories
                         factoriesByCity[city.id].forEach(factory => {
-                            const div = document.createElement('div');
+                const div = document.createElement('div');
                             div.className = 'form-check mb-2 ms-3';
-                            div.innerHTML = `
-                                <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
-                                    name="factories" value="${factory.id}" data-city="${factory.city_id}">
-                                <label class="form-check-label" for="factory${factory.id}">
+                div.innerHTML = `
+                    <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
+                        name="factories" value="${factory.id}" data-city="${factory.city_id}">
+                    <label class="form-check-label" for="factory${factory.id}">
                                     ${factory.name}
-                                </label>
-                            `;
-                            factorySelector.appendChild(div);
-                        });
-                    }
+                    </label>
+                `;
+                factorySelector.appendChild(div);
+            });
+        }
                 });
             }
         } else {

@@ -98,7 +98,7 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
         context['cities'] = City.objects.filter(status=True).order_by('name')
         context['batch_templates'] = BatchTemplate.objects.filter(is_active=True)
         return context
-    
+
     def get_success_url(self):
         """Override to handle case where self.object might be None"""
         if hasattr(self, 'object') and self.object is not None:

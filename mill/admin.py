@@ -83,12 +83,13 @@ class CityAdmin(admin.ModelAdmin):
 # admin.site.register(Factory)
 @admin.register(Factory)
 class FactoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'status', 'error','group', 'responsible_users_count', 'created_at')
-    list_filter = ('status', 'error', 'city', 'group')
+    list_display = ('name', 'city', 'status', 'error','group', 'uc300_pilot_status', 'pilot_devices_count', 'responsible_users_count', 'created_at')
+    list_filter = ('status', 'error', 'city', 'group', 'uc300_pilot_enabled')
     search_fields = ('name', 'address')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
     filter_horizontal = ('responsible_users',)
+    actions = ['enable_pilot_project', 'disable_pilot_project', 'enable_all_devices_pilot']
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'city', 'status', 'error', 'group')
@@ -96,6 +97,11 @@ class FactoryAdmin(admin.ModelAdmin):
         ('Location Information', {
             'fields': ('address', 'latitude', 'longitude'),
             'description': 'Add coordinates for map functionality. You can use Google Maps to find coordinates.'
+        }),
+        ('UC300 Pilot Project', {
+            'fields': ('uc300_pilot_enabled',),
+            'description': 'Enable UC300 pilot project for this factory. This allows devices in this factory to participate in the UC300 reset system with automatic counter resets and enhanced production tracking.',
+            'classes': ('collapse',)
         }),
         ('Responsible Users', {
             'fields': ('responsible_users',),
@@ -107,6 +113,146 @@ class FactoryAdmin(admin.ModelAdmin):
     def responsible_users_count(self, obj):
         return obj.responsible_users.count()
     responsible_users_count.short_description = 'Responsible Users'
+    
+    def uc300_pilot_status(self, obj):
+        """Display UC300 pilot status with visual indicator"""
+        if obj.uc300_pilot_enabled:
+            return "🟢 PILOT ACTIVE"
+        else:
+            return "⚪ PILOT INACTIVE"
+    uc300_pilot_status.short_description = 'UC300 Pilot'
+    uc300_pilot_status.admin_order_field = 'uc300_pilot_enabled'
+    
+    def pilot_devices_count(self, obj):
+        """Count of devices in this factory that are pilot-enabled"""
+        from mill.models import UC300PilotStatus
+        pilot_devices = UC300PilotStatus.objects.filter(
+            device__factory=obj,
+            is_pilot_enabled=True
+        ).count()
+        if pilot_devices > 0:
+            return f"🎯 {pilot_devices} devices"
+        else:
+            return "🔸 0 devices"
+    pilot_devices_count.short_description = 'Pilot Devices'
+    
+    def enable_pilot_project(self, request, queryset):
+        """Bulk action to enable pilot project for selected factories"""
+        updated = queryset.update(uc300_pilot_enabled=True)
+        self.message_user(
+            request,
+            f"UC300 pilot project enabled for {updated} factories.",
+            level='success'
+        )
+    enable_pilot_project.short_description = "🟢 Enable UC300 pilot project"
+    
+    def disable_pilot_project(self, request, queryset):
+        """Bulk action to disable pilot project for selected factories"""
+        from mill.models import UC300PilotStatus, Device
+        
+        disabled_devices = 0
+        for factory in queryset:
+            # Disable all devices in this factory
+            factory_devices = Device.objects.filter(factory=factory)
+            for device in factory_devices:
+                try:
+                    pilot_status = UC300PilotStatus.objects.get(device=device)
+                    if pilot_status.is_pilot_enabled:
+                        pilot_status.is_pilot_enabled = False
+                        pilot_status.use_reset_logic = False
+                        pilot_status.notes = f"Auto-disabled: Factory pilot disabled on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+                        pilot_status.save()
+                        disabled_devices += 1
+                except UC300PilotStatus.DoesNotExist:
+                    pass
+        
+        # Disable factories
+        updated = queryset.update(uc300_pilot_enabled=False)
+        
+        self.message_user(
+            request,
+            f"UC300 pilot project disabled for {updated} factories and {disabled_devices} devices.",
+            level='warning'
+        )
+    disable_pilot_project.short_description = "⚪ Disable UC300 pilot project"
+    
+    def enable_all_devices_pilot(self, request, queryset):
+        """Bulk action to enable pilot for all devices in selected factories"""
+        from mill.models import UC300PilotStatus, Device
+        
+        enabled_devices = 0
+        for factory in queryset:
+            if not factory.uc300_pilot_enabled:
+                continue  # Skip if factory pilot is not enabled
+                
+            factory_devices = Device.objects.filter(factory=factory)
+            for device in factory_devices:
+                pilot_status, created = UC300PilotStatus.objects.get_or_create(
+                    device=device,
+                    defaults={
+                        'is_pilot_enabled': True,
+                        'use_reset_logic': True,
+                        'daily_reset_time': timezone.now().time().replace(hour=23, minute=59, second=0, microsecond=0),
+                        'pilot_start_date': timezone.now(),
+                        'notes': f"Auto-enabled via factory bulk action on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+                    }
+                )
+                
+                if not created and not pilot_status.is_pilot_enabled:
+                    pilot_status.is_pilot_enabled = True
+                    pilot_status.use_reset_logic = True
+                    pilot_status.pilot_start_date = timezone.now()
+                    pilot_status.notes = f"Re-enabled via factory bulk action on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+                    pilot_status.save()
+                
+                enabled_devices += 1
+        
+        self.message_user(
+            request,
+            f"UC300 pilot enabled for {enabled_devices} devices in selected factories.",
+            level='success'
+        )
+    enable_all_devices_pilot.short_description = "🎯 Enable pilot for all devices in factory"
+    
+    def save_model(self, request, obj, form, change):
+        """Handle UC300 pilot enable/disable logic"""
+        # Save the factory first
+        super().save_model(request, obj, form, change)
+        
+        # If UC300 pilot is being disabled, also disable all devices in this factory
+        if change and not obj.uc300_pilot_enabled:
+            from mill.models import UC300PilotStatus, Device
+            factory_devices = Device.objects.filter(factory=obj)
+            
+            # Disable pilot for all devices in this factory
+            updated_count = 0
+            for device in factory_devices:
+                try:
+                    pilot_status = UC300PilotStatus.objects.get(device=device)
+                    if pilot_status.is_pilot_enabled:
+                        pilot_status.is_pilot_enabled = False
+                        pilot_status.use_reset_logic = False
+                        pilot_status.notes = f"Auto-disabled: Factory pilot disabled on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+                        pilot_status.save()
+                        updated_count += 1
+                except UC300PilotStatus.DoesNotExist:
+                    pass
+            
+            if updated_count > 0:
+                self.message_user(
+                    request,
+                    f"UC300 pilot disabled for factory '{obj.name}'. "
+                    f"Also disabled pilot for {updated_count} devices in this factory.",
+                    level='warning'
+                )
+        
+        elif change and obj.uc300_pilot_enabled:
+            self.message_user(
+                request,
+                f"UC300 pilot enabled for factory '{obj.name}'. "
+                f"You can now enable individual devices in this factory for the pilot project.",
+                level='success'
+            )
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'support_tickets_enabled')

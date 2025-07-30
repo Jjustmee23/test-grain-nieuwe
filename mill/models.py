@@ -44,6 +44,12 @@ class Factory(models.Model):
         help_text="Users responsible for this factory (will receive notifications)"
     )
     
+    # UC300 Pilot Project Configuration
+    uc300_pilot_enabled = models.BooleanField(
+        default=False, 
+        help_text="Enable UC300 pilot project for this factory. This allows devices in this factory to participate in the UC300 reset system."
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -357,7 +357,7 @@ class ProductionCalculationService:
                 
         except Exception as e:
             logger.error(f"Error inserting/updating production data for device {device_id}: {str(e)}")
-            raise
+            raise 
 
     def create_zero_production_entries(self, device_id, start_date, end_date):
         """Create entries with 0 daily production for missing days"""
