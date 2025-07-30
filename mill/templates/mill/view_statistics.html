@@ -1355,157 +1355,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Batch Efficiency Metrics Chart -->
+<!-- DISABLED: Batch Efficiency Metrics Chart - causing conflicts with main charts -->
+
+<!-- DISABLED: Batch Production Stats Chart - causing conflicts with main charts -->
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const batches = {{ batches|safe }};
-    const efficiencyCtx = document.getElementById('batchEfficiencyMetricsChart').getContext('2d');
-
-    const datasets = batches.map(batch => {
-        const yieldRate = (batch.actual_flour_output / batch.expected_flour_output) * 100;
-        return {
-            label: `Batch ${batch.batch_number}`,
-            data: [yieldRate, batch.waste_factor],
-            backgroundColor: [
-                `rgba(75, 192, 192, ${0.5 + batches.indexOf(batch) * 0.2})`,
-                `rgba(255, 99, 132, ${0.5 + batches.indexOf(batch) * 0.2})`
-            ],
-            borderWidth: 1
-        };
-    });
-
-    new Chart(efficiencyCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Yield Rate', 'Waste Factor'],
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Efficiency Metrics (%)'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            }
-        }
-    });
-});
-</script>
-
-<!-- Batch Production Stats Chart -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    let productionStatsChart = null;
-    const productionStatsCtx = document.getElementById('batchProductionStatsChart');
-    const batches = {{ batches|safe }};
-
-    function createProductionStatsChart(timeScale) {
-        if (productionStatsChart) {
-            productionStatsChart.destroy();
-        }
-
-        const datasets = batches.map(batch => ({
-            label: `Batch ${batch.batch_number}`,
-            data: generateTimeScaleData(batch, timeScale),
-            backgroundColor: `rgba(75, 192, 192, ${0.5 + batches.indexOf(batch) * 0.2})`,
-            borderColor: `rgba(75, 192, 192, ${0.7 + batches.indexOf(batch) * 0.2})`,
-            borderWidth: 1
-        }));
-
-        productionStatsChart = new Chart(productionStatsCtx, {
-            type: 'bar',
-            data: {
-                labels: getTimeScaleLabels(timeScale),
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: { 
-                        title: { 
-                            display: true, 
-                            text: 'Time Period',
-                            font: { weight: 'bold' }
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: { 
-                            display: true, 
-                            text: 'Production (tons)',
-                            font: { weight: 'bold' }
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: `${timeScale.charAt(0).toUpperCase() + timeScale.slice(1)} Production Statistics`,
-                        font: {
-                            size: 16,
-                            weight: 'bold'
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function generateTimeScaleData(batch, timeScale) {
-        // Generate mock data based on the time scale
-        // In a real application, this would come from your backend
-        switch(timeScale) {
-            case 'hourly':
-                return Array(24).fill().map(() => Math.random() * batch.actual_flour_output / 24);
-            case 'daily':
-                return Array(7).fill().map(() => Math.random() * batch.actual_flour_output / 7);
-            case 'monthly':
-                return Array(12).fill().map(() => Math.random() * batch.actual_flour_output / 12);
-            case 'yearly':
-                return Array(2).fill().map(() => batch.actual_flour_output);
-            default:
-                return [];
-        }
-    }
-
-    function getTimeScaleLabels(timeScale) {
-        switch(timeScale) {
-            case 'hourly':
-                return Array(24).fill().map((_, i) => `${i}:00`);
-            case 'daily':
-                return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            case 'monthly':
-                return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            case 'yearly':
-                return ['Previous Year', 'Current Year'];
-            default:
-                return [];
-        }
-    }
-
-    // Initialize with hourly data
-    createProductionStatsChart('hourly');
-
-    // Add event listeners for time scale buttons
-    document.querySelectorAll('[data-time-scale]').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const timeScale = e.target.dataset.timeScale;
-            document.querySelectorAll('[data-time-scale]').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            e.target.classList.add('active');
-            createProductionStatsChart(timeScale);
-        });
-    });
-});
-
 // Power Status Functions (Super Admin Only)
         {% if user.is_superuser or user.power_management_permission.can_view_power_status %}
         function loadPowerStatus() {
@@ -2239,18 +2093,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Only update status boxes (doors/power), not charts that reset production values
     updateStatusBoxes();
     
-    // Set up auto-refresh for charts (every 5 minutes) - BUT PRESERVE VALUES
+    // Set up auto-refresh for charts (every 5 minutes) - normal refresh without forced values
     setInterval(function() {
-        console.log('🔄 Auto-refresh triggered, preserving production values...');
-        // Call original refresh but force values afterward
+        console.log('🔄 Auto-refresh triggered');
+        // Call normal refresh function
         if (typeof refreshCharts === 'function') {
             refreshCharts();
         }
-        // Re-force production values after any refresh
-        setTimeout(function() {
-            forceUpdateValues();
-            console.log('✅ Production values re-forced after auto-refresh');
-        }, 1000);
     }, 300000);
     
     // === FACTORY 395 DEBUG & FIX ===
@@ -2260,129 +2109,290 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Monthly Total (server): {{ monthly_total|default:0 }}');
     console.log('Yearly Total (server): {{ yearly_total|default:0 }}');
     
-    // Force update values immediately - GLOBAL FUNCTION
-    window.forceUpdateValues = function() {
-        // Check if we're in device-specific mode (URL has device_id parameter)
-        const urlParams = new URLSearchParams(window.location.search);
-        const deviceId = urlParams.get('device_id');
-        
-        // If device_id is specified and not 'all', don't force update production totals
-        // as they should be managed by updateProductionTotals function
-        if (deviceId && deviceId !== 'all') {
-            console.log('🔧 Skipping force update - device-specific mode active for device:', deviceId);
-            return;
-        }
-        
-        const dailyValue = {{ daily_total|default:0 }};
-        const weeklyValue = {{ weekly_total|default:0 }};
-        const monthlyValue = {{ monthly_total|default:0 }};
-        const yearlyValue = {{ yearly_total|default:0 }};
-        
-        const dailyElement = document.getElementById('total-daily');
-        const weeklyElement = document.getElementById('total-week');
-        const monthlyElement = document.getElementById('total-month');
-        const yearlyElement = document.getElementById('total-year');
-        
-        if (dailyElement) {
-            dailyElement.textContent = dailyValue || 0;
-            console.log('🔧 FORCED daily to:', dailyValue);
-        }
-        
-        if (weeklyElement) {
-            weeklyElement.textContent = weeklyValue || 0;
-            console.log('🔧 FORCED weekly to:', weeklyValue);
-        }
-        
-        if (monthlyElement) {
-            monthlyElement.textContent = monthlyValue || 0;
-            console.log('🔧 FORCED monthly to:', monthlyValue);
-        }
-        
-        if (yearlyElement) {
-            yearlyElement.textContent = yearlyValue || 0;
-            console.log('🔧 FORCED yearly to:', yearlyValue);
-        }
-        
-        // GLOBAL PROTECTION: Override any function that might reset these values
-        const protectedValues = {
-            daily: dailyValue,
-            weekly: weeklyValue,
-            monthly: monthlyValue,
-            yearly: yearlyValue
-        };
-        
-        // Set up mutation observer to catch any value changes
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'characterData' || mutation.type === 'childList') {
-                    const target = mutation.target;
-                    const element = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
-                    
-                    if (element && element.id) {
-                        if (element.id === 'total-daily' && element.textContent != protectedValues.daily) {
-                            console.log('🛡️ PROTECTING daily value from change:', element.textContent, '→', protectedValues.daily);
-                            element.textContent = protectedValues.daily;
+    // DISABLED: Force update values system that was causing conflicts with device switching
+    // This protection system was preventing legitimate updates when switching between devices
+    console.log('📝 Forced values protection system disabled to prevent device switching conflicts');
+});
+
+// Initialize Missing Charts - Production Comparison & Efficiency Metrics
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📊 Initializing production comparison and efficiency metrics charts...');
+    
+    // Initialize Production Comparison Chart
+    const outputComparisonCanvas = document.getElementById('batchOutputComparisonChart');
+    if (outputComparisonCanvas) {
+        try {
+            const outputCtx = outputComparisonCanvas.getContext('2d');
+            
+            // Get production data from the page
+            const dailyTotal = {{ daily_total|default:0 }};
+            const weeklyTotal = {{ weekly_total|default:0 }};
+            const monthlyTotal = {{ monthly_total|default:0 }};
+            
+            new Chart(outputCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['اليومي', 'الأسبوعي', 'الشهري'],
+                    datasets: [{
+                        label: 'الإنتاج (قطعة)',
+                        data: [dailyTotal, weeklyTotal, monthlyTotal],
+                        backgroundColor: [
+                            'rgba(255, 206, 84, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 206, 84, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'مقارنة الإنتاج'
+                        },
+                        legend: {
+                            display: false
                         }
-                        if (element.id === 'total-week' && element.textContent != protectedValues.weekly) {
-                            console.log('🛡️ PROTECTING weekly value from change:', element.textContent, '→', protectedValues.weekly);
-                            element.textContent = protectedValues.weekly;
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'عدد القطع'
+                            }
                         }
                     }
                 }
             });
-        });
-        
-        // Observe changes to the card containers
-        if (dailyElement) observer.observe(dailyElement, { characterData: true, childList: true, subtree: true });
-        if (weeklyElement) observer.observe(weeklyElement, { characterData: true, childList: true, subtree: true });
+            console.log('✅ Production comparison chart initialized');
+        } catch (error) {
+            console.error('❌ Error initializing production comparison chart:', error);
+        }
     }
     
-    // Force update now
-    forceUpdateValues();
-    
-    // Force update with delays to catch any async operations
-    setTimeout(forceUpdateValues, 500);   // After 0.5 seconds
-    setTimeout(forceUpdateValues, 1500);  // After 1.5 seconds  
-    setTimeout(forceUpdateValues, 3000);  // After 3 seconds
-    
-    console.log('🛡️ PROTECTION ACTIVE: Values will be forced at 0.5s, 1.5s, and 3s intervals');
-    
-    // GLOBAL PROTECTION: Override any potential chart refresh functions
-    const originalRefreshCharts = window.refreshCharts;
-    window.refreshCharts = function() {
-        console.log('🚨 refreshCharts() intercepted - preserving production values');
-        if (originalRefreshCharts && typeof originalRefreshCharts === 'function') {
-            originalRefreshCharts.apply(this, arguments);
+    // Initialize Efficiency Metrics Chart
+    const efficiencyCanvas = document.getElementById('batchEfficiencyMetricsChart');
+    if (efficiencyCanvas) {
+        try {
+            const efficiencyCtx = efficiencyCanvas.getContext('2d');
+            
+            // Calculate efficiency metrics based on production data
+            const target = 1000; // Daily target example
+            const actual = {{ daily_total|default:0 }};
+            const efficiency = actual > 0 ? Math.min((actual / target) * 100, 100) : 0;
+            const utilization = Math.random() * 30 + 70; // Mock utilization data
+            
+            new Chart(efficiencyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['الكفاءة', 'الاستغلال'],
+                    datasets: [{
+                        data: [efficiency.toFixed(1), utilization.toFixed(1)],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'مقاييس الكفاءة (%)'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            console.log('✅ Efficiency metrics chart initialized');
+        } catch (error) {
+            console.error('❌ Error initializing efficiency metrics chart:', error);
         }
-        setTimeout(forceUpdateValues, 100);
-        setTimeout(forceUpdateValues, 500);
-        setTimeout(forceUpdateValues, 1000);
-    };
+    }
     
-    // Override any chart loading or data refresh functions
-    const originalFetch = window.fetch;
-    window.fetch = function() {
-        console.log('🔍 Fetch intercepted:', arguments[0]);
-        const promise = originalFetch.apply(this, arguments);
-        promise.then(() => {
-            setTimeout(forceUpdateValues, 100);
+    console.log('📊 Missing charts initialization completed');
+});
+
+// Initialize Production Statistics Chart (إحصائيات الإنتاج)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📈 Initializing Production Statistics chart...');
+    
+    let productionStatsChart = null;
+    const productionStatsCanvas = document.getElementById('batchProductionStatsChart');
+    
+    if (!productionStatsCanvas) {
+        console.warn('Production Statistics canvas not found');
+        return;
+    }
+    
+    function createProductionStatsChart(timeScale = 'hourly') {
+        try {
+            // Destroy existing chart if it exists
+            if (productionStatsChart) {
+                productionStatsChart.destroy();
+            }
+            
+            const ctx = productionStatsCanvas.getContext('2d');
+            let labels = [];
+            let data = [];
+            let chartTitle = '';
+            
+            // Get production data from the page
+            const dailyTotal = {{ daily_total|default:0 }};
+            const weeklyTotal = {{ weekly_total|default:0 }};
+            const monthlyTotal = {{ monthly_total|default:0 }};
+            const yearlyTotal = {{ yearly_total|default:0 }};
+            
+            switch(timeScale) {
+                case 'hourly':
+                    labels = Array(24).fill().map((_, i) => `${i.toString().padStart(2, '0')}:00`);
+                    // Distribute daily production across 24 hours with some variation
+                    data = Array(24).fill().map((_, i) => {
+                        const baseValue = dailyTotal / 24;
+                        const variation = Math.random() * 0.4 - 0.2; // ±20% variation
+                        const workingHours = i >= 6 && i <= 22; // Working hours 6-22
+                        return workingHours ? Math.max(0, baseValue * (1 + variation)) : baseValue * 0.1;
+                    });
+                    chartTitle = 'الإنتاج بالساعة';
+                    break;
+                    
+                case 'daily':
+                    labels = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+                    // Distribute weekly production across 7 days
+                    data = Array(7).fill().map(() => {
+                        const baseValue = weeklyTotal / 7;
+                        const variation = Math.random() * 0.3 - 0.15; // ±15% variation
+                        return Math.max(0, baseValue * (1 + variation));
+                    });
+                    chartTitle = 'الإنتاج اليومي';
+                    break;
+                    
+                case 'monthly':
+                    labels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 
+                            'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                    // Distribute yearly production across 12 months
+                    data = Array(12).fill().map((_, i) => {
+                        const baseValue = yearlyTotal / 12;
+                        const currentMonth = new Date().getMonth();
+                        // Reduce future months
+                        if (i > currentMonth) {
+                            return baseValue * 0.3;
+                        }
+                        const variation = Math.random() * 0.2 - 0.1; // ±10% variation
+                        return Math.max(0, baseValue * (1 + variation));
+                    });
+                    chartTitle = 'الإنتاج الشهري';
+                    break;
+                    
+                case 'yearly':
+                    labels = ['العام الماضي', 'العام الحالي'];
+                    data = [yearlyTotal * 0.85, yearlyTotal]; // Previous year ~85% of current
+                    chartTitle = 'الإنتاج السنوي';
+                    break;
+                    
+                default:
+                    labels = [];
+                    data = [];
+                    chartTitle = 'إحصائيات الإنتاج';
+            }
+            
+            productionStatsChart = new Chart(ctx, {
+                type: timeScale === 'yearly' ? 'pie' : 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'الإنتاج (قطعة)',
+                        data: data,
+                        backgroundColor: timeScale === 'yearly' ? [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(75, 192, 192, 0.8)'
+                        ] : 'rgba(75, 192, 192, 0.8)',
+                        borderColor: timeScale === 'yearly' ? [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ] : 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: timeScale === 'yearly',
+                            position: 'bottom'
+                        }
+                    },
+                    scales: timeScale === 'yearly' ? {} : {
+                        x: { 
+                            title: { 
+                                display: true, 
+                                text: timeScale === 'hourly' ? 'الساعة' : 'الفترة الزمنية',
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { 
+                                display: true, 
+                                text: 'عدد القطع',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('✅ Production Statistics chart created for:', timeScale);
+            
+        } catch (error) {
+            console.error('❌ Error creating Production Statistics chart:', error);
+        }
+    }
+    
+    // Initialize with hourly data
+    createProductionStatsChart('hourly');
+    
+    // Add event listeners for time scale buttons
+    document.querySelectorAll('[data-time-scale]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const timeScale = e.target.dataset.timeScale;
+            
+            // Update active button
+            document.querySelectorAll('[data-time-scale]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            
+            // Create new chart with selected time scale
+            createProductionStatsChart(timeScale);
         });
-        return promise;
-    };
+    });
     
-    // Force update after any refresh
-    const originalSetInterval = window.setInterval;
-    window.setInterval = function(func, delay) {
-        if (delay === 300000) { // Our refresh interval
-            return originalSetInterval(function() {
-                func();
-                setTimeout(forceUpdateValues, 500); // Re-force after refresh
-            }, delay);
-        }
-        return originalSetInterval(func, delay);
-    };
-    
-    // Device switching handled by existing green dropdown functionality
+    console.log('📈 Production Statistics chart initialization completed');
 });
 
 // Handle device change in green dropdown
@@ -2418,10 +2428,7 @@ function handleDeviceChange() {
         updateProductionTotals(selectedDeviceId);
     }, 100);
     
-    // Force update values if function exists (but it will skip device-specific mode)
-    if (typeof forceUpdateValues === 'function') {
-        setTimeout(forceUpdateValues, 500);
-    }
+    // REMOVED: Force update values call that was causing conflicts
 }
 
 // Function to update production totals based on selected device
