@@ -223,3 +223,9 @@ DATABASES['counter_db'] = {
     'HOST': 'localhost',
     'PORT': '5432',
 }
+
+# UC300 MQTT Configuration
+UC300_MQTT_BROKER_HOST = '172.17.0.1'  # Docker host IP (reachable from container)
+UC300_MQTT_BROKER_PORT = 1883
+UC300_MQTT_USERNAME = 'uc300'
+UC300_MQTT_PASSWORD = 'grain300'

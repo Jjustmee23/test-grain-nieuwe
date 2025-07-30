@@ -109,6 +109,45 @@
                         {% endif %}
                     </div>
 
+                    <!-- Expected Flour Output Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.expected_flour_output.id_for_label }}" class="form-label">
+                            {{ form.expected_flour_output.label }}
+                        </label>
+                        {{ form.expected_flour_output }}
+                        {% if form.expected_flour_output.help_text %}
+                        <div class="form-text">{{ form.expected_flour_output.help_text }}</div>
+                        {% endif %}
+                        {% if form.expected_flour_output.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {{ form.expected_flour_output.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Start Date Field (Super Admin Only) -->
+                    {% if user.is_superuser or user.groups.all.0.name == 'Superadmin' %}
+                    <div class="mb-3">
+                        <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                            {{ form.start_date.label }}
+                            <span class="text-muted">(Super Admin Only - Historical Data Integration)</span>
+                        </label>
+                        {{ form.start_date }}
+                        {% if form.start_date.help_text %}
+                        <div class="form-text">{{ form.start_date.help_text }}</div>
+                        {% endif %}
+                        {% if form.start_date.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {{ form.start_date.errors }}
+                        </div>
+                        {% endif %}
+                        <div class="alert alert-info mt-2">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Historical Data Integration:</strong> Changing the start date will automatically integrate all production data from that date to now into the batch.
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
                             Create Batch
@@ -245,45 +284,67 @@ function handleCitySelection() {
     // Get all selected city IDs
     const cityIds = Array.from(selectedCities).map(cb => cb.value);
     
-    // Fetch factories for all selected cities
-    Promise.all(cityIds.map(cityId => 
-        fetch(`/api/cities/${cityId}/factories/`)
-            .then(response => response.json())
-            .then(data => data.factories)
-            .catch(error => {
-                console.error('Error loading factories for city', cityId, ':', error);
-                return [];
-            })
-    )).then(allFactories => {
-        // Flatten and deduplicate factories
-        const factories = [];
-        const seenIds = new Set();
-        
-        allFactories.flat().forEach(factory => {
-            if (!seenIds.has(factory.id)) {
-                seenIds.add(factory.id);
-                factories.push(factory);
-            }
-        });
-        
-        // Populate factory selector
-        if (factories.length === 0) {
-            factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
-        } else {
-            factorySelector.innerHTML = '';
-            factories.forEach(factory => {
-                const div = document.createElement('div');
-                div.className = 'form-check mb-2';
-                div.innerHTML = `
-                    <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
-                        name="factories" value="${factory.id}" data-city="${factory.city_id}">
-                    <label class="form-check-label" for="factory${factory.id}">
-                        ${factory.name} (${factory.city_name || 'Unknown City'})
-                    </label>
-                `;
-                factorySelector.appendChild(div);
-            });
+    // Create form data for the API call
+    const formData = new FormData();
+    cityIds.forEach(cityId => {
+        formData.append('city_ids[]', cityId);
+    });
+    
+    // Fetch factories for all selected cities using the new API
+    fetch('/api/multiple-cities/factories/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.all_factories) {
+            const factories = data.all_factories;
+            
+            // Populate factory selector
+            if (factories.length === 0) {
+                factorySelector.innerHTML = '<div class="text-muted text-center">No factories found for selected cities</div>';
+            } else {
+                factorySelector.innerHTML = '';
+                
+                // Group factories by city for better display
+                const factoriesByCity = data.factories_by_city || {};
+                const cities = data.cities || [];
+                
+                cities.forEach(city => {
+                    if (factoriesByCity[city.id] && factoriesByCity[city.id].length > 0) {
+                        // City header
+                        const cityHeader = document.createElement('div');
+                        cityHeader.className = 'mt-3 mb-2';
+                        cityHeader.innerHTML = `<strong class="text-primary">${city.name}</strong>`;
+                        factorySelector.appendChild(cityHeader);
+                        
+                        // City factories
+                        factoriesByCity[city.id].forEach(factory => {
+                            const div = document.createElement('div');
+                            div.className = 'form-check mb-2 ms-3';
+                            div.innerHTML = `
+                                <input class="form-check-input factory-checkbox" type="checkbox" id="factory${factory.id}"
+                                    name="factories" value="${factory.id}" data-city="${factory.city_id}">
+                                <label class="form-check-label" for="factory${factory.id}">
+                                    ${factory.name}
+                                </label>
+                            `;
+                            factorySelector.appendChild(div);
+                        });
+                    }
+                });
+            }
+        } else {
+            factorySelector.innerHTML = '<div class="text-danger text-center">Error loading factories. Please try again.</div>';
+            console.error('API error:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading factories:', error);
+        factorySelector.innerHTML = '<div class="text-danger text-center">Error loading factories. Please try again.</div>';
     });
 }
 

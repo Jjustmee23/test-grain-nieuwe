@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Batch Delete</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Test Batch Delete</h1>
+    <button onclick="testDelete()">Test Delete Batch 6</button>
+    
+    <script>
+    function testDelete() {
+        console.log('🧪 Testing batch delete...');
+        
+        $.post('/batches/6/delete/', {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        })
+        .done(function(response) {
+            console.log('📥 Response:', response);
+            if (response.success) {
+                alert('✅ Delete successful!');
+            } else {
+                if (response.can_force_delete) {
+                    if (confirm('This batch is protected. Force delete?')) {
+                        $.post('/batches/6/delete/', {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            force_delete: 'true'
+                        })
+                        .done(function(forceResponse) {
+                            console.log('📥 Force response:', forceResponse);
+                            if (forceResponse.success) {
+                                alert('✅ Force delete successful!');
+                            } else {
+                                alert('❌ Force delete failed: ' + forceResponse.error);
+                            }
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('❌ Force delete error:', error);
+                            alert('❌ Force delete error: ' + error);
+                        });
+                    }
+                } else {
+                    alert('❌ Delete failed: ' + response.error);
+                }
+            }
+        })
+        .fail(function(xhr, status, error) {
+            console.error('❌ Delete error:', error);
+            console.error('❌ Status:', status);
+            console.error('❌ Response:', xhr.responseText);
+            alert('❌ Delete error: ' + error);
+        });
+    }
+    </script>
+</body>
+</html> 

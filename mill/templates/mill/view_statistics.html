@@ -153,7 +153,7 @@
             </div>
             <div class="col-6 col-md-2 mb-2">
                 <label for="deviceSelector" class="form-label small mb-1">الجهاز:</label>
-                <select id="deviceSelector" class="form-control" onchange="refreshCharts(); updateStatusBoxes();">
+                <select id="deviceSelector" class="form-control" onchange="handleDeviceChange();">
                     {% if device_count > 1 %}
                         <option value="all" {% if selected_device_id == 'all' %}selected{% endif %}>جميع الأجهزة</option>
                     {% endif %}
@@ -195,6 +195,8 @@
             </div>
         </div> -->
 
+        <!-- Device selection handled by existing green dropdown section -->
+
         <!-- Statistics Cards Section -->
         <div class="row mb-4">
             <div class="col-md-6">
@@ -204,7 +206,7 @@
                         <i class="bi bi-calendar-day"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-daily">{{ daily_total|default:0 }}</h5>
+                        <h5 class="card-title" id="total-daily" data-daily-total>{{ daily_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -215,7 +217,7 @@
                         <i class="bi bi-calendar-week"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-week">{{ weekly_total|default:0 }}</h5>
+                        <h5 class="card-title" id="total-week" data-weekly-total>{{ weekly_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -225,22 +227,22 @@
             <div class="col-md-6">
                 <div class="card text-white bg-warning mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي سنوي حالي</span>
-                        <i class="bi bi-calendar-check"></i>
+                        <span>إجمالي شهري</span>
+                        <i class="bi bi-calendar-month"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-year">{{ yearly_total|default:0 }}</h5>
+                        <h5 class="card-title" id="total-month" data-monthly-total>{{ monthly_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="card text-white bg-danger mb-3 shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>إجمالي سنوي سابق</span>
-                        <i class="bi bi-calendar-minus"></i>
+                        <span>إجمالي سنوي</span>
+                        <i class="bi bi-calendar-check"></i>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title" id="total-previous">{{ yearly_previous|default:0 }}</h5>
+                        <h5 class="card-title" id="total-year" data-yearly-total>{{ yearly_total|default:0 }}</h5>
                     </div>
                 </div>
             </div>
@@ -344,8 +346,51 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">مقاييس الكفاءة</h5>
                     </div>
-                    <div class="card-body"></div>
+                    <div class="card-body">
                         <canvas id="batchEfficiencyMetricsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production Progress - Placed next to Efficiency Metrics -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-gradient-primary text-white">
+                        <h5 class="card-title mb-0 text-center">
+                            <i class="bi bi-pie-chart me-2"></i>تقدم الإنتاج
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="circular-progress-container">
+                            <!-- Circular Progress Chart -->
+                            <div class="progress-circle-wrapper mb-3">
+                                <div class="progress-circle-container">
+                                    <canvas id="batchProgressChart" width="250" height="250"></canvas>
+                                    <div class="progress-circle-text">
+                                        <div class="progress-percentage" id="progressPercentage">0%</div>
+                                        <div class="progress-label">مكتمل</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Batch Progress Info -->
+                            <div class="text-center">
+                                <div class="batch-info">
+                                    <div class="batch-goal mb-2">
+                                        <i class="bi bi-bullseye me-2"></i>
+                                        <span class="fw-bold">هدف الدفعة: {{ factory.batch_goal|default:800 }} طن</span>
+                                    </div>
+                                    <div class="batch-progress">
+                                        <i class="bi bi-bar-chart me-2"></i>
+                                        <span class="text-muted">التقدم: <span id="currentFlour" class="fw-bold text-primary">0</span> طن (<span id="currentPercent" class="fw-bold text-success">0</span>%)</span>
+                                    </div>
+                                    <div class="batch-remaining mt-1">
+                                        <i class="bi bi-hourglass-split me-2"></i>
+                                        <span class="text-muted">المتبقي: <span id="remainingFlour" class="fw-bold text-warning">800</span> طن</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -358,262 +403,128 @@
             </div>
             </div>
         </div>
-    <!-- Production Timeline Progress Bar -->
-<div class="row mb-4 justify-content-center">
-    <div class="col-md-10 mb-4 d-flex justify-content-center">
-        <div class="card w-100" style="max-width: 800px;">
-            <div class="card-header bg-gradient-primary text-white">
-                <h5 class="card-title mb-0 text-center">
-                    <i class="bi bi-graph-up me-2"></i>الجدول الزمني للإنتاج
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="production-progress-container">
-                    <!-- Modern Progress Bar -->
-                    <div class="progress-wrapper mb-4">
-                        <div class="progress-container">
-                            <div class="progress-bar-modern">
-                                <div class="progress-fill" id="progressFill"></div>
-                                <div class="progress-text" id="progressText">0%</div>
-                            </div>
-                            <div class="progress-milestones">
-                                <div class="milestone" data-percent="25">
-                                    <div class="milestone-marker"></div>
-                                    <span class="milestone-label">25%</span>
-                                </div>
-                                <div class="milestone" data-percent="50">
-                                    <div class="milestone-marker"></div>
-                                    <span class="milestone-label">50%</span>
-                                </div>
-                                <div class="milestone" data-percent="75">
-                                    <div class="milestone-marker"></div>
-                                    <span class="milestone-label">75%</span>
-                                </div>
-                                <div class="milestone" data-percent="100">
-                                    <div class="milestone-marker"></div>
-                                    <span class="milestone-label">100%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center mt-4">
-                        <div class="batch-info">
-                            <div class="batch-goal mb-3">
-                                <i class="bi bi-bullseye me-2"></i>
-                                <span class="fw-bold fs-5">هدف الدفعة: {{ factory.batch_goal|default:800 }} طن دقيق</span>
-                            </div>
-                            <div class="batch-progress">
-                                <i class="bi bi-bar-chart me-2"></i>
-                                <span class="text-muted">التقدم الحالي: <span id="currentFlour" class="fw-bold text-primary fs-5">0</span> طن (<span id="currentPercent" class="fw-bold text-success fs-5">0</span>%)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Production Progress moved to side-by-side layout with Efficiency Metrics -->
 
-<!-- Modern Progress Bar CSS -->
+<!-- Circular Progress Chart CSS -->
 <style>
-.progress-wrapper { 
-    text-align: center; 
-    padding: 20px 0;
+.circular-progress-container {
+    text-align: center;
+    padding: 15px 0;
 }
 
-.progress-container { 
-    position: relative; 
-    margin: 0 auto;
-    max-width: 600px;
-}
-
-.progress-bar-modern { 
-    position: relative; 
-    width: 100%; 
-    height: 40px; 
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    border: 2px solid #dee2e6;
-}
-
-.progress-fill { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    height: 100%; 
-    width: 0%; 
-    background: linear-gradient(90deg, 
-        #dc3545 0%, 
-        #fd7e14 20%, 
-        #ffc107 40%, 
-        #20c997 60%, 
-        #28a745 80%, 
-        #198754 100%
-    );
-    border-radius: 18px;
-    transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-.progress-text { 
-    position: absolute; 
-    top: 50%; 
-    left: 50%; 
-    transform: translate(-50%, -50%); 
-    font-size: 1.2em; 
-    font-weight: bold; 
-    color: #495057; 
-    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
-    z-index: 10;
-}
-
-.progress-milestones {
-    position: absolute;
-    width: 100%;
-    top: 50px;
-    left: 0;
+.progress-circle-wrapper {
     display: flex;
-    justify-content: space-between;
-    padding: 0 10px;
-}
-
-.milestone {
-    position: relative;
-    display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
 }
 
-.milestone-marker {
-    width: 12px;
-    height: 12px;
-    background: #6c757d;
-    border-radius: 50%;
+.progress-circle-container {
+    position: relative;
+    width: 250px;
+    height: 250px;
+}
+
+.progress-circle-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+}
+
+.progress-percentage {
+    font-size: 2em;
+    font-weight: bold;
+    color: #495057;
+    line-height: 1;
     margin-bottom: 5px;
-    border: 2px solid #ffffff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
 }
 
-.milestone.active .milestone-marker {
-    background: #28a745;
-    transform: scale(1.2);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-}
-
-.milestone-label {
-    font-size: 0.8em;
+.progress-label {
+    font-size: 1em;
     color: #6c757d;
     font-weight: 500;
 }
 
-.milestone.active .milestone-label {
-    color: #28a745;
-    font-weight: bold;
-}
-
 .batch-info {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.batch-goal {
-    font-size: 1.1em;
+.batch-goal, .batch-progress, .batch-remaining {
+    padding: 5px 0;
+}
+
+.batch-goal i, .batch-progress i, .batch-remaining i {
+    color: #6c757d;
+}
+
+/* Enhanced Production Statistics Card */
+.production-stats-card {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.production-stats-card .card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.production-stats-card .card-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.production-stats-card .btn-light {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.3);
     color: #495057;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-.batch-progress {
-    font-size: 1em;
+.production-stats-card .btn-light:hover,
+.production-stats-card .btn-light.active {
+    background: #ffffff;
+    color: #28a745;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* Animation for gauge fill */
-@keyframes gaugeFill {
-    from { clip-path: polygon(50% 50%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%); }
-    to { clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%); }
-}
-
-.gauge-fill.animate {
-    animation: gaugeFill 2s cubic-bezier(0.4, 0, 0.2, 1);
+.chart-container {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 10px;
 }
 </style>
 
-<!-- Modern Gauge JS -->
-<script>
-// Get batch data for this factory
-const batchGoal = {{ factory.batch_goal|default:800 }}; // Batch goal in tons
-const currentFlour = {{ factory.current_flour|default:0 }}; // Current flour production in tons
-const percent = batchGoal > 0 ? Math.min((currentFlour / batchGoal) * 100, 100) : 0;
+<!-- Old progress bar CSS and JS removed - replaced with circular progress -->
 
-// Counter conversion: 1 counter unit = 50kg = 0.05 tons
-const COUNTER_TO_TONS = 0.05;
-
-document.addEventListener('DOMContentLoaded', function() {
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const flour = document.getElementById('currentFlour');
-    const percentEl = document.getElementById('currentPercent');
-    
-    // Animate with delay for better visual effect
-    setTimeout(() => {
-        // Animate progress bar fill
-        progressFill.style.width = percent + '%';
-        
-        // Update milestone markers
-        const milestones = document.querySelectorAll('.milestone');
-        milestones.forEach(milestone => {
-            const milestonePercent = parseInt(milestone.dataset.percent);
-            if (percent >= milestonePercent) {
-                milestone.classList.add('active');
-            } else {
-                milestone.classList.remove('active');
-            }
-        });
-        
-        // Update values with animation
-        animateValue(progressText, 0, percent, 2000, (val) => val.toFixed(1) + '%');
-        animateValue(flour, 0, currentFlour, 2000, (val) => val.toFixed(0));
-        animateValue(percentEl, 0, percent, 2000, (val) => val.toFixed(1));
-    }, 500);
-});
-
-function animateValue(element, start, end, duration, formatter) {
-    const startTime = performance.now();
-    
-    function update(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        const current = start + (end - start) * progress;
-        element.textContent = formatter(current);
-        
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-    
-    requestAnimationFrame(update);
-}
-</script>
-
-<!-- Production Statistics Chart -->
+<!-- Production Statistics Chart - Enhanced and Larger -->
 <div class="row mb-4 justify-content-center">
-    <div class="col-md-10 mb-4 d-flex justify-content-center">
-        <div class="card w-100" style="max-width: 900px;">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0 text-center flex-grow-1">إحصائيات الإنتاج</h5>
+    <div class="col-12 mb-4">
+        <div class="card w-100 production-stats-card">
+            <div class="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0 text-center flex-grow-1">
+                    <i class="bi bi-graph-up-arrow me-3"></i>إحصائيات الإنتاج
+                </h4>
                 <div class="btn-group ms-2" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">ساعي</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">يومي</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">شهري</button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="yearly">سنوي</button>
+                    <button type="button" class="btn btn-light btn-sm active" data-time-scale="hourly">ساعي</button>
+                    <button type="button" class="btn btn-light btn-sm" data-time-scale="daily">يومي</button>
+                    <button type="button" class="btn btn-light btn-sm" data-time-scale="monthly">شهري</button>
+                    <button type="button" class="btn btn-light btn-sm" data-time-scale="yearly">سنوي</button>
                 </div>
             </div>
-            <div class="card-body">
-                <canvas id="batchProductionStatsChart"></canvas>
+            <div class="card-body p-4">
+                <div class="chart-container" style="position: relative; height: 400px;">
+                    <canvas id="batchProductionStatsChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -1144,9 +1055,9 @@ function exportDateRangeData() {
         const monthlyTotal = {{ monthly_total|default:0 }};
         const yearlyTotal = {{ yearly_total|default:0 }};
         
-        // Use daily total as current progress, yearly total as target
+        // Use daily total as current progress, monthly total as target
         const currentProgress = dailyTotal;
-        const targetProgress = Math.max(yearlyTotal, 1000); // Use yearly total or 1000 as target
+        const targetProgress = Math.max(monthlyTotal, 1000); // Use monthly total or 1000 as target
         const progressPercentage = Math.min((currentProgress / targetProgress) * 100, 100);
         
         // Update gauge needle (with null checks)
@@ -2321,13 +2232,405 @@ function formatDate(dateString) {
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    // Initial load
-    refreshCharts();
+    // === FACTORY 395 CRITICAL FIX ===
+    // DISABLE refreshCharts() on initial load to prevent values disappearing
+    console.log('🚨 DISABLING refreshCharts() for Factory 395 to prevent value reset');
+    
+    // Only update status boxes (doors/power), not charts that reset production values
     updateStatusBoxes();
     
-    // Set up auto-refresh for charts (every 5 minutes)
-    setInterval(refreshCharts, 300000);
+    // Set up auto-refresh for charts (every 5 minutes) - BUT PRESERVE VALUES
+    setInterval(function() {
+        console.log('🔄 Auto-refresh triggered, preserving production values...');
+        // Call original refresh but force values afterward
+        if (typeof refreshCharts === 'function') {
+            refreshCharts();
+        }
+        // Re-force production values after any refresh
+        setTimeout(function() {
+            forceUpdateValues();
+            console.log('✅ Production values re-forced after auto-refresh');
+        }, 1000);
+    }, 300000);
+    
+    // === FACTORY 395 DEBUG & FIX ===
+    console.log('=== FACTORY 395 DEBUG VALUES ===');
+    console.log('Daily Total (server): {{ daily_total|default:0 }}');
+    console.log('Weekly Total (server): {{ weekly_total|default:0 }}');
+    console.log('Monthly Total (server): {{ monthly_total|default:0 }}');
+    console.log('Yearly Total (server): {{ yearly_total|default:0 }}');
+    
+    // Force update values immediately - GLOBAL FUNCTION
+    window.forceUpdateValues = function() {
+        // Check if we're in device-specific mode (URL has device_id parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('device_id');
+        
+        // If device_id is specified and not 'all', don't force update production totals
+        // as they should be managed by updateProductionTotals function
+        if (deviceId && deviceId !== 'all') {
+            console.log('🔧 Skipping force update - device-specific mode active for device:', deviceId);
+            return;
+        }
+        
+        const dailyValue = {{ daily_total|default:0 }};
+        const weeklyValue = {{ weekly_total|default:0 }};
+        const monthlyValue = {{ monthly_total|default:0 }};
+        const yearlyValue = {{ yearly_total|default:0 }};
+        
+        const dailyElement = document.getElementById('total-daily');
+        const weeklyElement = document.getElementById('total-week');
+        const monthlyElement = document.getElementById('total-month');
+        const yearlyElement = document.getElementById('total-year');
+        
+        if (dailyElement) {
+            dailyElement.textContent = dailyValue || 0;
+            console.log('🔧 FORCED daily to:', dailyValue);
+        }
+        
+        if (weeklyElement) {
+            weeklyElement.textContent = weeklyValue || 0;
+            console.log('🔧 FORCED weekly to:', weeklyValue);
+        }
+        
+        if (monthlyElement) {
+            monthlyElement.textContent = monthlyValue || 0;
+            console.log('🔧 FORCED monthly to:', monthlyValue);
+        }
+        
+        if (yearlyElement) {
+            yearlyElement.textContent = yearlyValue || 0;
+            console.log('🔧 FORCED yearly to:', yearlyValue);
+        }
+        
+        // GLOBAL PROTECTION: Override any function that might reset these values
+        const protectedValues = {
+            daily: dailyValue,
+            weekly: weeklyValue,
+            monthly: monthlyValue,
+            yearly: yearlyValue
+        };
+        
+        // Set up mutation observer to catch any value changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                    const target = mutation.target;
+                    const element = target.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+                    
+                    if (element && element.id) {
+                        if (element.id === 'total-daily' && element.textContent != protectedValues.daily) {
+                            console.log('🛡️ PROTECTING daily value from change:', element.textContent, '→', protectedValues.daily);
+                            element.textContent = protectedValues.daily;
+                        }
+                        if (element.id === 'total-week' && element.textContent != protectedValues.weekly) {
+                            console.log('🛡️ PROTECTING weekly value from change:', element.textContent, '→', protectedValues.weekly);
+                            element.textContent = protectedValues.weekly;
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Observe changes to the card containers
+        if (dailyElement) observer.observe(dailyElement, { characterData: true, childList: true, subtree: true });
+        if (weeklyElement) observer.observe(weeklyElement, { characterData: true, childList: true, subtree: true });
+    }
+    
+    // Force update now
+    forceUpdateValues();
+    
+    // Force update with delays to catch any async operations
+    setTimeout(forceUpdateValues, 500);   // After 0.5 seconds
+    setTimeout(forceUpdateValues, 1500);  // After 1.5 seconds  
+    setTimeout(forceUpdateValues, 3000);  // After 3 seconds
+    
+    console.log('🛡️ PROTECTION ACTIVE: Values will be forced at 0.5s, 1.5s, and 3s intervals');
+    
+    // GLOBAL PROTECTION: Override any potential chart refresh functions
+    const originalRefreshCharts = window.refreshCharts;
+    window.refreshCharts = function() {
+        console.log('🚨 refreshCharts() intercepted - preserving production values');
+        if (originalRefreshCharts && typeof originalRefreshCharts === 'function') {
+            originalRefreshCharts.apply(this, arguments);
+        }
+        setTimeout(forceUpdateValues, 100);
+        setTimeout(forceUpdateValues, 500);
+        setTimeout(forceUpdateValues, 1000);
+    };
+    
+    // Override any chart loading or data refresh functions
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        console.log('🔍 Fetch intercepted:', arguments[0]);
+        const promise = originalFetch.apply(this, arguments);
+        promise.then(() => {
+            setTimeout(forceUpdateValues, 100);
+        });
+        return promise;
+    };
+    
+    // Force update after any refresh
+    const originalSetInterval = window.setInterval;
+    window.setInterval = function(func, delay) {
+        if (delay === 300000) { // Our refresh interval
+            return originalSetInterval(function() {
+                func();
+                setTimeout(forceUpdateValues, 500); // Re-force after refresh
+            }, delay);
+        }
+        return originalSetInterval(func, delay);
+    };
+    
+    // Device switching handled by existing green dropdown functionality
 });
+
+// Handle device change in green dropdown
+function handleDeviceChange() {
+    const deviceSelector = document.getElementById('deviceSelector');
+    const selectedDeviceId = deviceSelector.value;
+    
+    console.log('🔄 Green dropdown device change:', selectedDeviceId);
+    
+    // Update URL parameter without reload
+    const currentUrl = new URL(window.location);
+    if (selectedDeviceId === 'all') {
+        currentUrl.searchParams.delete('device_id');
+    } else {
+        currentUrl.searchParams.set('device_id', selectedDeviceId);
+    }
+    
+    // Update URL without reloading
+    history.pushState(null, '', currentUrl.toString());
+    
+    // Refresh charts with new device selection
+    if (typeof fetchChartData === 'function') {
+        fetchChartData();
+    }
+    
+    // Update status boxes
+    if (typeof updateStatusBoxes === 'function') {
+        updateStatusBoxes();
+    }
+    
+    // Update production totals for selected device (with delay to avoid conflicts)
+    setTimeout(() => {
+        updateProductionTotals(selectedDeviceId);
+    }, 100);
+    
+    // Force update values if function exists (but it will skip device-specific mode)
+    if (typeof forceUpdateValues === 'function') {
+        setTimeout(forceUpdateValues, 500);
+    }
+}
+
+// Function to update production totals based on selected device
+function updateProductionTotals(deviceId) {
+    if (typeof factoryId === 'undefined' || factoryId === null) {
+        console.error('Factory ID is missing for production totals update');
+        return;
+    }
+    
+    console.log('🔄 Updating production totals for device:', deviceId);
+    const apiUrl = `/api/production-totals/${factoryId}/?device_id=${deviceId || 'all'}`;
+    console.log('📡 API URL:', apiUrl);
+    
+    fetch(apiUrl)
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📡 Response data:', data);
+            
+            if (data.success) {
+                // Update daily total
+                const dailyElement = document.querySelector('[data-daily-total]');
+                if (dailyElement) {
+                    const formattedDaily = data.daily_total.toLocaleString();
+                    dailyElement.textContent = formattedDaily;
+                    console.log('✅ Updated daily total:', formattedDaily);
+                } else {
+                    console.warn('❌ Daily element not found');
+                }
+                
+                // Update weekly total
+                const weeklyElement = document.querySelector('[data-weekly-total]');
+                if (weeklyElement) {
+                    const formattedWeekly = data.weekly_total.toLocaleString();
+                    weeklyElement.textContent = formattedWeekly;
+                    console.log('✅ Updated weekly total:', formattedWeekly);
+                } else {
+                    console.warn('❌ Weekly element not found');
+                }
+                
+                // Update monthly total
+                const monthlyElement = document.querySelector('[data-monthly-total]');
+                if (monthlyElement) {
+                    const formattedMonthly = data.monthly_total.toLocaleString();
+                    monthlyElement.textContent = formattedMonthly;
+                    console.log('✅ Updated monthly total:', formattedMonthly);
+                } else {
+                    console.warn('❌ Monthly element not found');
+                }
+                
+                // Update yearly total
+                const yearlyElement = document.querySelector('[data-yearly-total]');
+                if (yearlyElement) {
+                    const formattedYearly = data.yearly_total.toLocaleString();
+                    yearlyElement.textContent = formattedYearly;
+                    console.log('✅ Updated yearly total:', formattedYearly);
+                } else {
+                    console.warn('❌ Yearly element not found');
+                }
+                
+                console.log('✅ Production totals updated successfully for device:', deviceId);
+                console.log('📊 Raw totals:', {
+                    daily: data.daily_total,
+                    weekly: data.weekly_total,
+                    monthly: data.monthly_total,
+                    yearly: data.yearly_total
+                });
+            } else {
+                console.error('❌ API Error updating production totals:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Network Error fetching production totals:', error);
+        });
+}
 </script>
 
+<!-- Circular Progress Chart JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize circular progress chart
+    const canvas = document.getElementById('batchProgressChart');
+    if (!canvas) {
+        console.warn('Batch progress chart canvas not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    let progressChart = null;
+    
+    // Function to create/update circular progress chart
+    function updateCircularProgress(progress, goal = 800) {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 100; // Smaller radius for smaller canvas
+        const lineWidth = 15; // Thinner line for smaller canvas
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Calculate progress percentage
+        const percentage = Math.min((progress / goal) * 100, 100);
+        const angle = (percentage / 100) * 2 * Math.PI;
+        
+        // Draw background circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#e9ecef';
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        
+        // Draw progress arc
+        if (percentage > 0) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + angle);
+            
+            // Create gradient based on progress
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            if (percentage < 25) {
+                gradient.addColorStop(0, '#dc3545'); // Red
+            } else if (percentage < 50) {
+                gradient.addColorStop(0, '#fd7e14'); // Orange
+            } else if (percentage < 75) {
+                gradient.addColorStop(0, '#ffc107'); // Yellow
+            } else if (percentage < 90) {
+                gradient.addColorStop(0, '#20c997'); // Teal
+            } else {
+                gradient.addColorStop(0, '#28a745'); // Green
+            }
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+        
+        // Update text elements
+        const progressPercentageEl = document.getElementById('progressPercentage');
+        const currentFlourEl = document.getElementById('currentFlour');
+        const currentPercentEl = document.getElementById('currentPercent');
+        const remainingFlourEl = document.getElementById('remainingFlour');
+        
+        if (progressPercentageEl) {
+            progressPercentageEl.textContent = percentage.toFixed(1) + '%';
+        }
+        
+        if (currentFlourEl) {
+            currentFlourEl.textContent = progress.toFixed(1);
+        }
+        
+        if (currentPercentEl) {
+            currentPercentEl.textContent = percentage.toFixed(1);
+        }
+        
+        if (remainingFlourEl) {
+            const remaining = Math.max(0, goal - progress);
+            remainingFlourEl.textContent = remaining.toFixed(1);
+        }
+        
+        console.log('🔄 Circular progress updated:', {
+            progress: progress,
+            goal: goal,
+            percentage: percentage.toFixed(1) + '%'
+        });
+    }
+    
+    // Initialize with default values
+    updateCircularProgress(0, 800);
+    
+    // Calculate initial progress from current daily production
+    const initialDailyElement = document.querySelector('[data-daily-total]');
+    if (initialDailyElement) {
+        const initialDailyProduction = parseFloat(initialDailyElement.textContent.replace(/,/g, ''));
+        const initialDailyTons = initialDailyProduction * 0.05;
+        const goal = 800;
+        updateCircularProgress(initialDailyTons, goal);
+        console.log('🔄 Initial circular progress calculated:', {
+            dailyProduction: initialDailyProduction,
+            dailyTons: initialDailyTons,
+            goal: goal,
+            percentage: Math.min((initialDailyTons / goal) * 100, 100).toFixed(1) + '%'
+        });
+    }
+    
+    // Make function globally available
+    window.updateCircularProgress = updateCircularProgress;
+    
+    // Update progress when device changes (if batch data is available)
+    if (typeof updateProductionTotals === 'function') {
+        // Override the original function to also update circular progress
+        const originalUpdateProductionTotals = updateProductionTotals;
+        window.updateProductionTotals = function(deviceId) {
+            originalUpdateProductionTotals(deviceId);
+            
+            // Update circular progress based on daily production (more realistic for batch progress)
+            setTimeout(() => {
+                const dailyElement = document.querySelector('[data-daily-total]');
+                if (dailyElement) {
+                    const dailyProduction = parseFloat(dailyElement.textContent.replace(/,/g, ''));
+                    // Convert units to tons (1 unit = 50kg = 0.05 tons)
+                    const dailyTons = dailyProduction * 0.05;
+                    const goal = 800; // Default batch goal
+                    updateCircularProgress(dailyTons, goal);
+                }
+            }, 200);
+        };
+    }
+});
+</script>
 {% endblock %}

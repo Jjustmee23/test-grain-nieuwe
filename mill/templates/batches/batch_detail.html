@@ -47,9 +47,6 @@
             <!-- Counter Update Section -->
             {% if not batch.is_finalized %}
             <div class="btn-group ms-2">
-                <button type="button" class="btn btn-info" onclick="autoUpdateBatch()">
-                    <i class="fas fa-sync-alt"></i> Auto Update
-                </button>
                 <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#counterModal">
                     <i class="fas fa-tools"></i> Manual Correction
                 </button>
@@ -114,25 +111,25 @@
                         <div class="col-sm-6">
                             <div class="border rounded p-3 text-center">
                                 <h6>Wheat Input</h6>
-                                <h3>{{ batch.wheat_amount }} tons</h3>
+                                <h3 data-batch-wheat>{{ batch.wheat_amount }} tons</h3>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="border rounded p-3 text-center">
                                 <h6>Expected Output</h6>
-                                <h3>{{ batch.expected_flour_output }} tons</h3>
+                                <h3 data-batch-expected>{{ batch.expected_flour_output }} tons</h3>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="border rounded p-3 text-center">
                                 <h6>Actual Output</h6>
-                                <h3>{{ batch.actual_flour_output }} tons</h3>
+                                <h3 data-batch-actual>{{ batch.actual_flour_output }} tons</h3>
                             </div>
                         </div>
                         <div class="col-sm-6">
                             <div class="border rounded p-3 text-center">
                                 <h6>Yield Rate</h6>
-                                <h3>{{ yield_rate|floatformat:1 }}%</h3>
+                                <h3 data-batch-yield>{{ yield_rate|floatformat:1 }}%</h3>
                             </div>
                         </div>
                     </div>
@@ -167,8 +164,8 @@
                         <div class="col-md-3">
                             <div class="alert alert-warning text-center">
                                 <strong>Remaining:</strong><br>
-                                <span style="font-size:1.5em;">{{ remaining_tons|floatformat:2 }}</span> tons<br>
-                                <small>({{ progress_percentage|floatformat:1 }}% complete)</small>
+                                <span style="font-size:1.5em;">{{ remaining_units|floatformat:0 }}</span> pieces<br>
+                                <small>({{ remaining_tons|floatformat:2 }} tons)</small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -442,43 +439,41 @@
         </div>
         
         <!-- Output Comparison Chart -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Output Comparison</h5>
+                    <h6 class="card-title mb-0">Output Comparison</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="outputComparisonChart"></canvas>
+                    <canvas id="outputComparisonChart" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
     
         <!-- Efficiency Metrics Chart -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Efficiency Metrics</h5>
+                    <h6 class="card-title mb-0">Efficiency Metrics</h6>
                 </div>
                 <div class="card-body">
-                    <canvas id="efficiencyMetricsChart"></canvas>
+                    <canvas id="efficiencyMetricsChart" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Production Statistics Chart -->
-        <div class="col-md-12 mb-4">
-            <div class="card">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Production Statistics</h5>
+                    <h6 class="card-title mb-0">Production Statistics</h6>
                     <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="hourly">Hourly</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="daily">Daily</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm active" data-time-scale="daily">Daily</button>
                         <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="monthly">Monthly</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-time-scale="yearly">Yearly</button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="productionStatsChart"></canvas>
+                    <canvas id="productionStatsChart" style="height: 250px;"></canvas>
                 </div>
             </div>
         </div>
@@ -603,7 +598,8 @@
             method: 'POST',
             body: new FormData(this),
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
@@ -721,38 +717,60 @@ function updateCharts(batchData) {
 
     // Function to update production stats display
     function updateProductionStats(data) {
-        // Update wheat amount
-        const wheatElement = document.querySelector('.card-body h3:nth-of-type(1)');
-        if (wheatElement) wheatElement.textContent = `${data.wheat_amount} tons`;
-
-        // Update expected output
-        const expectedElement = document.querySelector('.card-body h3:nth-of-type(2)');
-        if (expectedElement) expectedElement.textContent = `${data.expected_flour_output} tons`;
-
-        // Update actual output
-        const actualElement = document.querySelector('.card-body h3:nth-of-type(3)');
-        if (actualElement) actualElement.textContent = `${data.actual_flour_output} tons`;
-
-        // Update yield rate
-        const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
-        const yieldElement = document.querySelector('.card-body h3:nth-of-type(4)');
-        if (yieldElement) yieldElement.textContent = `${yieldRate}%`;
+        try {
+            console.log('Updating production stats with:', data);
+            
+            // Use more specific selectors with safety checks
+            const updateElement = (selector, value, suffix = '') => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.textContent = value + suffix;
+                    console.log(`Updated ${selector}:`, value + suffix);
+                } else {
+                    console.warn(`Element not found: ${selector}`);
+                }
+            };
+            
+            // Update wheat amount
+            updateElement('[data-batch-wheat]', `${data.wheat_amount}`, ' tons');
+            
+            // Update expected output  
+            updateElement('[data-batch-expected]', `${data.expected_flour_output}`, ' tons');
+            
+            // Update actual output
+            updateElement('[data-batch-actual]', `${data.actual_flour_output}`, ' tons');
+            
+            // Update yield rate
+            if (data.expected_flour_output > 0) {
+                const yieldRate = (data.actual_flour_output / data.expected_flour_output * 100).toFixed(1);
+                updateElement('[data-batch-yield]', `${yieldRate}`, '%');
+            }
+            
+            // Update progress bar if it exists
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar && data.progress_percentage !== undefined) {
+                progressBar.style.width = `${data.progress_percentage}%`;
+                progressBar.setAttribute('aria-valuenow', data.progress_percentage);
+            }
+            
+        } catch (error) {
+            console.error('Error updating production stats:', error);
+        }
     }
-});
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get the batch data from the template
-        const batchData = {
-            wheatAmount: {{ batch.wheat_amount }},
-            expectedOutput: {{ batch.expected_flour_output }},
-            actualOutput: {{ batch.actual_flour_output }},
-            wasteFactor: {{ batch.waste_factor }},
-        };
     
-        // Production Timeline Progress Bar Animation
-        function updateProductionProgress() {
-            const expectedOutput = batchData.expectedOutput;
-            const actualOutput = batchData.actualOutput;
-            const progressPercentage = Math.min((actualOutput / expectedOutput) * 100, 100);
+    // Get the batch data from the template
+    const batchData = {
+        wheatAmount: {{ batch.wheat_amount }},
+        expectedOutput: {{ batch.expected_flour_output }},
+        actualOutput: {{ batch.actual_flour_output }},
+        wasteFactor: {{ batch.waste_factor }},
+    };
+
+    // Production Timeline Progress Bar Animation
+    function updateProductionProgress() {
+        const expectedOutput = batchData.expectedOutput;
+        const actualOutput = batchData.actualOutput;
+        const progressPercentage = Math.min((actualOutput / expectedOutput) * 100, 100);
             
             // Update progress bar
             const progressBar = document.getElementById('productionProgressBar');

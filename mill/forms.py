@@ -42,7 +42,7 @@ class BatchForm(forms.ModelForm):
     
     class Meta:
         model = Batch
-        fields = ['batch_number', 'wheat_amount', 'waste_factor', 'expected_flour_output']
+        fields = ['batch_number', 'wheat_amount', 'waste_factor', 'expected_flour_output', 'start_date']
         widgets = {
             'waste_factor': forms.NumberInput(
                 attrs={
@@ -65,12 +65,43 @@ class BatchForm(forms.ModelForm):
                     'placeholder': 'Enter Batch Number'
                 }
             ),
+            'expected_flour_output': forms.NumberInput(
+                attrs={
+                    'min': '0',
+                    'step': '0.01',
+                    'class': 'form-control',
+                    'placeholder': 'Expected flour output in tons'
+                }
+            ),
+            'start_date': forms.DateTimeInput(
+                attrs={
+                    'class': 'form-control',
+                    'type': 'datetime-local',
+                    'placeholder': 'Select start date and time'
+                }
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Initially, factory field should be empty
         self.fields['factories'].queryset = Factory.objects.none()
+        
+        # If this is a POST request with data, populate factories based on selected cities
+        if 'data' in kwargs and kwargs['data']:
+            data = kwargs['data']
+            city_ids = data.getlist('cities') if hasattr(data, 'getlist') else data.get('cities', [])
+            if city_ids:
+                try:
+                    # Convert to integers and filter factories
+                    city_ids = [int(cid) for cid in city_ids if cid]
+                    self.fields['factories'].queryset = Factory.objects.filter(
+                        city_id__in=city_ids, 
+                        status=True
+                    ).order_by('city__name', 'name')
+                except (ValueError, TypeError):
+                    # If conversion fails, keep empty queryset
+                    pass
 
     def clean_batch_number(self):
         batch_number = self.cleaned_data.get('batch_number')

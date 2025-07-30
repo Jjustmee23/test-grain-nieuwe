@@ -132,6 +132,13 @@ class UserProfile(models.Model):
     allowed_factories = models.ManyToManyField(Factory, blank=True)
     # Support tickets permission for super admins
     support_tickets_enabled = models.BooleanField(default=False, help_text="Enable support tickets management for this user")
+    # Batch management permissions
+    batch_management_enabled = models.BooleanField(default=False, help_text="Enable batch management for this user")
+    can_create_batches = models.BooleanField(default=False, help_text="Can create new batches")
+    can_approve_batches = models.BooleanField(default=False, help_text="Can approve batches")
+    can_start_batches = models.BooleanField(default=False, help_text="Can start batches")
+    can_stop_batches = models.BooleanField(default=False, help_text="Can stop batches")
+    can_view_analytics = models.BooleanField(default=False, help_text="Can view batch analytics")
 
     def __str__(self):
         return f"Profile for {self.user.username}"
@@ -165,7 +172,7 @@ class Batch(models.Model):
         validators=[MinValueValidator(0.0)],
         help_text="Actual flour output in tons"
     )
-    start_date = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateTimeField(default=timezone.now, help_text="Batch start date - can be edited by super admin to include historical data")
     end_date = models.DateTimeField(null=True, blank=True)
     start_value = models.IntegerField(default=0, help_text="Starting counter value from latest transaction")
     current_value = models.IntegerField(default=0, help_text="Current counter value")
@@ -196,6 +203,10 @@ class Batch(models.Model):
             # For new batches, start_value should always be 0
             # The current_value will be the difference since batch start
             self.start_value = 0
+            
+            # Set start_date to current time if not provided
+            if not self.start_date:
+                self.start_date = timezone.now()
                 
         # Calculate expected flour output based on wheat amount and waste factor
         if not self.expected_flour_output:
@@ -279,6 +290,165 @@ class Batch(models.Model):
             notification_type='batch_stopped',
             message=f"Batch {self.batch_number} has been stopped and finalized by {user.username}"
         )
+    
+    def update_start_date_with_historical_data(self, new_start_date, user):
+        """
+        Update batch start date and integrate historical production data
+        Only super admins can perform this operation
+        """
+        from django.utils import timezone
+        from datetime import datetime
+        
+        # Validate that user is super admin
+        if not user.is_superuser and not user.groups.filter(name='Superadmin').exists():
+            raise ValueError("Only super admins can update batch start dates")
+        
+        # Validate that new start date is not in the future
+        if new_start_date > timezone.now():
+            raise ValueError("Start date cannot be in the future")
+        
+        # Validate that batch can be edited (allow super admin to edit any non-completed batch)
+        if self.status in ['stopped', 'completed']:
+            raise ValueError("Cannot edit batch in current status")
+        
+        # Store old start date for logging
+        old_start_date = self.start_date
+        
+        # Calculate historical production data first
+        historical_production = self._calculate_historical_production(new_start_date)
+        
+        # Update all fields at once to avoid recursion
+        self.start_date = new_start_date
+        if historical_production > 0:
+            historical_tons = (historical_production * 50) / 1000
+            self.actual_flour_output = historical_tons
+            self.current_value = historical_production
+        
+        # Save all changes at once
+        self.save(update_fields=['start_date', 'actual_flour_output', 'current_value'])
+        
+        # Create notification
+        BatchNotification.objects.create(
+            batch=self,
+            notification_type='batch_started',
+            message=f"Batch {self.batch_number} start date updated from {old_start_date.strftime('%Y-%m-%d %H:%M')} to {new_start_date.strftime('%Y-%m-%d %H:%M')} by {user.username}. Historical data integrated."
+        )
+        
+        return True
+    
+    def _calculate_historical_production(self, start_date):
+        """
+        Calculate historical production data from the new start date
+        """
+        if not self.factory:
+            return 0
+        
+        # Get devices for this factory
+        devices = Device.objects.filter(factory=self.factory)
+        if not devices.exists():
+            return 0
+        
+        total_historical_production = 0
+        
+        for device in devices:
+            # Get historical data from start_date to now
+            historical_data = self._get_historical_device_data(device, start_date)
+            total_historical_production += historical_data
+        
+        return total_historical_production
+    
+    def _integrate_historical_production_data(self, start_date, skip_save=False):
+        """
+        Integrate historical production data from the new start date
+        """
+        if not self.factory:
+            return
+        
+        # Get devices for this factory
+        devices = Device.objects.filter(factory=self.factory)
+        if not devices.exists():
+            return
+        
+        total_historical_production = 0
+        
+        for device in devices:
+            # Get historical data from start_date to now
+            historical_data = self._get_historical_device_data(device, start_date)
+            total_historical_production += historical_data
+        
+        # Update batch with historical production
+        if total_historical_production > 0:
+            # Convert to tons (50kg per unit)
+            historical_tons = (total_historical_production * 50) / 1000
+            self.actual_flour_output = historical_tons
+            self.current_value = total_historical_production
+            if not skip_save:
+                self.save(update_fields=['actual_flour_output', 'current_value'])
+    
+    def _get_historical_device_data(self, device, start_date):
+        """
+        Get historical production data for a device from start_date to now
+        """
+        from django.db import connections
+        from datetime import datetime
+        
+        try:
+            # Try to get data from counter database first
+            with connections['counter'].cursor() as cursor:
+                counter_field = device.selected_counter or 'counter_1'
+                
+                # Get the first data point at or after start_date
+                cursor.execute(f"""
+                    SELECT {counter_field} 
+                    FROM mqtt_data 
+                    WHERE counter_id = %s 
+                    AND timestamp >= %s 
+                    ORDER BY timestamp ASC 
+                    LIMIT 1
+                """, (device.id, start_date))
+                
+                start_result = cursor.fetchone()
+                if not start_result:
+                    return 0
+                
+                start_value = start_result[0] or 0
+                
+                # Get the latest data point
+                cursor.execute(f"""
+                    SELECT {counter_field} 
+                    FROM mqtt_data 
+                    WHERE counter_id = %s 
+                    ORDER BY timestamp DESC 
+                    LIMIT 1
+                """, (device.id,))
+                
+                end_result = cursor.fetchone()
+                if not end_result:
+                    return 0
+                
+                end_value = end_result[0] or 0
+                
+                # Calculate production difference
+                production = end_value - start_value
+                return max(0, production)  # Ensure non-negative
+                
+        except Exception as e:
+            # Fallback to ProductionData if counter database fails
+            try:
+                from mill.models import ProductionData
+                
+                # Get production data from start_date to now
+                production_data = ProductionData.objects.filter(
+                    device=device,
+                    created_at__gte=start_date
+                ).aggregate(
+                    total_production=Sum('daily_production')
+                )
+                
+                return production_data['total_production'] or 0
+                
+            except Exception:
+                return 0
     
     def get_progress_color(self):
         """Get color based on progress percentage"""
@@ -2258,32 +2428,137 @@ class RawDataCounter(models.Model):
     end_flag = models.IntegerField(null=True, blank=True)
 
     class Meta:
-        managed = False  # Don't create migrations for this model
+        managed = False
         db_table = 'raw_data'
-        app_label = 'mill'
+
+
+# 🔄 UC300 RESET PILOT SYSTEM - NEW MODELS
+class CounterResetLog(models.Model):
+    """
+    Model to track UC300 counter resets for the pilot system.
+    This enables the new production calculation logic.
+    """
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='reset_logs')
+    reset_timestamp = models.DateTimeField()
+    counter_1_before = models.IntegerField(null=True, blank=True, help_text="Counter 1 value before reset")
+    counter_2_before = models.IntegerField(null=True, blank=True, help_text="Counter 2 value before reset")
+    counter_3_before = models.IntegerField(null=True, blank=True, help_text="Counter 3 value before reset")
+    counter_4_before = models.IntegerField(null=True, blank=True, help_text="Counter 4 value before reset")
+    reset_reason = models.CharField(
+        max_length=50,
+        choices=[
+            ('daily', 'Daily Scheduled Reset'),
+            ('batch_start', 'Batch Start Reset'),
+            ('manual', 'Manual Reset'),
+            ('maintenance', 'Maintenance Reset'),
+        ],
+        default='manual'
+    )
+    reset_successful = models.BooleanField(default=False, help_text="Whether the reset command was successful")
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True, help_text="Additional notes about the reset")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['device', 'reset_timestamp']),
+            models.Index(fields=['reset_timestamp']),
+            models.Index(fields=['reset_reason']),
+        ]
+        ordering = ['-reset_timestamp']
 
     def __str__(self):
-        return f"RawData {self.counter_id} - {self.timestamp}"
+        return f"Reset {self.device.name} at {self.reset_timestamp} ({self.reset_reason})"
 
-    @classmethod
-    def get_latest_by_device(cls, device_id):
-        """Get the latest raw data for a specific device"""
-        return cls.objects.using('default').filter(counter_id=device_id).order_by('-timestamp').first()
+    def get_reset_reason_display_with_icon(self):
+        """Get reset reason with appropriate icon"""
+        icons = {
+            'daily': '⏰',
+            'batch_start': '🎯', 
+            'manual': '👤',
+            'maintenance': '🔧'
+        }
+        return f"{icons.get(self.reset_reason, '🔄')} {self.get_reset_reason_display()}"
 
-    @classmethod
-    def get_data_by_date_range(cls, device_id, start_date, end_date):
-        """Get raw data for a device within a date range"""
-        return cls.objects.using('default').filter(
-            counter_id=device_id,
-            timestamp__range=[start_date, end_date]
-        ).order_by('timestamp')
 
-    @classmethod
-    def get_counter_values(cls, device_id, counter_field='counter_2'):
-        """Get counter values for a device"""
-        return cls.objects.using('default').filter(
-            counter_id=device_id
-        ).values('timestamp', counter_field).order_by('timestamp')
+class UC300PilotStatus(models.Model):
+    """
+    Model to track which devices are participating in the UC300 reset pilot.
+    This allows gradual migration and parallel systems.
+    """
+    device = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='pilot_status')
+    is_pilot_enabled = models.BooleanField(default=False, help_text="Whether this device is in UC300 reset pilot")
+    pilot_start_date = models.DateTimeField(null=True, blank=True, help_text="When pilot started for this device")
+    use_reset_logic = models.BooleanField(default=False, help_text="Use reset-based production calculation")
+    daily_reset_time = models.TimeField(null=True, blank=True, help_text="Daily reset time (e.g., 23:59)")
+    batch_reset_enabled = models.BooleanField(default=False, help_text="Enable batch-based resets")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True, help_text="Pilot notes and observations")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_pilot_enabled']),
+            models.Index(fields=['use_reset_logic']),
+        ]
+
+    def __str__(self):
+        status = "PILOT ACTIVE" if self.is_pilot_enabled else "PILOT INACTIVE"
+        return f"{self.device.name} - {status}"
+
+    def get_status_display(self):
+        """Get pilot status with appropriate styling"""
+        if self.is_pilot_enabled:
+            return "🟢 PILOT ACTIVE"
+        else:
+            return "⚪ PILOT INACTIVE"
+
+    def days_in_pilot(self):
+        """Calculate how many days this device has been in pilot"""
+        if self.pilot_start_date:
+            from django.utils import timezone
+            return (timezone.now() - self.pilot_start_date).days
+        return 0
+
+class UC300BatchStatus(models.Model):
+    """
+    Model to track batch status for UC300 devices.
+    When batch is active, counter keeps running until batch stops or new batch starts.
+    """
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='batch_status')
+    batch_name = models.CharField(max_length=100, help_text="Name/ID of the batch")
+    batch_start_time = models.DateTimeField(help_text="When batch started")
+    batch_end_time = models.DateTimeField(null=True, blank=True, help_text="When batch ended")
+    is_active = models.BooleanField(default=True, help_text="Whether batch is currently active")
+    start_counter_value = models.IntegerField(null=True, blank=True, help_text="Counter value when batch started")
+    end_counter_value = models.IntegerField(null=True, blank=True, help_text="Counter value when batch ended")
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True, help_text="Batch notes")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['device', 'is_active']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['batch_start_time']),
+        ]
+        ordering = ['-batch_start_time']
+
+    def __str__(self):
+        status = "ACTIVE" if self.is_active else "COMPLETED"
+        return f"Batch {self.batch_name} - {self.device.name} ({status})"
+
+    def get_batch_duration(self):
+        """Get batch duration"""
+        if self.batch_end_time:
+            return self.batch_end_time - self.batch_start_time
+        else:
+            from django.utils import timezone
+            return timezone.now() - self.batch_start_time
+
+    def get_batch_production(self):
+        """Get total production for this batch"""
+        if self.end_counter_value and self.start_counter_value:
+            return max(0, self.end_counter_value - self.start_counter_value)
+        return None
 
 class BatchTemplate(models.Model):
     """

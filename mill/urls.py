@@ -149,6 +149,7 @@ urlpatterns = [
     path('api/door-status/<int:factory_id>/', views.get_door_status_data, name='get_door_status_data'),
     path('api/power-status/<int:factory_id>/', views.get_power_status_data, name='get_power_status_data'),
     path('api/power-data-mqtt/<int:factory_id>/', views.get_power_data_from_mqtt, name='get_power_data_from_mqtt'),
+    path('api/production-totals/<int:factory_id>/', views.get_production_totals, name='get_production_totals'),
     path('view-tables/', views.view_tables, name='view_tables'),
     path('export-data/', views.export_data, name='export_data'),
     path('preview-data/', views.preview_data, name='preview_data'),
@@ -203,6 +204,7 @@ urlpatterns = [
     path('api/chart_data/', apis.chart_data, name='chart_data'),
     path('api/batch_chart_data/', apis.batch_chart_data, name='batch_chart_data'),
     path('api/cities/<int:city_id>/factories/', apis.get_city_factories, name='get_city_factories'),
+    path('api/multiple-cities/factories/', apis.get_multiple_cities_factories, name='get_multiple_cities_factories'),
     path('api/factories/', apis.get_all_factories, name='get_all_factories'),
 
     path('api/devices/',apis.get_devices,name='get-devices'),

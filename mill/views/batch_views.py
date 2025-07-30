@@ -98,6 +98,14 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
         context['cities'] = City.objects.filter(status=True).order_by('name')
         context['batch_templates'] = BatchTemplate.objects.filter(is_active=True)
         return context
+    
+    def get_success_url(self):
+        """Override to handle case where self.object might be None"""
+        if hasattr(self, 'object') and self.object is not None:
+            return super().get_success_url()
+        else:
+            # Fallback to hardcoded success URL
+            return reverse_lazy('batch-list')
 
     def form_valid(self, form):
         # Get the selected cities and factories
@@ -118,37 +126,69 @@ class BatchCreateView(LoginRequiredMixin, CreateView):
         base_batch_number = form.cleaned_data.get('batch_number')
         wheat_amount = form.cleaned_data.get('wheat_amount')
         waste_factor = form.cleaned_data.get('waste_factor')
+        expected_flour_output = form.cleaned_data.get('expected_flour_output')
         
         # Initialize notification service
         notification_service = BatchNotificationService()
         
-        for i, factory in enumerate(factories):
-            # Generate unique batch number for each factory
-            if len(factories) > 1:
-                batch_number = f"{base_batch_number}-{factory.name[:3].upper()}-{i+1:02d}"
-            else:
-                batch_number = base_batch_number
+        # Wrap batch creation in try-except for robust error handling
+        try:
+            for i, factory in enumerate(factories):
+                # Generate unique batch number for each factory
+                if len(factories) > 1:
+                    batch_number = f"{base_batch_number}-{factory.name[:3].upper()}-{i+1:02d}"
+                else:
+                    batch_number = base_batch_number
+                
+                # Double-check if batch number already exists (race condition protection)
+                if Batch.objects.filter(batch_number=batch_number).exists():
+                    form.add_error('batch_number', f'Batch number "{batch_number}" already exists. Please choose a different number.')
+                    return self.form_invalid(form)
+                
+                # Create batch with all required fields
+                # Create batch with start date
+                batch_data = {
+                    'batch_number': batch_number,
+                    'factory': factory,
+                    'wheat_amount': wheat_amount,
+                    'waste_factor': waste_factor,
+                    'expected_flour_output': expected_flour_output,
+                    'status': 'pending'
+                }
+                
+                # If super admin is creating batch and start_date is provided, use it
+                if is_super_admin(self.request.user) and form.cleaned_data.get('start_date'):
+                    batch_data['start_date'] = form.cleaned_data['start_date']
+                
+                batch = Batch.objects.create(**batch_data)
+                created_batches.append(batch)
+                
+                # Send notifications to responsible users
+                try:
+                    notification_service.notify_batch_created(batch)
+                except Exception as notification_error:
+                    # Log notification error but don't fail batch creation
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f'Failed to send notification for batch {batch.batch_number}: {notification_error}')
+                    
+        except Exception as creation_error:
+            # If any batch creation fails, clean up already created batches
+            for created_batch in created_batches:
+                try:
+                    created_batch.delete()
+                except:
+                    pass
             
-            # Check if batch number already exists
-            if Batch.objects.filter(batch_number=batch_number).exists():
-                form.add_error('batch_number', f'Batch number "{batch_number}" already exists.')
-                return self.form_invalid(form)
-            
-            # Create batch
-            batch = Batch.objects.create(
-                batch_number=batch_number,
-                factory=factory,
-                wheat_amount=wheat_amount,
-                waste_factor=waste_factor,
-                status='pending'
-            )
-            created_batches.append(batch)
-            
-            # Send notifications to responsible users
-            notification_service.notify_batch_created(batch)
+            # Add form error with helpful message
+            form.add_error(None, f'Failed to create batch: {str(creation_error)}. Please try again with a different batch number.')
+            return self.form_invalid(form)
         
         messages.success(self.request, f'Successfully created {len(created_batches)} batch(es).')
-        return super().form_valid(form)
+        
+        # FIXED: Simple redirect to batch list (no need for complex success_url logic)
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect(reverse_lazy('batch-list'))
 
 class BatchDetailView(LoginRequiredMixin, DetailView):
     model = Batch
@@ -187,13 +227,38 @@ class BatchDetailView(LoginRequiredMixin, DetailView):
         if batch.factory:
             context['devices'] = batch.factory.devices.all()
         
-        # Add template variables for batch_detail.html
+        # Calculate today's production (daily production from today)
+        from datetime import date
+        today = date.today()
+        today_production = 0
+        
+        if batch.factory and batch.factory.devices.exists():
+            # Get today's production from ProductionData
+            device = batch.factory.devices.first()
+            today_production_data = ProductionData.objects.filter(
+                device=device,
+                created_at__date=today
+            ).first()
+            
+            if today_production_data:
+                today_production = today_production_data.daily_production
+        
+        # Calculate total production from start date to now
+        total_production_units = batch.current_value or 0
+        total_production_tons = total_production_units * 50 / 1000  # Convert to tons
+        
+        # Calculate remaining
+        remaining_units = max(0, (batch.expected_flour_output * 1000 / 50) - total_production_units)
+        remaining_tons = remaining_units * 50 / 1000
+        
+        # Add template variables for batch_detail.html with correct calculations
         context['yield_rate'] = batch.progress_percentage
         context['batch_start_date'] = batch.start_date
-        context['today_production'] = batch.current_value  # Today's production units
-        context['cumulative_units'] = batch.current_value  # Total units produced
-        context['cumulative_tons'] = float(batch.actual_flour_output)  # Total tons
-        context['remaining_tons'] = float(batch.expected_flour_output - batch.actual_flour_output)
+        context['today_production'] = today_production  # Today's daily production
+        context['cumulative_units'] = total_production_units  # Total units from start to now
+        context['cumulative_tons'] = total_production_tons  # Total tons from start to now
+        context['remaining_units'] = remaining_units  # Remaining units needed
+        context['remaining_tons'] = remaining_tons  # Remaining tons needed
         context['progress_percentage'] = batch.progress_percentage
         context['conversion_factor'] = 50  # kg per unit
         
@@ -245,12 +310,74 @@ class BatchUpdateView(LoginRequiredMixin, UpdateView):
         
         # Only allow updates if batch can be edited
         if not batch.can_be_edited:
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Batch {batch.batch_number} cannot be edited in its current status.'
+                })
             messages.error(self.request, f'Batch {batch.batch_number} cannot be edited in its current status.')
             return self.form_invalid(form)
         
-        batch.save()
-        messages.success(self.request, f'Batch {batch.batch_number} updated successfully.')
+        # Check if start_date is being changed by super admin
+        if 'start_date' in form.changed_data:
+            if not is_super_admin(self.request.user):
+                if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Only Super Admins can change batch start dates.'
+                    })
+                messages.error(self.request, 'Only Super Admins can change batch start dates.')
+                return self.form_invalid(form)
+            
+            new_start_date = form.cleaned_data['start_date']
+            try:
+                # Update start date with historical data integration
+                batch.update_start_date_with_historical_data(new_start_date, self.request.user)
+                message = f'Batch {batch.batch_number} start date updated with historical data integration.'
+            except ValueError as e:
+                if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Error updating start date: {str(e)}'
+                    })
+                messages.error(self.request, f'Error updating start date: {str(e)}')
+                return self.form_invalid(form)
+        else:
+            # Normal save for other fields
+            batch.save()
+            message = f'Batch {batch.batch_number} updated successfully.'
+        
+        # Return JSON response for AJAX requests
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': message,
+                'batch_data': {
+                    'wheat_amount': float(batch.wheat_amount),
+                    'expected_flour_output': float(batch.expected_flour_output),
+                    'actual_flour_output': float(batch.actual_flour_output),
+                    'waste_factor': float(batch.waste_factor),
+                    'progress_percentage': batch.progress_percentage,
+                }
+            })
+        
+        # Standard response for non-AJAX requests
+        messages.success(self.request, message)
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        # Return JSON response for AJAX requests
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            errors = []
+            for field, field_errors in form.errors.items():
+                for error in field_errors:
+                    errors.append(f"{field}: {error}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Form validation failed: ' + '; '.join(errors)
+            })
+        
+        return super().form_invalid(form)
 
 class BatchAutoUpdateView(LoginRequiredMixin, View):
     """View for automatically updating batch current values from device data"""
@@ -776,11 +903,22 @@ def batch_delete(request, pk):
         batch = get_object_or_404(Batch, pk=pk)
         
         # Check if batch can be deleted (not in production)
+        # Super admins can force delete any batch
         if batch.status in ['in_process', 'completed']:
-            return JsonResponse({
-                'success': False,
-                'error': f'Cannot delete batch in {batch.get_status_display()} status'
-            }, status=400)
+            # Check if this is a force delete request
+            force_delete = request.POST.get('force_delete', 'false').lower() == 'true'
+            
+            if not force_delete:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Cannot delete batch in {batch.get_status_display()} status. Use force delete option.',
+                    'can_force_delete': True
+                }, status=400)
+            else:
+                # Log force delete for audit
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f'Super admin {request.user.username} force deleted batch {batch.batch_number} (ID: {batch.id}) in {batch.status} status')
         
         batch_number = batch.batch_number
         batch.delete()

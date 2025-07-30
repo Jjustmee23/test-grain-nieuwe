@@ -58,14 +58,24 @@ def view_statistics(request, factory_id):
     # Debug: Print device information
     print(f"DEBUG: Factory {factory.name} has {len(device_ids)} devices: {device_ids}")
     
-    # Get the latest ProductionData for each device
+    # Get the latest ProductionData for each device (or selected device)
     daily_total = 0
     weekly_total = 0
     monthly_total = 0
     yearly_total = 0
     yearly_previous = 0
     
-    for device in devices:
+    # Filter devices based on selection
+    if selected_device_id and selected_device_id != 'all':
+        # Filter to only the selected device
+        filtered_devices = devices.filter(id=selected_device_id)
+        print(f"DEBUG: Filtering to device {selected_device_id}")
+    else:
+        # Use all devices for the factory
+        filtered_devices = devices
+        print(f"DEBUG: Using all devices ({devices.count()} devices)")
+    
+    for device in filtered_devices:
         # Get the latest ProductionData record for this device
         latest_production = ProductionData.objects.filter(device=device).order_by('-updated_at').first()
         
@@ -80,7 +90,7 @@ def view_statistics(request, factory_id):
         else:
             print(f"DEBUG: No ProductionData found for device {device.name}")
     
-    print(f"DEBUG: Calculated totals - Daily: {daily_total}, Weekly: {weekly_total}, Monthly: {monthly_total}, Yearly: {yearly_total}")
+    print(f"DEBUG: Calculated totals for {'device ' + selected_device_id if selected_device_id != 'all' else 'all devices'} - Daily: {daily_total}, Weekly: {weekly_total}, Monthly: {monthly_total}, Yearly: {yearly_total}")
     
     # For yearly_previous, we need to get data from the previous year
     # This is more complex, so for now we'll use a simple calculation
@@ -143,11 +153,19 @@ def view_statistics(request, factory_id):
             'door_input_index': door_status.door_input_index
         })
 
+    # Get current device name for display
+    current_device_name = "جميع الأجهزة"
+    if selected_device_id and selected_device_id != 'all':
+        selected_device = devices.filter(id=selected_device_id).first()
+        if selected_device:
+            current_device_name = selected_device.name
+
     context = {
         'factory': factory,
         'devices': devices,
         'device_count': device_count,
         'selected_device_id': selected_device_id,
+        'current_device_name': current_device_name,
         'selected_date': timezone.now().date(),
         'current_year': datetime.now().year,
         'batches': batch_details_json,
@@ -527,3 +545,68 @@ def get_power_data_from_mqtt(request, factory_id):
     }
     
     return JsonResponse(response_data)
+
+@login_required
+def get_production_totals(request, factory_id):
+    """API endpoint to get production totals filtered by device"""
+    try:
+        # Get the factory
+        factory = get_object_or_404(Factory, id=factory_id)
+        
+        # Check user permissions
+        if not request.user.is_superuser:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                if not user_profile.allowed_factories.filter(id=factory_id).exists():
+                    return JsonResponse({'error': 'Permission denied'}, status=403)
+            except UserProfile.DoesNotExist:
+                return JsonResponse({'error': 'User profile not found'}, status=403)
+        
+        # Get device filter parameter
+        selected_device_id = request.GET.get('device_id', 'all')
+        
+        # Get devices for this factory
+        devices = Device.objects.filter(factory=factory, status=True)
+        
+        # Filter devices if specific device selected
+        if selected_device_id and selected_device_id != 'all':
+            devices = devices.filter(id=selected_device_id)
+        
+        # Calculate totals
+        daily_total = 0
+        weekly_total = 0
+        monthly_total = 0
+        yearly_total = 0
+        
+        for device in devices:
+            latest_production = ProductionData.objects.filter(device=device).order_by('-updated_at').first()
+            if latest_production:
+                daily_total += latest_production.daily_production or 0
+                weekly_total += latest_production.weekly_production or 0
+                monthly_total += latest_production.monthly_production or 0
+                yearly_total += latest_production.yearly_production or 0
+        
+        # Calculate previous year estimate
+        yearly_previous = int(yearly_total * 0.9)
+        
+        # Get device info for display
+        current_device_name = "جميع الأجهزة"
+        if selected_device_id and selected_device_id != 'all':
+            selected_device = devices.filter(id=selected_device_id).first()
+            if selected_device:
+                current_device_name = selected_device.name
+        
+        return JsonResponse({
+            'success': True,
+            'daily_total': daily_total,
+            'weekly_total': weekly_total,
+            'monthly_total': monthly_total,
+            'yearly_total': yearly_total,
+            'yearly_previous': yearly_previous,
+            'current_device_name': current_device_name,
+            'selected_device_id': selected_device_id,
+            'device_count': devices.count()
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

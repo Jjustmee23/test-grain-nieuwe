@@ -206,8 +206,9 @@ def notify_on_batch_completion(sender, instance, **kwargs):
                 link=f"/batches/{instance.id}/"
             )
         
-        # Auto-complete the batch
-        instance.status = 'completed'
-        instance.is_completed = True
-        instance.end_date = timezone.now()
-        instance.save(update_fields=['status', 'is_completed', 'end_date'])
+        # Auto-complete the batch (prevent recursion)
+        Batch.objects.filter(pk=instance.pk).update(
+            status='completed',
+            is_completed=True,
+            end_date=timezone.now()
+        )

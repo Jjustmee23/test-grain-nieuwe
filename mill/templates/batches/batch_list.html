@@ -561,21 +561,85 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Individual batch delete
+// Individual batch delete - CACHE BUSTED VERSION
 function confirmDeleteBatch(batchId, batchNumber) {
+    console.log('🔧 Using updated delete function with force delete support');
     if (confirm('{% trans "Are you sure you want to delete batch" %} "' + batchNumber + '"?')) {
+        // First try normal delete
+        console.log('🔄 Attempting normal delete for batch', batchId);
         $.post(`/batches/${batchId}/delete/`, {
             csrfmiddlewaretoken: '{{ csrf_token }}'
         })
         .done(function(response) {
+            console.log('📥 Delete response:', response);
             if (response.success) {
+                console.log('✅ Delete successful, reloading page');
                 location.reload();
             } else {
-                alert('Error: ' + response.error);
+                console.log('❌ Delete failed, checking force delete option');
+                // If normal delete fails, check if force delete is available
+                if (response.can_force_delete) {
+                    if (confirm('This batch is protected. Do you want to force delete it? (Super admin only)')) {
+                        // Try force delete
+                        $.post(`/batches/${batchId}/delete/`, {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            force_delete: 'true'
+                        })
+                        .done(function(forceResponse) {
+                            if (forceResponse.success) {
+                                location.reload();
+                            } else {
+                                alert('Force delete failed: ' + forceResponse.error);
+                            }
+                        })
+                        .fail(function() {
+                            alert('An error occurred during force delete.');
+                        });
+                    }
+                } else {
+                    alert('Error: ' + response.error);
+                }
             }
         })
-        .fail(function() {
-            alert('An error occurred while deleting the batch.');
+        .fail(function(xhr, status, error) {
+            console.log('❌ Delete failed with status:', status);
+            console.log('❌ Error:', error);
+            console.log('❌ Response:', xhr.responseText);
+            
+            // Try to parse the response as JSON
+            try {
+                const response = JSON.parse(xhr.responseText);
+                console.log('📥 Parsed response:', response);
+                
+                if (response.can_force_delete) {
+                    if (confirm('This batch is protected. Do you want to force delete it? (Super admin only)')) {
+                        // Try force delete
+                        console.log('🔄 Attempting force delete for batch', batchId);
+                        $.post(`/batches/${batchId}/delete/`, {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            force_delete: 'true'
+                        })
+                        .done(function(forceResponse) {
+                            console.log('📥 Force delete response:', forceResponse);
+                            if (forceResponse.success) {
+                                console.log('✅ Force delete successful, reloading page');
+                                location.reload();
+                            } else {
+                                alert('Force delete failed: ' + forceResponse.error);
+                            }
+                        })
+                        .fail(function(forceXhr, forceStatus, forceError) {
+                            console.error('❌ Force delete error:', forceError);
+                            alert('An error occurred during force delete: ' + forceError);
+                        });
+                    }
+                } else {
+                    alert('Error: ' + (response.error || 'Unknown error occurred'));
+                }
+            } catch (e) {
+                console.error('❌ Could not parse response:', e);
+                alert('An error occurred while deleting the batch.');
+            }
         });
     }
 }

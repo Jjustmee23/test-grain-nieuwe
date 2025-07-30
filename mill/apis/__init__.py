@@ -28,6 +28,73 @@ def get_city_factories(request, city_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+def get_multiple_cities_factories(request):
+    """Get all factories for multiple cities - for batch form"""
+    try:
+        # Get city IDs from POST or GET
+        if request.method == 'POST':
+            city_ids = request.POST.getlist('city_ids[]')
+        else:
+            city_ids = request.GET.getlist('city_ids[]')
+        
+        if not city_ids:
+            return JsonResponse({'error': 'No city IDs provided'}, status=400)
+        
+        # Convert to integers
+        try:
+            city_ids = [int(city_id) for city_id in city_ids if city_id]
+        except ValueError:
+            return JsonResponse({'error': 'Invalid city IDs format'}, status=400)
+        
+        # Get cities and factories
+        cities = City.objects.filter(id__in=city_ids, status=True).order_by('name')
+        factories = Factory.objects.filter(city__in=cities, status=True).order_by('city__name', 'name')
+        
+        # Group factories by city
+        cities_data = []
+        factories_by_city = {}
+        
+        for city in cities:
+            city_factories = [
+                {
+                    "id": factory.id, 
+                    "name": factory.name, 
+                    "city_name": city.name, 
+                    "city_id": city.id
+                } 
+                for factory in factories if factory.city_id == city.id
+            ]
+            
+            cities_data.append({
+                "id": city.id,
+                "name": city.name,
+                "factories": city_factories
+            })
+            
+            factories_by_city[city.id] = city_factories
+        
+        # Also provide flat list of all factories
+        all_factories = [
+            {
+                "id": factory.id, 
+                "name": factory.name, 
+                "city_name": factory.city.name, 
+                "city_id": factory.city.id
+            } 
+            for factory in factories
+        ]
+        
+        return JsonResponse({
+            "cities": cities_data,
+            "all_factories": all_factories,
+            "factories_by_city": factories_by_city,
+            "success": True
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 def get_all_factories(request):
     """Get all factories"""
     try:
