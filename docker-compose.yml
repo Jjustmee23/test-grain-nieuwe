@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: mill_postgres
+    environment:
+      POSTGRES_DB: mill_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mill_network
+
+  # Counter Database
+  counter_postgres:
+    image: postgres:15
+    container_name: mill_counter_postgres
+    environment:
+      POSTGRES_DB: counter_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - counter_postgres_data:/var/lib/postgresql/data
+    networks:
+      - mill_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mill_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mill_network
+
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: mill_mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - mqtt_data:/mosquitto/data
+      - mqtt_logs:/mosquitto/log
+    networks:
+      - mill_network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mill_backend
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/mill_db?schema=public
+      - COUNTER_DATABASE_URL=postgresql://postgres:password@counter_postgres:5432/counter_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
+      - JWT_REFRESH_SECRET=your-refresh-secret-key-here
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost:3000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - counter_postgres
+      - redis
+      - mqtt
+    networks:
+      - mill_network
+    command: npm run dev
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mill_frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_WS_URL=ws://localhost:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - mill_network
+
+volumes:
+  postgres_data:
+  counter_postgres_data:
+  redis_data:
+  mqtt_data:
+  mqtt_logs:
+
+networks:
+  mill_network:
+    driver: bridge 

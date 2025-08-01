@@ -28,7 +28,10 @@ import {
   TablePagination,
   LinearProgress,
   Alert,
-  Tooltip
+  Tooltip,
+  FormGroup,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,146 +47,314 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon
 } from '@mui/icons-material';
+import { useSnackbar } from 'notistack';
+
+interface Factory {
+  id: number;
+  name: string;
+  status: boolean;
+  group: string;
+  address: string;
+  createdAt: string;
+}
 
 interface Device {
-  id: number;
+  id: string;
   name: string;
   factoryId: number;
   factoryName: string;
-  status: 'online' | 'offline' | 'maintenance';
-  signalStrength: number;
-  lastSeen: string;
-  counter1: number;
-  counter2: number;
-  counter3: number;
-  counter4: number;
-  ain1: number; // Power value
-  ain2: number;
-  ain3: number;
-  ain4: number;
-  ain5: number;
-  ain6: number;
-  ain7: number;
-  ain8: number;
-  din: string; // Door status
-  temperature: number;
-  humidity: number;
+  status: boolean;
+  serialNumber?: string;
+  selectedCounter: string;
   createdAt: string;
 }
 
 const Devices: React.FC = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [devices, setDevices] = useState<Device[]>([]);
+  const [newDevices, setNewDevices] = useState<any[]>([]);
+  const [factories, setFactories] = useState<Factory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [factoriesLoading, setFactoriesLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [configureDialogOpen, setConfigureDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [configuringDevice, setConfiguringDevice] = useState<any>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     factoryId: '',
-    status: 'online'
+    serialNumber: '',
+    selectedCounter: 'counter_1',
+    activeCounters: {
+      counter_1: true,
+      counter_2: false,
+      counter_3: false,
+      counter_4: false
+    }
   });
 
-  // Mock data - replace with API calls
-  useEffect(() => {
-    const mockDevices: Device[] = [
-      {
-        id: 1,
-        name: 'Device-001',
-        factoryId: 1,
-        factoryName: 'Baghdad Central Mill',
-        status: 'online',
-        signalStrength: 85,
-        lastSeen: new Date().toISOString(),
-        counter1: 1250,
-        counter2: 890,
-        counter3: 567,
-        counter4: 234,
-        ain1: 220.5, // Power voltage
-        ain2: 45.2,
-        ain3: 78.9,
-        ain4: 12.3,
-        ain5: 95.7,
-        ain6: 33.1,
-        ain7: 67.8,
-        ain8: 89.4,
-        din: 'closed',
-        temperature: 42.5,
-        humidity: 65.2,
-        createdAt: '2024-01-15'
-      },
-      {
-        id: 2,
-        name: 'Device-002',
-        factoryId: 1,
-        factoryName: 'Baghdad Central Mill',
-        status: 'offline',
-        signalStrength: 0,
-        lastSeen: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        counter1: 980,
-        counter2: 456,
-        counter3: 789,
-        counter4: 123,
-        ain1: 0,
-        ain2: 0,
-        ain3: 0,
-        ain4: 0,
-        ain5: 0,
-        ain6: 0,
-        ain7: 0,
-        ain8: 0,
-        din: 'unknown',
-        temperature: 0,
-        humidity: 0,
-        createdAt: '2024-01-16'
-      },
-      {
-        id: 3,
-        name: 'Device-003',
-        factoryId: 2,
-        factoryName: 'Basra Grain Factory',
-        status: 'online',
-        signalStrength: 92,
-        lastSeen: new Date().toISOString(),
-        counter1: 2100,
-        counter2: 1500,
-        counter3: 890,
-        counter4: 456,
-        ain1: 218.7,
-        ain2: 48.9,
-        ain3: 82.1,
-        ain4: 15.6,
-        ain5: 91.3,
-        ain6: 37.8,
-        ain7: 71.2,
-        ain8: 93.5,
-        din: 'open',
-        temperature: 38.9,
-        humidity: 58.7,
-        createdAt: '2024-02-20'
-      }
-    ];
+  const [configureFormData, setConfigureFormData] = useState({
+    name: '',
+    factoryId: '',
+    serialNumber: '',
+    selectedCounter: 'counter_1',
+    activeCounters: {
+      counter_1: true,
+      counter_2: false,
+      counter_3: false,
+      counter_4: false
+    }
+  });
 
-    setTimeout(() => {
-      setDevices(mockDevices);
+  // Fetch factories from API
+  const fetchFactories = async () => {
+    try {
+      setFactoriesLoading(true);
+      const response = await fetch('/api/factories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch factories');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setFactories(result.data);
+      } else {
+        throw new Error(result.message || 'Failed to fetch factories');
+      }
+    } catch (error) {
+      console.error('Error fetching factories:', error);
+      enqueueSnackbar('Failed to load factories', { variant: 'error' });
+    } finally {
+      setFactoriesLoading(false);
+    }
+  };
+
+  // Fetch devices from API
+  const fetchDevices = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/devices/configured', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch devices');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setDevices(result.data);
+      } else {
+        throw new Error(result.message || 'Failed to fetch devices');
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      enqueueSnackbar('Failed to load devices', { variant: 'error' });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  // Fetch new devices from API
+  const fetchNewDevices = async () => {
+    try {
+      const response = await fetch('/api/devices/new', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch new devices');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setNewDevices(result.data);
+      } else {
+        throw new Error(result.message || 'Failed to fetch new devices');
+      }
+    } catch (error) {
+      console.error('Error fetching new devices:', error);
+      enqueueSnackbar('Failed to load new devices', { variant: 'error' });
+    }
+  };
+
+  // Create device via API
+  const createDevice = async (deviceData: any) => {
+    try {
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: deviceData.id,
+          name: deviceData.name,
+          factoryId: parseInt(deviceData.factoryId),
+          serialNumber: deviceData.serialNumber,
+          selectedCounter: deviceData.selectedCounter
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create device');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Device created successfully', { variant: 'success' });
+        fetchDevices(); // Refresh the list
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to create device');
+      }
+    } catch (error) {
+      console.error('Error creating device:', error);
+      enqueueSnackbar(error instanceof Error ? error.message : 'Failed to create device', { variant: 'error' });
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    fetchFactories();
+    fetchDevices();
+    fetchNewDevices();
   }, []);
+
+  // Configure device function
+  const configureDevice = async (deviceId: string, deviceData: any) => {
+    try {
+      const response = await fetch(`/api/devices/${deviceId}/configure`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: deviceData.name,
+          factoryId: parseInt(deviceData.factoryId),
+          serialNumber: deviceData.serialNumber,
+          selectedCounter: deviceData.selectedCounter
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to configure device');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Device configured successfully', { variant: 'success' });
+        
+        // Refresh both lists
+        fetchDevices();
+        fetchNewDevices();
+        
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to configure device');
+      }
+    } catch (error) {
+      console.error('Error configuring device:', error);
+      enqueueSnackbar(error instanceof Error ? error.message : 'Failed to configure device', { variant: 'error' });
+      throw error;
+    }
+  };
+
+  // Handle configure device dialog
+  const handleOpenConfigureDialog = (device: any) => {
+    setConfiguringDevice(device);
+    setConfigureFormData({
+      name: '',
+      factoryId: '',
+      serialNumber: device.serialNumber || '',
+      selectedCounter: 'counter_1',
+      activeCounters: {
+        counter_1: true,
+        counter_2: false,
+        counter_3: false,
+        counter_4: false
+      }
+    });
+    setConfigureDialogOpen(true);
+  };
+
+  const handleCloseConfigureDialog = () => {
+    setConfigureDialogOpen(false);
+    setConfiguringDevice(null);
+  };
+
+  const handleConfigureCounterChange = (counter: string, checked: boolean) => {
+    setConfigureFormData(prev => ({
+      ...prev,
+      activeCounters: {
+        ...prev.activeCounters,
+        [counter]: checked
+      },
+      selectedCounter: prev.selectedCounter === counter && !checked 
+        ? Object.keys(prev.activeCounters).find(c => c !== counter && prev.activeCounters[c as keyof typeof prev.activeCounters]) || 'counter_1'
+        : prev.selectedCounter
+    }));
+  };
+
+  const handleConfigureSubmit = async () => {
+    if (!configuringDevice) return;
+
+    try {
+      await configureDevice(configuringDevice.id, configureFormData);
+      handleCloseConfigureDialog();
+    } catch (error) {
+      // Error is already handled in configureDevice function
+    }
+  };
 
   const handleOpenDialog = (device?: Device) => {
     if (device) {
       setEditingDevice(device);
       setFormData({
+        id: device.id,
         name: device.name,
         factoryId: device.factoryId.toString(),
-        status: device.status
+        serialNumber: device.serialNumber || '',
+        selectedCounter: device.selectedCounter,
+        activeCounters: {
+          counter_1: device.selectedCounter === 'counter_1',
+          counter_2: device.selectedCounter === 'counter_2',
+          counter_3: device.selectedCounter === 'counter_3',
+          counter_4: device.selectedCounter === 'counter_4'
+        }
       });
     } else {
       setEditingDevice(null);
       setFormData({
+        id: '',
         name: '',
         factoryId: '',
-        status: 'online'
+        serialNumber: '',
+        selectedCounter: 'counter_1',
+        activeCounters: {
+          counter_1: true,
+          counter_2: false,
+          counter_3: false,
+          counter_4: false
+        }
       });
     }
     setOpenDialog(true);
@@ -194,80 +365,53 @@ const Devices: React.FC = () => {
     setEditingDevice(null);
   };
 
-  const handleSubmit = () => {
-    if (editingDevice) {
-      setDevices(prev => prev.map(d => 
-        d.id === editingDevice.id 
-          ? { 
-              ...d, 
-              name: formData.name,
-              factoryId: parseInt(formData.factoryId),
-              status: formData.status as 'online' | 'offline' | 'maintenance'
-            }
-          : d
-      ));
-    } else {
-      const newDevice: Device = {
-        id: Math.max(...devices.map(d => d.id)) + 1,
-        name: formData.name,
-        factoryId: parseInt(formData.factoryId),
-        factoryName: 'New Factory', // This would come from API
-        status: formData.status as 'online' | 'offline' | 'maintenance',
-        signalStrength: 0,
-        lastSeen: new Date().toISOString(),
-        counter1: 0,
-        counter2: 0,
-        counter3: 0,
-        counter4: 0,
-        ain1: 0,
-        ain2: 0,
-        ain3: 0,
-        ain4: 0,
-        ain5: 0,
-        ain6: 0,
-        ain7: 0,
-        ain8: 0,
-        din: 'unknown',
-        temperature: 0,
-        humidity: 0,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setDevices(prev => [...prev, newDevice]);
-    }
-    handleCloseDialog();
+  const handleCounterChange = (counter: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      activeCounters: {
+        ...prev.activeCounters,
+        [counter]: checked
+      },
+      // If the selected counter is unchecked, switch to the first active counter
+      selectedCounter: prev.selectedCounter === counter && !checked 
+        ? Object.keys(prev.activeCounters).find(c => c !== counter && prev.activeCounters[c as keyof typeof prev.activeCounters]) || 'counter_1'
+        : prev.selectedCounter
+    }));
   };
 
-  const handleDelete = (id: number) => {
+  const handleSubmit = async () => {
+    try {
+      if (editingDevice) {
+        // Update existing device (mock for now)
+        setDevices(prev => prev.map(d => 
+          d.id === editingDevice.id 
+            ? { 
+                ...d, 
+                name: formData.name,
+                factoryId: parseInt(formData.factoryId),
+                serialNumber: formData.serialNumber,
+                selectedCounter: formData.selectedCounter
+              }
+            : d
+        ));
+        enqueueSnackbar('Device updated successfully', { variant: 'success' });
+      } else {
+        // Create new device via API
+        await createDevice(formData);
+      }
+      handleCloseDialog();
+    } catch (error) {
+      // Error is already handled in createDevice function
+    }
+  };
+
+  const handleDelete = (id: string) => {
     setDevices(prev => prev.filter(d => d.id !== id));
+    enqueueSnackbar('Device deleted successfully', { variant: 'success' });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return 'success';
-      case 'offline': return 'error';
-      case 'maintenance': return 'warning';
-      default: return 'default';
-    }
-  };
-
-  const getSignalIcon = (signalStrength: number) => {
-    if (signalStrength === 0) return <NoSignalIcon />;
-    if (signalStrength > 80) return <SignalIcon />;
-    return <SignalIcon />;
-  };
-
-  const formatLastSeen = (lastSeen: string) => {
-    const now = new Date();
-    const last = new Date(lastSeen);
-    const diff = now.getTime() - last.getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+  const getStatusColor = (status: boolean) => {
+    return status ? 'success' : 'error';
   };
 
   if (loading) {
@@ -302,6 +446,18 @@ const Devices: React.FC = () => {
                 Total Devices
               </Typography>
               <Typography variant="h4">
+                {devices.length + newDevices.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Configured Devices
+              </Typography>
+              <Typography variant="h4" color="success.main">
                 {devices.length}
               </Typography>
             </CardContent>
@@ -311,22 +467,10 @@ const Devices: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Online Devices
+                New Devices
               </Typography>
-              <Typography variant="h4" color="success.main">
-                {devices.filter(d => d.status === 'online').length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Average Signal
-              </Typography>
-              <Typography variant="h4">
-                {Math.round(devices.reduce((sum, d) => sum + d.signalStrength, 0) / devices.length)}%
+              <Typography variant="h4" color="warning.main">
+                {newDevices.length}
               </Typography>
             </CardContent>
           </Card>
@@ -335,140 +479,195 @@ const Devices: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Production
+                Total Factories
               </Typography>
               <Typography variant="h4" color="primary.main">
-                {devices.reduce((sum, d) => sum + d.counter1 + d.counter2 + d.counter3 + d.counter4, 0)}
+                {factories.length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Devices Table */}
-      <Paper>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Device</TableCell>
-                <TableCell>Factory</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Signal</TableCell>
-                <TableCell>Power (AIN1)</TableCell>
-                <TableCell>Temperature</TableCell>
-                <TableCell>Door Status</TableCell>
-                <TableCell>Last Seen</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {devices
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((device) => (
-                  <TableRow key={device.id}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <DeviceIcon sx={{ mr: 1, color: 'primary.main' }} />
-                        {device.name}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{device.factoryName}</TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={device.status === 'online' ? <CheckCircleIcon /> : <CancelIcon />}
-                        label={device.status}
-                        color={getStatusColor(device.status) as any}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        {getSignalIcon(device.signalStrength)}
-                        <Typography variant="body2" sx={{ ml: 1 }}>
-                          {device.signalStrength}%
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {device.ain1 > 0 ? `${device.ain1}V` : 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {device.temperature > 0 ? `${device.temperature}°C` : 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={device.din}
-                        size="small"
-                        color={device.din === 'open' ? 'error' : 'success'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatLastSeen(device.lastSeen)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="Refresh Data">
-                        <IconButton size="small" color="primary">
-                          <RefreshIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Device">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(device)}
-                          color="primary"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Device Settings">
-                        <IconButton size="small" color="secondary">
-                          <SettingsIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Device">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(device.id)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+      {/* New Devices Section */}
+      {newDevices.length > 0 && (
+        <Box mb={4}>
+          <Typography variant="h5" gutterBottom color="warning.main">
+            New Devices ({newDevices.length})
+          </Typography>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            These devices have been detected via MQTT but need to be configured with a name and factory assignment.
+          </Alert>
+          <Paper>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Device ID (Serial Number)</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>First Seen</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={devices.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(event, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(event) => {
-            setRowsPerPage(parseInt(event.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </Paper>
+                </TableHead>
+                <TableBody>
+                  {newDevices.map((device) => (
+                    <TableRow key={device.id}>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <DeviceIcon sx={{ mr: 1, color: 'warning.main' }} />
+                          <Typography variant="body2" fontWeight="bold">
+                            {device.id}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={device.status ? <CheckCircleIcon /> : <CancelIcon />}
+                          label={device.status ? 'Online' : 'Offline'}
+                          color={device.status ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(device.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="primary"
+                          onClick={() => handleOpenConfigureDialog(device)}
+                        >
+                          Configure
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Box>
+      )}
+
+      {/* Configured Devices Section */}
+      <Box>
+        <Typography variant="h5" gutterBottom>
+          Configured Devices ({devices.length})
+        </Typography>
+        <Paper>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Device ID</TableCell>
+                  <TableCell>Device Name</TableCell>
+                  <TableCell>Factory</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Selected Counter</TableCell>
+                  <TableCell>Serial Number</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {devices
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((device) => (
+                    <TableRow key={device.id}>
+                      <TableCell>
+                        <Box display="flex" alignItems="center">
+                          <DeviceIcon sx={{ mr: 1, color: 'primary.main' }} />
+                          {device.id}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{device.name}</TableCell>
+                      <TableCell>{device.factoryName}</TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={device.status ? <CheckCircleIcon /> : <CancelIcon />}
+                          label={device.status ? 'Online' : 'Offline'}
+                          color={getStatusColor(device.status) as any}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={device.selectedCounter}
+                          size="small"
+                          color="primary"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {device.serialNumber || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {new Date(device.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="Edit Device">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(device)}
+                            color="primary"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Device">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDelete(device.id)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={devices.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(event, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(event) => {
+              setRowsPerPage(parseInt(event.target.value, 10));
+              setPage(0);
+            }}
+          />
+        </Paper>
+      </Box>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingDevice ? 'Edit Device' : 'Add New Device'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Device ID"
+                value={formData.id}
+                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                disabled={!!editingDevice} // Can't change ID when editing
+                helperText="Unique device identifier"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Device Name"
@@ -483,24 +682,97 @@ const Devices: React.FC = () => {
                   value={formData.factoryId}
                   label="Factory"
                   onChange={(e) => setFormData({ ...formData, factoryId: e.target.value })}
+                  disabled={factoriesLoading}
                 >
-                  <MenuItem value={1}>Baghdad Central Mill</MenuItem>
-                  <MenuItem value={2}>Basra Grain Factory</MenuItem>
-                  <MenuItem value={3}>Mosul Processing Plant</MenuItem>
+                  {factoriesLoading ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading factories...
+                    </MenuItem>
+                  ) : (
+                    factories.map((factory) => (
+                      <MenuItem key={factory.id} value={factory.id}>
+                        {factory.name}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Serial Number"
+                value={formData.serialNumber}
+                onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                helperText="Optional device serial number"
+              />
+            </Grid>
+            
+            {/* Counter Selection Section */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Counter Configuration
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Select which counters this device will use. The primary counter (selected counter) is used for data collection.
+              </Alert>
+              
+              <FormGroup row>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.activeCounters.counter_1}
+                      onChange={(e) => handleCounterChange('counter_1', e.target.checked)}
+                    />
+                  }
+                  label="Counter 1"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.activeCounters.counter_2}
+                      onChange={(e) => handleCounterChange('counter_2', e.target.checked)}
+                    />
+                  }
+                  label="Counter 2"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.activeCounters.counter_3}
+                      onChange={(e) => handleCounterChange('counter_3', e.target.checked)}
+                    />
+                  }
+                  label="Counter 3"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.activeCounters.counter_4}
+                      onChange={(e) => handleCounterChange('counter_4', e.target.checked)}
+                    />
+                  }
+                  label="Counter 4"
+                />
+              </FormGroup>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Primary Counter</InputLabel>
                 <Select
-                  value={formData.status}
-                  label="Status"
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  value={formData.selectedCounter}
+                  label="Primary Counter"
+                  onChange={(e) => setFormData({ ...formData, selectedCounter: e.target.value })}
                 >
-                  <MenuItem value="online">Online</MenuItem>
-                  <MenuItem value="offline">Offline</MenuItem>
-                  <MenuItem value="maintenance">Maintenance</MenuItem>
+                  {Object.entries(formData.activeCounters).map(([counter, active]) => (
+                    active && (
+                      <MenuItem key={counter} value={counter}>
+                        {counter.replace('_', ' ').toUpperCase()}
+                      </MenuItem>
+                    )
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -508,8 +780,139 @@ const Devices: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            disabled={!formData.id || !formData.name || !formData.factoryId || !Object.values(formData.activeCounters).some(Boolean)}
+          >
             {editingDevice ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Configure Device Dialog */}
+      <Dialog open={configureDialogOpen} onClose={handleCloseConfigureDialog} maxWidth="md" fullWidth>
+        <DialogTitle>Configure New Device</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Device Name"
+                value={configureFormData.name}
+                onChange={(e) => setConfigureFormData({ ...configureFormData, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Factory</InputLabel>
+                <Select
+                  value={configureFormData.factoryId}
+                  label="Factory"
+                  onChange={(e) => setConfigureFormData({ ...configureFormData, factoryId: e.target.value })}
+                  disabled={factoriesLoading}
+                >
+                  {factoriesLoading ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading factories...
+                    </MenuItem>
+                  ) : (
+                    factories.map((factory) => (
+                      <MenuItem key={factory.id} value={factory.id}>
+                        {factory.name}
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Serial Number"
+                value={configureFormData.serialNumber}
+                onChange={(e) => setConfigureFormData({ ...configureFormData, serialNumber: e.target.value })}
+              />
+            </Grid>
+            
+            {/* Counter Selection Section */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Counter Configuration
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Select which counters this device will use. The primary counter (selected counter) is used for data collection.
+              </Alert>
+              
+              <FormGroup row>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={configureFormData.activeCounters.counter_1}
+                      onChange={(e) => handleConfigureCounterChange('counter_1', e.target.checked)}
+                    />
+                  }
+                  label="Counter 1"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={configureFormData.activeCounters.counter_2}
+                      onChange={(e) => handleConfigureCounterChange('counter_2', e.target.checked)}
+                    />
+                  }
+                  label="Counter 2"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={configureFormData.activeCounters.counter_3}
+                      onChange={(e) => handleConfigureCounterChange('counter_3', e.target.checked)}
+                    />
+                  }
+                  label="Counter 3"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={configureFormData.activeCounters.counter_4}
+                      onChange={(e) => handleConfigureCounterChange('counter_4', e.target.checked)}
+                    />
+                  }
+                  label="Counter 4"
+                />
+              </FormGroup>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Primary Counter</InputLabel>
+                <Select
+                  value={configureFormData.selectedCounter}
+                  label="Primary Counter"
+                  onChange={(e) => setConfigureFormData({ ...configureFormData, selectedCounter: e.target.value })}
+                >
+                  {Object.entries(configureFormData.activeCounters).map(([counter, active]) => (
+                    active && (
+                      <MenuItem key={counter} value={counter}>
+                        {counter.replace('_', ' ').toUpperCase()}
+                      </MenuItem>
+                    )
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfigureDialog}>Cancel</Button>
+          <Button 
+            onClick={handleConfigureSubmit} 
+            variant="contained"
+            disabled={!configureFormData.name || !configureFormData.factoryId || !Object.values(configureFormData.activeCounters).some(Boolean)}
+          >
+            Configure
           </Button>
         </DialogActions>
       </Dialog>

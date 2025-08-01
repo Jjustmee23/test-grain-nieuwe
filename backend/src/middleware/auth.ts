@@ -5,15 +5,16 @@ interface AuthRequest extends Request {
   user?: any;
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Access token required'
     });
+    return;
   }
 
   try {
@@ -22,44 +23,49 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       message: 'Invalid or expired token'
     });
+    return;
   }
 };
 
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Authentication required'
     });
+    return;
   }
 
   if (!req.user.isStaff && !req.user.isSuperuser) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       message: 'Admin access required'
     });
+    return;
   }
 
   next();
 };
 
-export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    return res.status(401).json({
+    res.status(401).json({
       success: false,
       message: 'Authentication required'
     });
+    return;
   }
 
   if (!req.user.isSuperuser) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       message: 'Super admin access required'
     });
+    return;
   }
 
   next();

@@ -98,13 +98,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: city
     });
   } catch (error) {
     console.error('Error fetching city:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch city',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -151,14 +151,14 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'City created successfully',
       data: city
     });
   } catch (error) {
     console.error('Error creating city:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to create city',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -223,14 +223,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'City updated successfully',
       data: city
     });
   } catch (error) {
     console.error('Error updating city:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to update city',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -282,13 +282,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       where: { id: cityId }
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'City deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting city:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to delete city',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -334,14 +334,14 @@ router.get('/:id/factories', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: factories,
       total: factories.length
     });
   } catch (error) {
     console.error('Error fetching city factories:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch city factories',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -433,13 +433,13 @@ router.get('/:id/statistics', authenticateToken, async (req, res) => {
       }))
     };
 
-    res.json({
+    return res.json({
       success: true,
       data: statistics
     });
   } catch (error) {
     console.error('Error fetching city statistics:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch city statistics',
       error: error instanceof Error ? error.message : 'Unknown error'

@@ -35,14 +35,22 @@ import {
   LocationOn as LocationIcon,
   Factory as FactoryIcon,
   CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  DeviceHub as DeviceIcon
 } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
+
+interface City {
+  id: number;
+  name: string;
+  status: boolean;
+  createdAt: string;
+}
 
 interface Factory {
   id: number;
   name: string;
-  city: string;
+  city: City;
   status: boolean;
   group: string;
   address: string;
@@ -56,68 +64,131 @@ interface Factory {
 const Factories: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [factories, setFactories] = useState<Factory[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
+  const [citiesLoading, setCitiesLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingFactory, setEditingFactory] = useState<Factory | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     name: '',
-    city: '',
+    cityId: '',
     group: '',
     address: '',
     phone: '',
     email: ''
   });
 
-  // Mock data - replace with API calls
-  useEffect(() => {
-    const mockFactories: Factory[] = [
-      {
-        id: 1,
-        name: 'Baghdad Central Mill',
-        city: 'Baghdad',
-        status: true,
-        group: 'Government',
-        address: '123 Industrial Zone, Baghdad',
-        phone: '+964 123 456 789',
-        email: 'baghdad@mill.com',
-        createdAt: '2024-01-15',
-        deviceCount: 8,
-        activeBatches: 3
-      },
-      {
-        id: 2,
-        name: 'Basra Grain Factory',
-        city: 'Basra',
-        status: true,
-        group: 'Private',
-        address: '456 Port Road, Basra',
-        phone: '+964 987 654 321',
-        email: 'basra@mill.com',
-        createdAt: '2024-02-20',
-        deviceCount: 12,
-        activeBatches: 5
-      },
-      {
-        id: 3,
-        name: 'Mosul Processing Plant',
-        city: 'Mosul',
-        status: false,
-        group: 'Commercial',
-        address: '789 Northern District, Mosul',
-        phone: '+964 555 123 456',
-        email: 'mosul@mill.com',
-        createdAt: '2024-03-10',
-        deviceCount: 6,
-        activeBatches: 0
-      }
-    ];
+  // Devices management state
+  const [devicesDialogOpen, setDevicesDialogOpen] = useState(false);
+  const [selectedFactory, setSelectedFactory] = useState<Factory | null>(null);
+  const [factoryDevices, setFactoryDevices] = useState<any[]>([]);
+  const [deviceFormData, setDeviceFormData] = useState({
+    id: '',
+    name: '',
+    serialNumber: '',
+    selectedCounter: 'counter_1'
+  });
 
-    setTimeout(() => {
-      setFactories(mockFactories);
+  // Fetch cities from API
+  const fetchCities = async () => {
+    try {
+      setCitiesLoading(true);
+      const response = await fetch('/api/cities', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cities');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setCities(result.data);
+      } else {
+        throw new Error(result.message || 'Failed to fetch cities');
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      enqueueSnackbar('Failed to load cities', { variant: 'error' });
+    } finally {
+      setCitiesLoading(false);
+    }
+  };
+
+  // Fetch factories from API
+  const fetchFactories = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/factories', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch factories');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setFactories(result.data);
+      } else {
+        throw new Error(result.message || 'Failed to fetch factories');
+      }
+    } catch (error) {
+      console.error('Error fetching factories:', error);
+      enqueueSnackbar('Failed to load factories', { variant: 'error' });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  // Create factory via API
+  const createFactory = async (factoryData: any) => {
+    try {
+      const response = await fetch('/api/factories', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: factoryData.name,
+          cityId: parseInt(factoryData.cityId),
+          group: factoryData.group,
+          address: factoryData.address
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create factory');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Factory created successfully', { variant: 'success' });
+        fetchFactories(); // Refresh the list
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to create factory');
+      }
+    } catch (error) {
+      console.error('Error creating factory:', error);
+      enqueueSnackbar(error instanceof Error ? error.message : 'Failed to create factory', { variant: 'error' });
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    fetchCities();
+    fetchFactories();
   }, []);
 
   const handleOpenDialog = (factory?: Factory) => {
@@ -125,7 +196,7 @@ const Factories: React.FC = () => {
       setEditingFactory(factory);
       setFormData({
         name: factory.name,
-        city: factory.city,
+        cityId: factory.city.id.toString(),
         group: factory.group,
         address: factory.address,
         phone: factory.phone,
@@ -135,7 +206,7 @@ const Factories: React.FC = () => {
       setEditingFactory(null);
       setFormData({
         name: '',
-        city: '',
+        cityId: '',
         group: '',
         address: '',
         phone: '',
@@ -150,29 +221,24 @@ const Factories: React.FC = () => {
     setEditingFactory(null);
   };
 
-  const handleSubmit = () => {
-    if (editingFactory) {
-      // Update existing factory
-      setFactories(prev => prev.map(f => 
-        f.id === editingFactory.id 
-          ? { ...f, ...formData }
-          : f
-      ));
-      enqueueSnackbar('Factory updated successfully', { variant: 'success' });
-    } else {
-      // Add new factory
-      const newFactory: Factory = {
-        id: Math.max(...factories.map(f => f.id)) + 1,
-        ...formData,
-        status: true,
-        createdAt: new Date().toISOString().split('T')[0],
-        deviceCount: 0,
-        activeBatches: 0
-      };
-      setFactories(prev => [...prev, newFactory]);
-      enqueueSnackbar('Factory added successfully', { variant: 'success' });
+  const handleSubmit = async () => {
+    try {
+      if (editingFactory) {
+        // Update existing factory (mock for now)
+        setFactories(prev => prev.map(f => 
+          f.id === editingFactory.id 
+            ? { ...f, ...formData, city: cities.find(c => c.id === parseInt(formData.cityId)) || f.city }
+            : f
+        ));
+        enqueueSnackbar('Factory updated successfully', { variant: 'success' });
+      } else {
+        // Create new factory via API
+        await createFactory(formData);
+      }
+      handleCloseDialog();
+    } catch (error) {
+      // Error is already handled in createFactory function
     }
-    handleCloseDialog();
   };
 
   const handleDelete = (id: number) => {
@@ -194,6 +260,113 @@ const Factories: React.FC = () => {
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  // Devices management functions
+  const handleOpenDevicesDialog = async (factory: Factory) => {
+    setSelectedFactory(factory);
+    setDevicesDialogOpen(true);
+    
+    // Fetch devices for this factory
+    try {
+      const response = await fetch(`/api/devices/factory/${factory.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setFactoryDevices(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching factory devices:', error);
+      enqueueSnackbar('Failed to load factory devices', { variant: 'error' });
+    }
+  };
+
+  const handleCloseDevicesDialog = () => {
+    setDevicesDialogOpen(false);
+    setSelectedFactory(null);
+    setFactoryDevices([]);
+    setDeviceFormData({
+      id: '',
+      name: '',
+      serialNumber: '',
+      selectedCounter: 'counter_1'
+    });
+  };
+
+  const handleAddDevice = async () => {
+    if (!selectedFactory) return;
+
+    try {
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: deviceFormData.id,
+          name: deviceFormData.name,
+          factoryId: selectedFactory.id,
+          serialNumber: deviceFormData.serialNumber,
+          selectedCounter: deviceFormData.selectedCounter
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create device');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        enqueueSnackbar('Device added successfully', { variant: 'success' });
+        
+        // Add the new device to the list
+        setFactoryDevices(prev => [...prev, result.data]);
+        
+        // Reset form
+        setDeviceFormData({
+          id: '',
+          name: '',
+          serialNumber: '',
+          selectedCounter: 'counter_1'
+        });
+      } else {
+        throw new Error(result.message || 'Failed to create device');
+      }
+    } catch (error) {
+      console.error('Error adding device:', error);
+      enqueueSnackbar(error instanceof Error ? error.message : 'Failed to add device', { variant: 'error' });
+    }
+  };
+
+  const handleRemoveDevice = async (deviceId: string) => {
+    try {
+      const response = await fetch(`/api/devices/${deviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        enqueueSnackbar('Device removed successfully', { variant: 'success' });
+        setFactoryDevices(prev => prev.filter(d => d.id !== deviceId));
+      } else {
+        throw new Error('Failed to remove device');
+      }
+    } catch (error) {
+      console.error('Error removing device:', error);
+      enqueueSnackbar('Failed to remove device', { variant: 'error' });
+    }
   };
 
   if (loading) {
@@ -301,14 +474,14 @@ const Factories: React.FC = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <LocationIcon sx={{ mr: 1, fontSize: 'small' }} />
-                        {factory.city}
+                        {factory.city.name}
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Chip 
                         label={factory.group} 
                         size="small"
-                        color={factory.group === 'Government' ? 'primary' : 'secondary'}
+                        color={factory.group === 'government' ? 'primary' : 'secondary'}
                       />
                     </TableCell>
                     <TableCell>
@@ -331,6 +504,13 @@ const Factories: React.FC = () => {
                         color="primary"
                       >
                         <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenDevicesDialog(factory)}
+                        color="secondary"
+                      >
+                        <DeviceIcon />
                       </IconButton>
                       <IconButton
                         size="small"
@@ -372,12 +552,28 @@ const Factories: React.FC = () => {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="City"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              />
+              <FormControl fullWidth>
+                <InputLabel>City</InputLabel>
+                <Select
+                  value={formData.cityId}
+                  label="City"
+                  onChange={(e) => setFormData({ ...formData, cityId: e.target.value })}
+                  disabled={citiesLoading}
+                >
+                  {citiesLoading ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading cities...
+                    </MenuItem>
+                  ) : (
+                    cities.map((city) => (
+                      <MenuItem key={city.id} value={city.id}>
+                        {city.name}
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
@@ -387,9 +583,9 @@ const Factories: React.FC = () => {
                   label="Group"
                   onChange={(e) => setFormData({ ...formData, group: e.target.value })}
                 >
-                  <MenuItem value="Government">Government</MenuItem>
-                  <MenuItem value="Private">Private</MenuItem>
-                  <MenuItem value="Commercial">Commercial</MenuItem>
+                  <MenuItem value="government">Government</MenuItem>
+                  <MenuItem value="private">Private</MenuItem>
+                  <MenuItem value="commercial">Commercial</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -424,9 +620,129 @@ const Factories: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            disabled={!formData.name || !formData.cityId || !formData.group}
+          >
             {editingFactory ? 'Update' : 'Create'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Manage Devices Dialog */}
+      <Dialog open={devicesDialogOpen} onClose={handleCloseDevicesDialog} maxWidth="lg" fullWidth>
+        <DialogTitle>
+          Manage Devices - {selectedFactory?.name}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Add New Device
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Device ID"
+                  value={deviceFormData.id}
+                  onChange={(e) => setDeviceFormData({ ...deviceFormData, id: e.target.value })}
+                  helperText="Unique device identifier"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Device Name"
+                  value={deviceFormData.name}
+                  onChange={(e) => setDeviceFormData({ ...deviceFormData, name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Serial Number"
+                  value={deviceFormData.serialNumber}
+                  onChange={(e) => setDeviceFormData({ ...deviceFormData, serialNumber: e.target.value })}
+                  helperText="Optional"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Primary Counter</InputLabel>
+                  <Select
+                    value={deviceFormData.selectedCounter}
+                    label="Primary Counter"
+                    onChange={(e) => setDeviceFormData({ ...deviceFormData, selectedCounter: e.target.value })}
+                  >
+                    <MenuItem value="counter_1">Counter 1</MenuItem>
+                    <MenuItem value="counter_2">Counter 2</MenuItem>
+                    <MenuItem value="counter_3">Counter 3</MenuItem>
+                    <MenuItem value="counter_4">Counter 4</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+            <Box sx={{ mt: 2 }}>
+              <Button 
+                variant="contained" 
+                onClick={handleAddDevice}
+                disabled={!deviceFormData.id || !deviceFormData.name}
+              >
+                Add Device
+              </Button>
+            </Box>
+          </Box>
+
+          <Typography variant="h6" gutterBottom>
+            Factory Devices ({factoryDevices.length})
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Device ID</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Serial Number</TableCell>
+                  <TableCell>Primary Counter</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {factoryDevices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell>{device.id}</TableCell>
+                    <TableCell>{device.name}</TableCell>
+                    <TableCell>{device.serialNumber || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Chip label={device.selectedCounter} size="small" color="primary" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={device.status ? <CheckCircleIcon /> : <CancelIcon />}
+                        label={device.status ? 'Online' : 'Offline'}
+                        color={device.status ? 'success' : 'error'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveDevice(device.id)}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDevicesDialog}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

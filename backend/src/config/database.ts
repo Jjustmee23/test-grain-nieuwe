@@ -5,7 +5,7 @@ import { logger } from './logger';
 export const prisma = new PrismaClient({
   datasources: {
     db: {
-      url: `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`
+      url: process.env.DATABASE_URL
     }
   }
 });
@@ -32,26 +32,43 @@ export const getDatabaseHealth = async () => {
     await prisma.$queryRaw`SELECT 1 as test`;
     const latency = Date.now() - start;
 
+    // Parse DATABASE_URL to get connection details
+    const dbUrl = process.env.DATABASE_URL || '';
+    const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/([^?]+)/);
+    
+    const host = urlMatch ? urlMatch[3] : 'unknown';
+    const port = urlMatch ? urlMatch[4] : 'unknown';
+    const database = urlMatch ? urlMatch[5] : 'unknown';
+
     return {
       status: 'healthy',
       database: {
         status: 'connected',
         latency: `${latency}ms`,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        database: process.env.DB_NAME
+        host,
+        port,
+        database
       }
     };
   } catch (error) {
     logger.error('Error getting database health:', error);
+    
+    // Parse DATABASE_URL to get connection details
+    const dbUrl = process.env.DATABASE_URL || '';
+    const urlMatch = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/([^?]+)/);
+    
+    const host = urlMatch ? urlMatch[3] : 'unknown';
+    const port = urlMatch ? urlMatch[4] : 'unknown';
+    const database = urlMatch ? urlMatch[5] : 'unknown';
+
     return {
       status: 'unhealthy',
       database: { 
         status: 'disconnected', 
         latency: 'N/A', 
-        host: process.env.DB_HOST, 
-        port: process.env.DB_PORT, 
-        database: process.env.DB_NAME 
+        host, 
+        port, 
+        database 
       }
     };
   }
