@@ -133,6 +133,12 @@ services:
       MQTT_PORT: 1883
       MQTT_USERNAME: uc300
       MQTT_PASSWORD: grain300
+      # Counter Database (for data migration)
+      COUNTER_DB_HOST: localhost
+      COUNTER_DB_PORT: 5434
+      COUNTER_DB_NAME: counter_db
+      COUNTER_DB_USER: counter_user
+      COUNTER_DB_PASSWORD: counter_password_2024
     volumes:
       - backend_logs:/app/logs
     networks:

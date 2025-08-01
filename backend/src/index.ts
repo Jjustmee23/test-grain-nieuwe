@@ -20,6 +20,7 @@ import analyticsRoutes from './routes/analytics';
 import supportRoutes from './routes/support';
 import usersRoutes from './routes/users';
 import notificationsRoutes from './routes/notifications';
+import migrationRoutes from './routes/migration';
 
 const app = express();
 const server = createServer(app);
@@ -98,6 +99,7 @@ app.use('/api/devices', devicesRoutes);
 app.use('/api/batches', batchesRoutes);
 app.use('/api/power', powerRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/migration', migrationRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/notifications', notificationsRoutes);
