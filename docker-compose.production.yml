@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database with Persistent Volume
+  # Software Database (Application Logic)
   postgres:
     image: postgres:15-alpine
     container_name: mill_postgres
@@ -30,6 +30,41 @@ services:
           cpus: '0.5'
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mill_user -d mill_management"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=false"
+
+  # Hardware Database (MQTT/IoT Data)
+  postgres_hardware:
+    image: postgres:15-alpine
+    container_name: mill_postgres_hardware
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mill_hardware
+      POSTGRES_USER: hardware_user
+      POSTGRES_PASSWORD: hardware_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_hardware_data:/var/lib/postgresql/data
+      - postgres_hardware_backups:/var/lib/postgresql/backups
+      - ./postgres/hardware_init:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hardware_user -d mill_hardware"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -75,13 +110,25 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Software Database
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: mill_management
       DB_USER: mill_user
       DB_PASSWORD: mill_password_2024
+      DATABASE_URL: postgresql://mill_user:mill_password_2024@postgres:5432/mill_management
+      # Hardware Database
+      HARDWARE_DB_HOST: postgres_hardware
+      HARDWARE_DB_PORT: 5432
+      HARDWARE_DB_NAME: mill_hardware
+      HARDWARE_DB_USER: hardware_user
+      HARDWARE_DB_PASSWORD: hardware_password_2024
+      HARDWARE_DATABASE_URL: postgresql://hardware_user:hardware_password_2024@postgres_hardware:5432/mill_hardware
+      # Redis
       REDIS_URL: redis://redis:6379
+      # JWT
       JWT_SECRET: mill_jwt_secret_2024_production
+      # MQTT
       MQTT_BROKER: 45.154.238.114
       MQTT_PORT: 1883
       MQTT_USERNAME: uc300
@@ -92,6 +139,8 @@ services:
       - mill-network
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres_hardware:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -438,6 +487,18 @@ volumes:
       type: none
       o: bind
       device: /opt/mill/postgres/backups
+  postgres_hardware_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/postgres_hardware/data
+  postgres_hardware_backups:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/postgres_hardware/backups
   redis_data:
     driver: local
     driver_opts:
