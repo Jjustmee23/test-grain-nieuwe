@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { logger } from './config/logger';
 import { testDatabaseConnections } from './config/database';
 import { redisClient } from './config/redis';
+import { mqttService } from './services/mqtt-service';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -156,10 +157,18 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info({
     service: 'mill-management-api',
     version: '1.0.0'
   });
+  
+  // Start MQTT service
+  try {
+    await mqttService.start();
+    logger.info('✅ MQTT service started successfully');
+  } catch (error) {
+    logger.error('❌ Failed to start MQTT service:', error);
+  }
 }); 

@@ -1,0 +1,372 @@
+// Optimized Mill Management Database Schema
+// Only essential tables for mill management
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core Models
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  factories Factory[]
+
+  @@map("mill_city")
+}
+
+model Factory {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  status      Boolean  @default(true)
+  error       Boolean  @default(false)
+  group       String   @default("government") @db.VarChar(30)
+  address     String?
+  latitude    Decimal? @db.Decimal(9, 6)
+  longitude   Decimal? @db.Decimal(9, 6)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  cityId      Int?     @map("city_id")
+
+  // Relations
+  city        City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  devices     Device[]
+  batches     Batch[]
+
+  @@map("mill_factory")
+}
+
+model Device {
+  id               String   @id @db.VarChar(30)
+  name             String?  @db.VarChar(255)
+  serialNumber     String?  @map("serial_number") @db.VarChar(100)
+  selectedCounter  String   @default("counter_1") @map("selected_counter") @db.VarChar(50)
+  status           Boolean  @default(false)
+  isConfigured     Boolean  @default(false) @map("is_configured")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  factoryId        Int?     @map("factory_id")
+
+  // Relations
+  factory          Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  mqttData         MqttData[]
+  rawData          RawData[]
+  alerts           Alert[]
+  powerEvents      PowerEvent[]
+  devicePowerStatus DevicePowerStatus?
+
+  @@map("mill_device")
+}
+
+// Django Auth User (built-in)
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique @db.VarChar(150)
+  email         String   @db.VarChar(254)
+  firstName     String   @map("first_name") @db.VarChar(150)
+  lastName      String   @map("last_name") @db.VarChar(150)
+  password      String   @db.VarChar(128)
+  isStaff       Boolean  @default(false) @map("is_staff")
+  isActive      Boolean  @default(true) @map("is_active")
+  isSuperuser   Boolean  @default(false) @map("is_superuser")
+  dateJoined    DateTime @default(now()) @map("date_joined")
+  lastLogin     DateTime? @map("last_login")
+
+  // Relations
+  userProfile   UserProfile?
+  approvedBatches Batch[] @relation("ApprovedBatches")
+  acknowledgedAlerts Alert[] @relation("AcknowledgedAlerts")
+  notifications Notification[]
+
+  @@map("auth_user")
+}
+
+model UserProfile {
+  id                    Int      @id @default(autoincrement())
+  phoneNumber           String?  @map("phone_number") @db.VarChar(20)
+  department            String?  @db.VarChar(100)
+  position              String?  @db.VarChar(100)
+  profilePicture        String?  @map("profile_picture") @db.Text
+  timezone              String?  @default("UTC") @db.VarChar(50)
+  language              String?  @default("en") @db.VarChar(10)
+  theme                 String?  @default("light") @db.VarChar(20)
+  notificationPreferences Json?  @map("notification_preferences") @db.JsonB
+
+  // Foreign keys
+  userId                Int      @unique @map("user_id")
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mill_userprofile")
+}
+
+// MQTT Data - Raw hex messages from MQTT
+model MqttData {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(30)
+  timestamp   DateTime @default(now())
+  hexMessage  String   @map("hex_message") @db.Text  // Raw hex message
+  topic       String   @db.VarChar(255)
+  qos         Int      @default(0)
+  retained    Boolean  @default(false)
+
+  // Foreign keys
+  deviceId_fk String   @map("device_id_fk") @db.VarChar(30)
+
+  // Relations
+  device      Device   @relation(fields: [deviceId_fk], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("mill_mqtt_data")
+}
+
+// Raw Data - Decoded data from MQTT
+model RawData {
+  id            Int      @id @default(autoincrement())
+  deviceId      String   @map("device_id") @db.VarChar(30)
+  timestamp     DateTime @default(now())
+  
+  // Signal data
+  signalStrength Int?    @map("signal_strength")
+  signalDbm     Int?     @map("signal_dbm")
+  
+  // Counter data
+  di1Counter    Int?     @map("di1_counter")
+  di2Counter    Int?     @map("di2_counter")
+  di3Counter    Int?     @map("di3_counter")
+  di4Counter    Int?     @map("di4_counter")
+  
+  // Digital outputs
+  do1Enabled    String?  @map("do1_enabled") @db.VarChar(255)
+  
+  // Analog inputs
+  ai1Value      Decimal? @map("ai1_value") @db.Decimal(10, 2)
+  
+  // Additional fields from MQTT
+  mobileSignal  Int?     @map("mobile_signal")
+  doutEnabled   String?  @map("dout_enabled") @db.VarChar(255)
+  dout          String?  @db.VarChar(255)
+  diMode        String?  @map("di_mode") @db.VarChar(255)
+  din           String?  @db.VarChar(255)
+  ainMode       String?  @map("ain_mode") @db.VarChar(255)
+  ain2Value     Decimal? @map("ain2_value") @db.Decimal(10, 2)
+  ain3Value     Decimal? @map("ain3_value") @db.Decimal(10, 2)
+  ain4Value     Decimal? @map("ain4_value") @db.Decimal(10, 2)
+  ain5Value     Decimal? @map("ain5_value") @db.Decimal(10, 2)
+  ain6Value     Decimal? @map("ain6_value") @db.Decimal(10, 2)
+  ain7Value     Decimal? @map("ain7_value") @db.Decimal(10, 2)
+  ain8Value     Decimal? @map("ain8_value") @db.Decimal(10, 2)
+  startFlag     Int?     @map("start_flag")
+  dataType      Int?     @map("data_type")
+  length        Int?
+  version       Int?
+  endFlag       Int?     @map("end_flag")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  deviceId_fk   String   @map("device_id_fk") @db.VarChar(30)
+
+  // Relations
+  device        Device   @relation(fields: [deviceId_fk], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@index([timestamp])
+  @@map("mill_rawdata")
+}
+
+// Production Management
+model Batch {
+  id                Int      @id @default(autoincrement())
+  batchNumber       String   @unique @map("batch_number") @db.VarChar(50)
+  wheatAmount       Int      @map("wheat_amount")
+  wasteFactor       Decimal  @map("waste_factor") @db.Decimal(5, 2)
+  expectedFlourOutput Int    @map("expected_flour_output")
+  actualFlourOutput Int      @default(0) @map("actual_flour_output")
+  startDate         DateTime @map("start_date")
+  endDate           DateTime? @map("end_date")
+  startValue        Int      @map("start_value")
+  currentValue      Int      @default(0) @map("current_value")
+  status            String   @default("pending") @db.VarChar(20)
+  isCompleted       Boolean  @default(false) @map("is_completed")
+  approvedAt        DateTime? @map("approved_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  factoryId         Int?     @map("factory_id")
+  approvedById      Int?     @map("approved_by_id")
+
+  // Relations
+  factory           Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  approvedBy        User?    @relation("ApprovedBatches", fields: [approvedById], references: [id], onDelete: SetNull)
+  alerts            Alert[]
+  flourBagCounts    FlourBagCount[]
+
+  @@index([factoryId, status])
+  @@index([batchNumber])
+  @@map("mill_batch")
+}
+
+model BatchTemplate {
+  id                Int      @id @default(autoincrement())
+  name              String   @unique @db.VarChar(100)
+  description       String?  @db.Text
+  targetWeight      Decimal  @map("target_weight") @db.Decimal(10, 2)
+  targetMoisture    Decimal  @map("target_moisture") @db.Decimal(5, 2)
+  targetProtein     Decimal  @map("target_protein") @db.Decimal(5, 2)
+  estimatedDuration Int      @map("estimated_duration") // in minutes
+  requiresApproval  Boolean  @default(false) @map("requires_approval")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  createdById       Int      @map("created_by_id")
+
+  // Relations
+  createdBy         User     @relation("CreatedBatchTemplates", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("mill_batchtemplate")
+}
+
+model FlourBagCount {
+  id          Int      @id @default(autoincrement())
+  count       Int
+  timestamp   DateTime @default(now())
+  notes       String?  @db.Text
+
+  // Foreign keys
+  batchId     Int      @map("batch_id")
+  deviceId    String   @map("device_id") @db.VarChar(30)
+
+  // Relations
+  batch       Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([timestamp])
+  @@map("mill_flourbagcount")
+}
+
+// Monitoring & Alerts
+model Alert {
+  id             Int      @id @default(autoincrement())
+  alertType      String   @map("alert_type") @db.VarChar(20)
+  severity       String   @db.VarChar(10)
+  message        String   @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  isAcknowledged Boolean  @default(false) @map("is_acknowledged")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  batchId        Int      @map("batch_id")
+  deviceId       String   @map("device_id") @db.VarChar(30)
+  acknowledgedById Int?   @map("acknowledged_by_id")
+
+  // Relations
+  batch          Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  device         Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  acknowledgedBy User?    @relation("AcknowledgedAlerts", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  @@index([batchId, alertType, createdAt])
+  @@map("mill_alert")
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(255)
+  message      String   @db.Text
+  priority     String   @default("medium") @db.VarChar(10)
+  status       String   @default("pending") @db.VarChar(10)
+  sentInApp    Boolean  @default(false) @map("sent_in_app")
+  sentEmail    Boolean  @default(false) @map("sent_email")
+  emailSentAt  DateTime? @map("email_sent_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  userId       Int      @map("user_id")
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("mill_notification")
+}
+
+model NotificationCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("mill_notificationcategory")
+}
+
+// Power Management
+model PowerEvent {
+  id          Int      @id @default(autoincrement())
+  eventType   String   @map("event_type") @db.VarChar(50)
+  severity    String   @db.VarChar(20)
+  message     String   @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  resolvedAt  DateTime? @map("resolved_at")
+
+  // Foreign keys
+  deviceId    String   @map("device_id") @db.VarChar(30)
+  resolvedById Int?    @map("resolved_by_id")
+
+  // Relations
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([isActive])
+  @@map("mill_powerevent")
+}
+
+model DevicePowerStatus {
+  id          Int      @id @default(autoincrement())
+  status      String   @db.VarChar(50)
+  voltage     Decimal? @db.Decimal(10, 2)
+  current     Decimal? @db.Decimal(10, 2)
+  power       Decimal? @db.Decimal(10, 2)
+  lastUpdated DateTime @default(now()) @map("last_updated")
+
+  // Foreign keys
+  deviceId    String   @unique @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("mill_devicepowerstatus")
+}
+
+model PowerData {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(30)
+  voltage     Decimal? @db.Decimal(10, 2)
+  current     Decimal? @db.Decimal(10, 2)
+  power       Decimal? @db.Decimal(10, 2)
+  energy      Decimal? @db.Decimal(10, 2)
+  frequency   Decimal? @db.Decimal(5, 2)
+  powerFactor Decimal? @map("power_factor") @db.Decimal(3, 2)
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("mill_powerdata")
+} 
