@@ -1,0 +1,187 @@
+// Hardware Database Schema for MQTT/IoT Data
+// This schema is specifically for storing real-time hardware data
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("HARDWARE_DATABASE_URL")
+}
+
+// MQTT Device Data
+model DeviceData {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  topic       String   @db.VarChar(255)
+  message     Json
+  timestamp   DateTime @default(now())
+  rawData     String?  @map("raw_data") @db.Text
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("device_data")
+}
+
+// Power Consumption Data
+model PowerData {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  voltage     Decimal? @db.Decimal(10, 2)
+  current     Decimal? @db.Decimal(10, 2)
+  power       Decimal? @db.Decimal(10, 2)
+  energy      Decimal? @db.Decimal(10, 2)
+  frequency   Decimal? @db.Decimal(5, 2)
+  powerFactor Decimal? @map("power_factor") @db.Decimal(3, 2)
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("power_data")
+}
+
+// Device Status
+model DeviceStatus {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @unique @map("device_id") @db.VarChar(100)
+  status      String   @db.VarChar(50) // online, offline, error, maintenance
+  lastSeen    DateTime @default(now()) @map("last_seen")
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  macAddress  String?  @map("mac_address") @db.VarChar(17)
+  firmware    String?  @db.VarChar(50)
+  location    String?  @db.VarChar(255)
+  description String?  @db.Text
+
+  @@map("device_status")
+}
+
+// Temperature Sensors
+model TemperatureData {
+  id          Int      @id @default(autoincrement())
+  sensorId    String   @map("sensor_id") @db.VarChar(100)
+  temperature Decimal  @db.Decimal(5, 2)
+  humidity    Decimal? @db.Decimal(5, 2)
+  pressure    Decimal? @db.Decimal(8, 2)
+  timestamp   DateTime @default(now())
+
+  @@index([sensorId])
+  @@index([timestamp])
+  @@map("temperature_data")
+}
+
+// Production Counters
+model ProductionCounter {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  counterType String   @map("counter_type") @db.VarChar(50) // flour, bags, batches
+  value       Int
+  unit        String   @db.VarChar(20) // kg, bags, batches
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("production_counter")
+}
+
+// Alarms and Events
+model HardwareAlarm {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  alarmType   String   @map("alarm_type") @db.VarChar(50) // temperature, power, communication
+  severity    String   @db.VarChar(20) // low, medium, high, critical
+  message     String   @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  resolvedAt  DateTime? @map("resolved_at")
+
+  @@index([deviceId])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("hardware_alarm")
+}
+
+// MQTT Message Log
+model MqttMessageLog {
+  id          Int      @id @default(autoincrement())
+  topic       String   @db.VarChar(255)
+  message     String   @db.Text
+  qos         Int      @default(0)
+  retained    Boolean  @default(false)
+  timestamp   DateTime @default(now())
+
+  @@index([topic])
+  @@index([timestamp])
+  @@map("mqtt_message_log")
+}
+
+// UC300 Specific Data (from your existing table)
+model Uc300OfficialData {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  dataType    String   @map("data_type") @db.VarChar(50)
+  value       String   @db.Text
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("uc300_official_data")
+}
+
+// System Metrics
+model SystemMetrics {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  cpuUsage    Decimal? @map("cpu_usage") @db.Decimal(5, 2)
+  memoryUsage Decimal? @map("memory_usage") @db.Decimal(5, 2)
+  diskUsage   Decimal? @map("disk_usage") @db.Decimal(5, 2)
+  networkIn   Decimal? @map("network_in") @db.Decimal(10, 2)
+  networkOut  Decimal? @map("network_out") @db.Decimal(10, 2)
+  uptime      Int?
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@map("system_metrics")
+}
+
+// Batch Processing Data
+model BatchProcessingData {
+  id          Int      @id @default(autoincrement())
+  batchId     String   @map("batch_id") @db.VarChar(100)
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  startTime   DateTime @map("start_time")
+  endTime     DateTime? @map("end_time")
+  status      String   @db.VarChar(50) // running, completed, failed, paused
+  progress    Decimal? @db.Decimal(5, 2) // percentage
+  inputWeight Decimal? @map("input_weight") @db.Decimal(10, 2)
+  outputWeight Decimal? @map("output_weight") @db.Decimal(10, 2)
+  efficiency  Decimal? @db.Decimal(5, 2)
+  timestamp   DateTime @default(now())
+
+  @@index([batchId])
+  @@index([deviceId])
+  @@index([status])
+  @@map("batch_processing_data")
+}
+
+// Maintenance Log
+model MaintenanceLog {
+  id          Int      @id @default(autoincrement())
+  deviceId    String   @map("device_id") @db.VarChar(100)
+  maintenanceType String @map("maintenance_type") @db.VarChar(50) // preventive, corrective, emergency
+  description String   @db.Text
+  performedBy String?  @map("performed_by") @db.VarChar(100)
+  startTime   DateTime @map("start_time")
+  endTime     DateTime? @map("end_time")
+  parts       String?  @db.Text
+  cost        Decimal? @db.Decimal(10, 2)
+  notes       String?  @db.Text
+  timestamp   DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([maintenanceType])
+  @@index([startTime])
+  @@map("maintenance_log")
+} 
