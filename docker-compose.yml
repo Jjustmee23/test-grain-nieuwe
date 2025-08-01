@@ -1,0 +1,97 @@
+services:
+  # Frontend - React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_WS_URL=ws://localhost:5000
+
+    depends_on:
+      - backend
+    networks:
+      - mill-network
+
+  # Backend - Node.js API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      # Main Database (Django legacy)
+      - DB_HOST=45.154.238.114
+      - DB_PORT=5433
+      - DB_NAME=testdb
+      - DB_USER=testuser
+      - DB_PASSWORD=testpassword
+      
+      # Hardware Database
+      - COUNTER_DB_HOST=45.154.238.114
+      - COUNTER_DB_PORT=5432
+      - COUNTER_DB_NAME=counter
+      - COUNTER_DB_USER=root
+      - COUNTER_DB_PASSWORD=testpassword
+      
+      # JWT & Security
+      - JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
+      - JWT_REFRESH_SECRET=your-refresh-secret-key-here
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      
+      # MQTT Settings
+      - MQTT_BROKER_URL=mqtt://your-mqtt-broker:1883
+      - MQTT_USERNAME=mqtt_user
+      - MQTT_PASSWORD=mqtt_password
+      
+      # Microsoft 365 Integration
+      - MS365_CLIENT_ID=your-azure-app-client-id
+      - MS365_CLIENT_SECRET=your-azure-app-client-secret
+      - MS365_TENANT_ID=your-azure-tenant-id
+      
+      # Application Settings
+      - NODE_ENV=production
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost:3000
+      
+      # Redis Configuration
+      - REDIS_URL=redis://redis:6379
+      
+
+    networks:
+      - mill-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - mill-network
+
+  # MQTT Broker (optional - if not using external)
+  # mosquitto:
+  #   image: eclipse-mosquitto:2
+  #   ports:
+  #     - "1883:1883"
+  #     - "9001:9001"
+  #   volumes:
+  #     - ./mqtt/config:/mosquitto/config
+  #     - ./mqtt/data:/mosquitto/data
+  #     - ./mqtt/log:/mosquitto/log
+  #   networks:
+  #     - mill-network
+
+volumes:
+  redis-data:
+
+networks:
+  mill-network:
+    driver: bridge 

@@ -1,0 +1,193 @@
+version: '3.8'
+
+services:
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: mill-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik-certificates:/certificates
+      - traefik-logs:/var/log/traefik
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.nexonsolutions.be`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$H6usM2VK9BWkEJkCCK1UeOFL9DnH/Vx9M9K81Q1Ej/xZtxZJN8mG"
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: mill-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mill_management
+      POSTGRES_USER: mill_user
+      POSTGRES_PASSWORD: mill_password_2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=false"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mill-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=false"
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    container_name: mill-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: mill_management
+      DB_USER: mill_user
+      DB_PASSWORD: mill_password_2024
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # MQTT Broker
+      MQTT_BROKER: 45.154.238.114
+      MQTT_USERNAME: uc300
+      MQTT_PASSWORD: grain300
+      MQTT_PORT: 1883
+      # JWT Secret
+      JWT_SECRET: mill_jwt_secret_2024_production
+      # CORS
+      CORS_ORIGIN: https://test.nexonsolutions.be
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mill-network
+    volumes:
+      - ./logs:/app/logs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.nexonsolutions.be`)"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=5000"
+      - "traefik.http.routers.backend.middlewares=rate-limit"
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    container_name: mill-frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: https://api.nexonsolutions.be
+      REACT_APP_WS_URL: wss://api.nexonsolutions.be
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`test.nexonsolutions.be`)"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.frontend.middlewares=security-headers"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+
+  # MQTT Client Service
+  mqtt-client:
+    build:
+      context: ./mqtt-client
+      dockerfile: Dockerfile
+    container_name: mill-mqtt-client
+    restart: unless-stopped
+    environment:
+      MQTT_BROKER: 45.154.238.114
+      MQTT_USERNAME: uc300
+      MQTT_PASSWORD: grain300
+      MQTT_PORT: 1883
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: mill_management
+      DB_USER: mill_user
+      DB_PASSWORD: mill_password_2024
+    depends_on:
+      - postgres
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=false"
+
+  # Admin Panel (Future)
+  admin-panel:
+    image: nginx:alpine
+    container_name: mill-admin-panel
+    restart: unless-stopped
+    volumes:
+      - ./admin-panel:/usr/share/nginx/html
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.admin.rule=Host(`admin.nexonsolutions.be`)"
+      - "traefik.http.routers.admin.tls=true"
+      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.admin.loadbalancer.server.port=80"
+      - "traefik.http.routers.admin.middlewares=auth-admin"
+      - "traefik.http.middlewares.auth-admin.basicauth.users=admin:$$2y$$10$$H6usM2VK9BWkEJkCCK1UeOFL9DnH/Vx9M9K81Q1Ej/xZtxZJN8mG"
+
+  # Monitoring Dashboard (Future)
+  monitoring:
+    image: grafana/grafana:latest
+    container_name: mill-monitoring
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: mill_monitoring_2024
+    volumes:
+      - monitoring_data:/var/lib/grafana
+    networks:
+      - mill-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitoring.rule=Host(`monitor.nexonsolutions.be`)"
+      - "traefik.http.routers.monitoring.tls=true"
+      - "traefik.http.routers.monitoring.tls.certresolver=letsencrypt"
+      - "traefik.http.services.monitoring.loadbalancer.server.port=3000"
+
+networks:
+  mill-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  traefik-certificates:
+  traefik-logs:
+  monitoring_data: 

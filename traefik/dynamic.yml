@@ -1,0 +1,37 @@
+# Dynamic Configuration
+http:
+  middlewares:
+    security-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+    
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+    
+    cors:
+      headers:
+        accessControlAllowOriginList:
+          - "https://test.nexonsolutions.be"
+          - "https://api.nexonsolutions.be"
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+        accessControlMaxAge: 86400 

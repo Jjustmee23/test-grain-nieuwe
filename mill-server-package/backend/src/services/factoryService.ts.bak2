@@ -1,0 +1,159 @@
+import { prisma } from '../config/database';
+import { logger } from '../config/logger';
+import { Decimal } from '@prisma/client/runtime/library';
+
+export interface Factory {
+  id: number;
+  name: string;
+  status: boolean;
+  error: boolean;
+  group: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: Date;
+  cityId?: number | null;
+  city?: {
+    id: number;
+    name: string;
+  } | null;
+  _count?: {
+    devices: number;
+    batches: number;
+  };
+}
+
+// Helper function to convert Decimal to number
+const convertDecimal = (value: Decimal | null): number | null => {
+  return value ? Number(value) : null;
+};
+
+export const getAllFactories = async (): Promise<Factory[]> => {
+  try {
+    const factories = await prisma.factory.findMany({
+      include: {
+        city: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            devices: true,
+            batches: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // Convert Decimal fields to numbers
+    const convertedFactories = factories.map(factory => ({
+      ...factory,
+      latitude: convertDecimal(factory.latitude),
+      longitude: convertDecimal(factory.longitude)
+    }));
+
+    logger.info(`Retrieved ${factories.length} factories from database`);
+    return convertedFactories;
+  } catch (error) {
+    logger.error('Error fetching factories:', error);
+    throw new Error('Failed to fetch factories');
+  }
+};
+
+export const getFactoryById = async (id: number): Promise<Factory | null> => {
+  try {
+    const factory = await prisma.factory.findUnique({
+      where: { id },
+      include: {
+        city: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            devices: true,
+            batches: true
+          }
+        }
+      }
+    });
+
+    if (!factory) return null;
+
+    // Convert Decimal fields to numbers
+    return {
+      ...factory,
+      latitude: convertDecimal(factory.latitude),
+      longitude: convertDecimal(factory.longitude)
+    };
+  } catch (error) {
+    logger.error(`Error fetching factory ${id}:`, error);
+    throw new Error('Failed to fetch factory');
+  }
+};
+
+export const getFactoriesByCity = async (cityId: number): Promise<Factory[]> => {
+  try {
+    const factories = await prisma.factory.findMany({
+      where: { cityId },
+      include: {
+        city: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        _count: {
+          select: {
+            devices: true,
+            batches: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // Convert Decimal fields to numbers
+    const convertedFactories = factories.map(factory => ({
+      ...factory,
+      latitude: convertDecimal(factory.latitude),
+      longitude: convertDecimal(factory.longitude)
+    }));
+
+    return convertedFactories;
+  } catch (error) {
+    logger.error(`Error fetching factories for city ${cityId}:`, error);
+    throw new Error('Failed to fetch factories by city');
+  }
+};
+
+export const getFactoriesStats = async () => {
+  try {
+    const totalFactories = await prisma.factory.count();
+    const activeFactories = await prisma.factory.count({
+      where: { status: true }
+    });
+    const errorFactories = await prisma.factory.count({
+      where: { error: true }
+    });
+
+    return {
+      total: totalFactories,
+      active: activeFactories,
+      error: errorFactories,
+      inactive: totalFactories - activeFactories
+    };
+  } catch (error) {
+    logger.error('Error fetching factory stats:', error);
+    throw new Error('Failed to fetch factory statistics');
+  }
+}; 
