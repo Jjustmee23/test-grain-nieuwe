@@ -66,6 +66,8 @@ services:
       MQTT_PASSWORD: grain300
     volumes:
       - backend_logs_traefik:/app/logs
+    ports:
+      - "3002:3000"
     networks:
       - mill-network-traefik
     depends_on:
@@ -81,7 +83,7 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`api.localhost`)"
+      - "traefik.http.routers.backend.rule=Host(`localhost`) && PathPrefix(`/api`)"
       - "traefik.http.services.backend.loadbalancer.server.port=3000"
       - "traefik.http.middlewares.backend-strip.stripprefix.prefixes=/api"
       - "traefik.http.routers.backend.middlewares=backend-strip"
@@ -94,10 +96,12 @@ services:
     container_name: mill_frontend_traefik
     restart: unless-stopped
     environment:
-      REACT_APP_API_URL: http://api.localhost
-      REACT_APP_WS_URL: ws://api.localhost
+      REACT_APP_API_URL: http://localhost/api
+      REACT_APP_WS_URL: ws://localhost/api
     volumes:
       - frontend_logs_traefik:/app/logs
+    ports:
+      - "3001:80"
     networks:
       - mill-network-traefik
     healthcheck:
@@ -107,8 +111,9 @@ services:
       retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.priority=1"
 
   # MQTT Client for UC300 Data
   mqtt-client:

@@ -11,6 +11,7 @@ import { redisClient } from './config/redis';
 
 // Import routes
 import authRoutes from './routes/auth';
+import citiesRoutes from './routes/cities';
 import factoriesRoutes from './routes/factories';
 import devicesRoutes from './routes/devices';
 import batchesRoutes from './routes/batches';
@@ -91,6 +92,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/cities', citiesRoutes);
 app.use('/api/factories', factoriesRoutes);
 app.use('/api/devices', devicesRoutes);
 app.use('/api/batches', batchesRoutes);

@@ -22,6 +22,7 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard,
+  LocationCity,
   Factory,
   DeviceHub,
   LocalShipping,
@@ -66,6 +67,7 @@ const Header: React.FC = () => {
 
   const navigationItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+    { text: 'Cities', icon: <LocationCity />, path: '/cities' },
     { text: 'Factories', icon: <Factory />, path: '/factories' },
     { text: 'Devices', icon: <DeviceHub />, path: '/devices' },
     { text: 'Batches', icon: <LocalShipping />, path: '/batches' },

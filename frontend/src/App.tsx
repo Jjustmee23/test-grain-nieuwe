@@ -7,6 +7,7 @@ import { SnackbarProvider } from 'notistack';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import Cities from './pages/Cities';
 import Factories from './pages/Factories';
 import Devices from './pages/Devices';
 import Batches from './pages/Batches';
@@ -43,6 +44,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/cities"
+                  element={
+                    <ProtectedRoute>
+                      <Cities />
                     </ProtectedRoute>
                   }
                 />

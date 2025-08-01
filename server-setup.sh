@@ -46,17 +46,11 @@ sudo apt install -y \
     vim \
     htop \
     ufw \
-    fail2ban \
     logwatch \
     rkhunter \
     chkrootkit \
-    clamav \
-    clamav-daemon \
-    unzip \
-    zip \
-    jq \
-    tree \
-    net-tools \
+    unattended-upgrades \
+    cron \
     nginx \
     certbot \
     python3-certbot-nginx
@@ -86,93 +80,19 @@ else
     print_status "Docker Compose already installed"
 fi
 
-# 5. Configure Firewall (UFW)
-print_status "Configuring firewall..."
-sudo ufw --force reset
+# 5. Configure UFW Firewall
+print_status "Configuring UFW Firewall..."
+sudo ufw --force enable
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 8080/tcp  # Traefik dashboard
-sudo ufw --force enable
-print_success "Firewall configured"
+sudo ufw allow 22/tcp
+print_success "UFW Firewall configured"
 
-# 6. Configure Fail2Ban
-print_status "Configuring Fail2Ban..."
-sudo systemctl enable fail2ban
-sudo systemctl start fail2ban
-
-# Create custom fail2ban config
-sudo tee /etc/fail2ban/jail.local > /dev/null << 'EOF'
-[DEFAULT]
-bantime = 3600
-findtime = 600
-maxretry = 3
-backend = auto
-
-[sshd]
-enabled = true
-port = ssh
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = 3
-bantime = 3600
-
-[nginx-http-auth]
-enabled = true
-filter = nginx-http-auth
-port = http,https
-logpath = /var/log/nginx/error.log
-maxretry = 3
-bantime = 3600
-
-[nginx-limit-req]
-enabled = true
-filter = nginx-limit-req
-action = iptables-multiport[name=ReqLimit, port="http,https"]
-logpath = /var/log/nginx/error.log
-maxretry = 3
-bantime = 3600
-EOF
-
-sudo systemctl restart fail2ban
-print_success "Fail2Ban configured"
-
-# 7. Configure SSH Security
-print_status "Configuring SSH security..."
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
-
-sudo tee -a /etc/ssh/sshd_config > /dev/null << 'EOF'
-
-# Security settings
-PermitRootLogin no
-PasswordAuthentication no
-PubkeyAuthentication yes
-AuthorizedKeysFile .ssh/authorized_keys
-ChallengeResponseAuthentication no
-UsePAM yes
-X11Forwarding no
-AllowTcpForwarding no
-AllowAgentForwarding no
-PermitEmptyPasswords no
-MaxAuthTries 3
-ClientAliveInterval 300
-ClientAliveCountMax 2
-EOF
-
-sudo systemctl restart ssh
-print_success "SSH security configured"
-
-# 8. Install and Configure ClamAV
-print_status "Configuring ClamAV..."
-sudo freshclam
-sudo systemctl enable clamav-daemon
-sudo systemctl start clamav-daemon
-print_success "ClamAV configured"
-
-# 9. Configure System Monitoring
-print_status "Configuring system monitoring..."
+# 6. Configure System Monitoring
+print_status "Configuring System Monitoring..."
 
 # Create log rotation for application logs
 sudo tee /etc/logrotate.d/mill-management > /dev/null << 'EOF'
@@ -413,7 +333,6 @@ echo "  ✅ System updates"
 echo "  ✅ Docker & Docker Compose"
 echo "  ✅ UFW Firewall"
 echo "  ✅ Fail2Ban (SSH protection)"
-echo "  ✅ ClamAV (Antivirus)"
 echo "  ✅ SSH Security hardening"
 echo "  ✅ Automatic updates"
 echo "  ✅ System monitoring"
