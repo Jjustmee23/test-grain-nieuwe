@@ -1,82 +1,156 @@
-# Mill Management Application - React Edition
+# 🏭 Mill Management System
 
-Modern React + Node.js version of the Mill Management Dashboard voor graanverwerkende fabrieken in Irak.
-
-## 🏗️ Architecture
-
-- **Frontend**: React 18 + TypeScript + Material-UI (MUI) v5
-- **Backend**: Node.js + Express + TypeScript + Prisma ORM
-- **Database**: PostgreSQL (existing database preserved)
-- **Real-time**: WebSocket + MQTT integration
-- **Authentication**: JWT + 2FA
-- **State Management**: Redux Toolkit + RTK Query
-- **Charts**: Recharts
-- **Deployment**: Docker
-
-## 📊 Features
-
-### Core Modules
-1. **Factory Management** - Beheer van molens in verschillende steden (Government/Private/Commercial)
-2. **IoT Device Monitoring** - Real-time monitoring van sensoren en apparaten
-3. **Batch Processing** - Productie batch beheer (wheat input → flour output)
-4. **Power Management** - Energie monitoring en alerts
-5. **Production Analytics** - Uitgebreide statistieken en charts
-6. **User Management** - Multi-user systeem met verschillende rollen
-7. **Real-time Data** - MQTT data ontvangst van IoT sensoren (elke 5 min)
-8. **Notifications** - Email alerts via Microsoft365
-9. **Support System** - Ticket management en feedback
-10. **Security** - 2FA, role-based permissions
-
-### Improvements over Django Version
-- ⚡ **Modern UI**: Material-UI components with improved UX
-- 🔄 **Real-time Updates**: WebSocket for instant data updates
-- 📱 **Responsive Design**: Mobile-first approach
-- 🚀 **Performance**: Optimized with React Query caching
-- 🔒 **Security**: Modern JWT authentication with refresh tokens
-- 📊 **Better Charts**: Interactive Recharts instead of Chart.js
-- 🐳 **Docker**: Improved containerization
-
-## 🗄️ Database
-
-**Preserves existing PostgreSQL database - NO DATA LOSS!**
-
-- **Main Database**: testdb (45.154.238.114:5433)
-- **Hardware Database**: counter (45.154.238.114:5432)
-- **33 Models**: All existing Django models replicated
+Complete IoT-based mill management system with real-time monitoring, MQTT integration, and multi-domain support.
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Ubuntu Server 24.04 LTS
+- Docker & Docker Compose
+- Domain names pointing to your server
+
+### Installation
+
+1. **Clone the repository:**
 ```bash
-# Clone and setup
-git clone <repo>
-cd mill-react-application
-
-# Start with Docker
-docker-compose up --build
-
-# Or development mode
-cd backend && npm install && npm run dev
-cd frontend && npm install && npm start
+git clone https://github.com/yourusername/mill-management-system.git
+cd mill-management-system
 ```
 
-## 📁 Project Structure
-
-```
-mill-react-application/
-├── frontend/           # React + TypeScript app
-├── backend/           # Node.js + Express API
-├── shared/           # Shared types/interfaces
-├── docs/            # Documentation
-├── docker-compose.yml
-└── README.md
+2. **Run the server setup:**
+```bash
+chmod +x server-setup.sh
+./server-setup.sh
 ```
 
-## 🌐 Access
+3. **Start the application:**
+```bash
+./start.sh
+```
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000
-- **API Docs**: http://localhost:5000/api-docs
+4. **Access the application:**
+- Main App: https://test.nexonsolutions.be
+- API: https://api.nexonsolutions.be
+- Admin Panel: https://admin.nexonsolutions.be
+- Monitoring: https://monitor.nexonsolutions.be
+- Traefik Dashboard: https://traefik.nexonsolutions.be
+
+## 🏗️ Architecture
+
+```
+Internet → Traefik (SSL) → Frontend/Backend → PostgreSQL
+                    ↓
+                MQTT Client → External Broker
+```
+
+## 📦 Services
+
+- **🌐 Traefik** - Reverse proxy with automatic SSL
+- **🐘 PostgreSQL** - Database for mill data
+- **🔧 Node.js Backend** - API server
+- **⚛️ React Frontend** - Web application
+- **📡 MQTT Client** - IoT data collection
+- **🔐 SSL Certificates** - Automatic Let's Encrypt
+- **📊 Redis** - Caching layer
+
+## 🔐 Security Features
+
+- **Fail2Ban** - SSH protection
+- **UFW Firewall** - Network security
+- **ClamAV** - Antivirus scanning
+- **SSH Key Authentication** - No password login
+- **Automatic Updates** - Security patches
+- **Rate Limiting** - DDoS protection
+
+## 📡 MQTT Integration
+
+Connects to external MQTT broker:
+- **Broker**: 45.154.238.114
+- **Username**: uc300
+- **Password**: grain300
+- **Topics**: device/+/power, device/+/status, etc.
+
+## 🗄️ Database
+
+- **Host**: postgres (Docker service)
+- **Database**: mill_management
+- **User**: mill_user
+- **Password**: mill_password_2024
+
+## 📚 Management Commands
+
+```bash
+./start.sh          # Start all services
+./stop.sh           # Stop all services
+./restart.sh        # Restart all services
+./logs.sh           # View logs
+./monitor-system.sh # System status
+./backup-system.sh  # Create backup
+```
+
+## 🌐 Multi-Domain Setup
+
+Configure DNS records pointing to your server:
+- test.nexonsolutions.be → Main App
+- api.nexonsolutions.be → Backend API
+- admin.nexonsolutions.be → Admin Panel
+- monitor.nexonsolutions.be → Monitoring
+- traefik.nexonsolutions.be → Traefik Dashboard
+
+## 🔧 Configuration
+
+Environment variables in `.env`:
+```bash
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=mill_management
+DB_USER=mill_user
+DB_PASSWORD=mill_password_2024
+MQTT_BROKER=45.154.238.114
+MQTT_USERNAME=uc300
+MQTT_PASSWORD=grain300
+```
+
+## 📊 Features
+
+- **Real-time Monitoring** - Live device status
+- **Production Analytics** - Performance metrics
+- **User Management** - Role-based access
+- **Alert System** - Device notifications
+- **Backup System** - Automatic backups
+- **System Monitoring** - Health checks
+
+## 🛠️ Development
+
+### Backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm start
+```
+
+### MQTT Client
+```bash
+cd mqtt-client
+npm install
+npm run dev
+```
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🤝 Support
+
+For support and questions, please open an issue on GitHub.
 
 ---
 
-**Migrated from Django with ❤️ - All data preserved!** 
+**Built with ❤️ for efficient mill management** 
