@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma, counterPrisma } from '../config/database';
+import { prisma } from '../config/database';
 import { logger } from '../config/logger';
 
 const router = Router();
@@ -31,54 +31,13 @@ router.get('/', async (req, res) => {
         name: 'asc'
       }
     });
-
-    // Enrich with real-time data from counter database
-    const enrichedDevices = await Promise.all(
-      devices.map(async (device) => {
-        try {
-          const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { lastPowerCheck: 'desc' }
-          });
-
-          const doorStatus = await counterPrisma.doorStatus.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { lastCheck: 'desc' }
-          });
-
-          const productionData = await counterPrisma.productionData.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { createdAt: 'desc' }
-          });
-
-          return {
-            ...device,
-            powerStatus: powerStatus?.hasPower || false,
-            doorStatus: doorStatus?.isOpen || false,
-            temperature: powerStatus?.ain1Value || null,
-            lastSeen: powerStatus?.lastPowerCheck || null,
-            productionCount: productionData?.dailyProduction || 0
-          };
-        } catch (error) {
-          logger.error(`Error enriching device ${device.id}:`, error);
-          return {
-            ...device,
-            powerStatus: false,
-            doorStatus: false,
-            temperature: null,
-            lastSeen: null,
-            productionCount: 0
-          };
-        }
-      })
-    );
     
     logger.info(`Retrieved ${devices.length} devices from database`);
     
     return res.json({
       success: true,
-      data: enrichedDevices,
-      count: enrichedDevices.length
+      data: devices,
+      count: devices.length
     });
   } catch (error) {
     logger.error('Error in GET /devices:', error);
@@ -106,7 +65,7 @@ router.get('/:id', async (req, res) => {
         }
       }
     });
-
+    
     if (!device) {
       return res.status(404).json({
         success: false,
@@ -114,60 +73,21 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Enrich with real-time data
-    try {
-      const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
-        where: { deviceId: device.id },
-        orderBy: { lastPowerCheck: 'desc' }
-      });
-
-      const doorStatus = await counterPrisma.doorStatus.findFirst({
-        where: { deviceId: device.id },
-        orderBy: { lastCheck: 'desc' }
-      });
-
-      const productionData = await counterPrisma.productionData.findFirst({
-        where: { deviceId: device.id },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      const enrichedDevice = {
-        ...device,
-        powerStatus: powerStatus?.hasPower || false,
-        doorStatus: doorStatus?.isOpen || false,
-        temperature: powerStatus?.ain1Value || null,
-        lastSeen: powerStatus?.lastPowerCheck || null,
-        productionCount: productionData?.dailyProduction || 0
-      };
-
-      return res.json({
-        success: true,
-        data: enrichedDevice
-      });
-    } catch (error) {
-      logger.error(`Error enriching device ${deviceId}:`, error);
-      return res.json({
-        success: true,
-        data: {
-          ...device,
-          powerStatus: false,
-          doorStatus: false,
-          temperature: null,
-          lastSeen: null,
-          productionCount: 0
-        }
-      });
-    }
+    return res.json({
+      success: true,
+      data: device
+    });
   } catch (error) {
     logger.error(`Error in GET /devices/${req.params.id}:`, error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to fetch device'
+      error: 'Failed to fetch device',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
-// Get devices by factory
+// Get devices by factory ID
 router.get('/factory/:factoryId', async (req, res) => {
   try {
     const factoryId = parseInt(req.params.factoryId);
@@ -177,7 +97,7 @@ router.get('/factory/:factoryId', async (req, res) => {
         error: 'Invalid factory ID'
       });
     }
-
+    
     const devices = await prisma.device.findMany({
       where: { factoryId },
       include: {
@@ -192,63 +112,23 @@ router.get('/factory/:factoryId', async (req, res) => {
         name: 'asc'
       }
     });
-
-    // Enrich with real-time data
-    const enrichedDevices = await Promise.all(
-      devices.map(async (device) => {
-        try {
-          const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { lastPowerCheck: 'desc' }
-          });
-
-          const doorStatus = await counterPrisma.doorStatus.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { lastCheck: 'desc' }
-          });
-
-          const productionData = await counterPrisma.productionData.findFirst({
-            where: { deviceId: device.id },
-            orderBy: { createdAt: 'desc' }
-          });
-
-          return {
-            ...device,
-            powerStatus: powerStatus?.hasPower || false,
-            doorStatus: doorStatus?.isOpen || false,
-            temperature: powerStatus?.ain1Value || null,
-            lastSeen: powerStatus?.lastPowerCheck || null,
-            productionCount: productionData?.dailyProduction || 0
-          };
-        } catch (error) {
-          logger.error(`Error enriching device ${device.id}:`, error);
-          return {
-            ...device,
-            powerStatus: false,
-            doorStatus: false,
-            temperature: null,
-            lastSeen: null,
-            productionCount: 0
-          };
-        }
-      })
-    );
-
+    
     return res.json({
       success: true,
-      data: enrichedDevices,
-      count: enrichedDevices.length
+      data: devices,
+      count: devices.length
     });
   } catch (error) {
     logger.error(`Error in GET /devices/factory/${req.params.factoryId}:`, error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to fetch devices by factory'
+      error: 'Failed to fetch devices by factory',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
-// Get device statistics
+// Get devices stats overview
 router.get('/stats/overview', async (req, res) => {
   try {
     const totalDevices = await prisma.device.count();
@@ -256,18 +136,12 @@ router.get('/stats/overview', async (req, res) => {
       where: { status: true }
     });
 
-    // Get powered devices from counter database
-    const poweredDevices = await counterPrisma.devicePowerStatus.count({
-      where: { hasPower: true }
-    });
-
     const stats = {
       total: totalDevices,
       online: onlineDevices,
-      powered: poweredDevices,
       offline: totalDevices - onlineDevices
     };
-
+    
     return res.json({
       success: true,
       data: stats
@@ -276,7 +150,8 @@ router.get('/stats/overview', async (req, res) => {
     logger.error('Error in GET /devices/stats/overview:', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to fetch device statistics'
+      error: 'Failed to fetch device stats',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

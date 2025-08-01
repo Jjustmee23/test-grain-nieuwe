@@ -1,0 +1,210 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with Persistent Volume
+  postgres:
+    image: postgres:15-alpine
+    container_name: mill_postgres_traefik
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mill_management
+      POSTGRES_USER: mill_user
+      POSTGRES_PASSWORD: mill_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data_traefik:/var/lib/postgresql/data
+      - postgres_backups_traefik:/var/lib/postgresql/backups
+    ports:
+      - "5432:5432"
+    networks:
+      - mill-network-traefik
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mill_user -d mill_management"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis Cache with Persistent Volume
+  redis:
+    image: redis:7-alpine
+    container_name: mill_redis_traefik
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data_traefik:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - mill-network-traefik
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    container_name: mill_backend_traefik
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: mill_management
+      DB_USER: mill_user
+      DB_PASSWORD: mill_password_2024
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: mill_jwt_secret_2024_traefik
+      MQTT_BROKER: 45.154.238.114
+      MQTT_PORT: 1883
+      MQTT_USERNAME: uc300
+      MQTT_PASSWORD: grain300
+    volumes:
+      - backend_logs_traefik:/app/logs
+    networks:
+      - mill-network-traefik
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`api.localhost`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.backend-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=backend-strip"
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    container_name: mill_frontend_traefik
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://api.localhost
+      REACT_APP_WS_URL: ws://api.localhost
+    volumes:
+      - frontend_logs_traefik:/app/logs
+    networks:
+      - mill-network-traefik
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`app.localhost`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # MQTT Client for UC300 Data
+  mqtt-client:
+    build:
+      context: ./mqtt-client
+      dockerfile: Dockerfile
+    container_name: mill_mqtt_client_traefik
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: mill_management
+      DB_USER: mill_user
+      DB_PASSWORD: mill_password_2024
+      MQTT_BROKER: 45.154.238.114
+      MQTT_PORT: 1883
+      MQTT_USERNAME: uc300
+      MQTT_PASSWORD: grain300
+    volumes:
+      - mqtt_logs_traefik:/app/logs
+    networks:
+      - mill-network-traefik
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "node"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana Monitoring Dashboard
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: mill_grafana_traefik
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: mill_grafana_2024
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data_traefik:/var/lib/grafana
+    networks:
+      - mill-network-traefik
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: mill_traefik_local
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=mill-network-traefik"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.dashboard.address=:8081"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+      - "8081:8081"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_logs_traefik:/var/log/traefik
+    networks:
+      - mill-network-traefik
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/api/rawdata"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data_traefik:
+  postgres_backups_traefik:
+  redis_data_traefik:
+  grafana_data_traefik:
+  traefik_logs_traefik:
+  backend_logs_traefik:
+  frontend_logs_traefik:
+  mqtt_logs_traefik:
+
+networks:
+  mill-network-traefik:
+    driver: bridge 

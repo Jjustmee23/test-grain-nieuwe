@@ -1,56 +1,67 @@
 version: '3.8'
 
 services:
-  # Traefik Reverse Proxy
-  traefik:
-    image: traefik:v2.10
-    container_name: mill-traefik
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Traefik dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - traefik-certificates:/certificates
-      - traefik-logs:/var/log/traefik
-    networks:
-      - mill-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.nexonsolutions.be`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$H6usM2VK9BWkEJkCCK1UeOFL9DnH/Vx9M9K81Q1Ej/xZtxZJN8mG"
-
-  # PostgreSQL Database
+  # PostgreSQL Database with Persistent Volume
   postgres:
     image: postgres:15-alpine
-    container_name: mill-postgres
+    container_name: mill_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: mill_management
       POSTGRES_USER: mill_user
       POSTGRES_PASSWORD: mill_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
+      - postgres_backups:/var/lib/postgresql/backups
+      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/conf/postgresql.conf:/etc/postgresql/postgresql.conf
+    ports:
+      - "5432:5432"
     networks:
       - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mill_user -d mill_management"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     labels:
       - "traefik.enable=false"
 
-  # Redis Cache
+  # Redis Cache with Persistent Volume
   redis:
     image: redis:7-alpine
-    container_name: mill-redis
+    container_name: mill_redis
     restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
       - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     labels:
       - "traefik.enable=false"
 
@@ -59,135 +70,432 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.production
-    container_name: mill-backend
+    container_name: mill_backend
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 5000
-      # Database
+      PORT: 3000
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: mill_management
       DB_USER: mill_user
       DB_PASSWORD: mill_password_2024
-      # Redis
       REDIS_URL: redis://redis:6379
-      # MQTT Broker
+      JWT_SECRET: mill_jwt_secret_2024_production
       MQTT_BROKER: 45.154.238.114
+      MQTT_PORT: 1883
       MQTT_USERNAME: uc300
       MQTT_PASSWORD: grain300
-      MQTT_PORT: 1883
-      # JWT Secret
-      JWT_SECRET: mill_jwt_secret_2024_production
-      # CORS
-      CORS_ORIGIN: https://test.nexonsolutions.be
-    depends_on:
-      - postgres
-      - redis
+    volumes:
+      - backend_logs:/app/logs
     networks:
       - mill-network
-    volumes:
-      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`api.nexonsolutions.be`)"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.backend.loadbalancer.server.port=5000"
-      - "traefik.http.routers.backend.middlewares=rate-limit"
-      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
-      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+      - "traefik.http.services.backend.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.backend-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.backend.middlewares=backend-strip"
 
   # Frontend React App
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.production
-    container_name: mill-frontend
+    container_name: mill_frontend
     restart: unless-stopped
     environment:
       REACT_APP_API_URL: https://api.nexonsolutions.be
       REACT_APP_WS_URL: wss://api.nexonsolutions.be
+    volumes:
+      - frontend_logs:/app/logs
     networks:
       - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`test.nexonsolutions.be`)"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-      - "traefik.http.routers.frontend.middlewares=security-headers"
-      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
-  # MQTT Client Service
+  # MQTT Client for UC300 Data
   mqtt-client:
     build:
       context: ./mqtt-client
       dockerfile: Dockerfile
-    container_name: mill-mqtt-client
+    container_name: mill_mqtt_client
     restart: unless-stopped
     environment:
-      MQTT_BROKER: 45.154.238.114
-      MQTT_USERNAME: uc300
-      MQTT_PASSWORD: grain300
-      MQTT_PORT: 1883
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: mill_management
       DB_USER: mill_user
       DB_PASSWORD: mill_password_2024
-    depends_on:
-      - postgres
+      MQTT_BROKER: 45.154.238.114
+      MQTT_PORT: 1883
+      MQTT_USERNAME: uc300
+      MQTT_PASSWORD: grain300
+    volumes:
+      - mqtt_logs:/app/logs
     networks:
       - mill-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "node"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     labels:
       - "traefik.enable=false"
 
-  # Admin Panel (Future)
-  admin-panel:
-    image: nginx:alpine
-    container_name: mill-admin-panel
-    restart: unless-stopped
-    volumes:
-      - ./admin-panel:/usr/share/nginx/html
-    networks:
-      - mill-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.admin.rule=Host(`admin.nexonsolutions.be`)"
-      - "traefik.http.routers.admin.tls=true"
-      - "traefik.http.routers.admin.tls.certresolver=letsencrypt"
-      - "traefik.http.services.admin.loadbalancer.server.port=80"
-      - "traefik.http.routers.admin.middlewares=auth-admin"
-      - "traefik.http.middlewares.auth-admin.basicauth.users=admin:$$2y$$10$$H6usM2VK9BWkEJkCCK1UeOFL9DnH/Vx9M9K81Q1Ej/xZtxZJN8mG"
-
-  # Monitoring Dashboard (Future)
-  monitoring:
-    image: grafana/grafana:latest
-    container_name: mill-monitoring
+  # Grafana Monitoring Dashboard
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: mill_grafana
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: mill_monitoring_2024
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: mill_grafana_2024
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
     volumes:
-      - monitoring_data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
+      - grafana_provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/plugins:/var/lib/grafana/plugins
+    ports:
+      - "3001:3000"
     networks:
       - mill-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.monitoring.rule=Host(`monitor.nexonsolutions.be`)"
-      - "traefik.http.routers.monitoring.tls=true"
-      - "traefik.http.routers.monitoring.tls.certresolver=letsencrypt"
-      - "traefik.http.services.monitoring.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.nexonsolutions.be`)"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # Prometheus Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: mill_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules:/etc/prometheus/rules
+    ports:
+      - "9090:9090"
+    networks:
+      - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.nexonsolutions.be`)"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+  # Node Exporter for System Metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: mill_node_exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    network_mode: host
+    pid: host
+    volumes:
+      - '/:/host:ro,rslave'
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
+    labels:
+      - "traefik.enable=false"
+
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: mill_traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=mill-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.dashboard.address=:8080"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@nexonsolutions.be"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--metrics.prometheus=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/certificates
+      - traefik_logs:/var/log/traefik
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    networks:
+      - mill-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/rawdata"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=false"
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: mill_backup
+    restart: "no"
+    environment:
+      POSTGRES_DB: mill_management
+      POSTGRES_USER: mill_user
+      POSTGRES_PASSWORD: mill_password_2024
+      BACKUP_RETENTION_DAYS: 30
+      BACKUP_SCHEDULE: "0 2 * * *"
+      S3_BUCKET: mill-backups
+      S3_ENDPOINT: s3.amazonaws.com
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - postgres_backups:/backups
+      - ./backup/scripts:/scripts
+      - ./backup/config:/config
+    networks:
+      - mill-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    command: ["/scripts/backup.sh"]
+    labels:
+      - "traefik.enable=false"
+
+  # Resource Monitor
+  resource-monitor:
+    image: stefanprodan/swarmprom-node-exporter:19.2.0
+    container_name: mill_resource_monitor
+    restart: unless-stopped
+    command:
+      - '--collector.disable-defaults'
+      - '--collector.filesystem'
+      - '--collector.cpu'
+      - '--collector.meminfo'
+      - '--collector.diskstats'
+      - '--collector.netdev'
+      - '--collector.loadavg'
+      - '--collector.uname'
+      - '--collector.vmstat'
+      - '--collector.filefd'
+      - '--collector.netstat'
+      - '--collector.stat'
+      - '--collector.time'
+      - '--collector.logind'
+      - '--collector.systemd'
+      - '--collector.tcpstat'
+      - '--collector.bonding'
+      - '--collector.hwmon'
+      - '--collector.arp'
+      - '--web.listen-address=:9100'
+    network_mode: host
+    pid: host
+    volumes:
+      - '/:/host:ro,rslave'
+      - /etc:/etc:ro
+      - /proc:/proc:ro
+      - /sys:/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
+    labels:
+      - "traefik.enable=false"
+
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/postgres/data
+  postgres_backups:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/postgres/backups
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/redis/data
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/grafana/data
+  grafana_provisioning:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/grafana/provisioning
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/prometheus/data
+  traefik_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/traefik/certs
+  traefik_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/traefik/logs
+  backend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/backend/logs
+  frontend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/frontend/logs
+  mqtt_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/mill/mqtt/logs
 
 networks:
   mill-network:
     driver: bridge
-
-volumes:
-  postgres_data:
-  redis_data:
-  traefik-certificates:
-  traefik-logs:
-  monitoring_data: 
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 
