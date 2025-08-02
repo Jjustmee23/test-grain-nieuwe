@@ -112,16 +112,9 @@ const Dashboard: React.FC = () => {
   const fetchFactories = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        enqueueSnackbar('Authentication required', { variant: 'error' });
-        return;
-      }
-
       const apiUrl = process.env.REACT_APP_API_URL || '/api';
-      const response = await fetch(`${apiUrl}/factories/stats`, {
+      const response = await fetch(`${apiUrl}/factories/stats/public`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -152,13 +145,9 @@ const Dashboard: React.FC = () => {
   // Fetch cities for filters
   const fetchCities = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return;
-
       const apiUrl = process.env.REACT_APP_API_URL || '/api';
-      const response = await fetch(`${apiUrl}/cities`, {
+      const response = await fetch(`${apiUrl}/cities/public`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
