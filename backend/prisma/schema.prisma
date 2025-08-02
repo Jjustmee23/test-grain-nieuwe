@@ -1,0 +1,844 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum PermissionType {
+  READ
+  WRITE
+  DELETE
+  MANAGE
+}
+
+// Core Models
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  factories     Factory[]
+  userProfiles  UserProfile[] @relation("AllowedCities")
+  tvSettings    TVDashboardSettings[] @relation("SelectedCities")
+  userPermissions UserCityPermission[]
+
+  @@map("mill_city")
+}
+
+model Factory {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  status      Boolean  @default(true)
+  error       Boolean  @default(false)
+  group       String   @default("government") @db.VarChar(30) // government, private, commercial
+  address     String?
+  latitude    Decimal? @db.Decimal(9, 6)
+  longitude   Decimal? @db.Decimal(9, 6)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  cityId      Int?     @map("city_id")
+
+  // Relations
+  city                  City? @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  devices               Device[]
+  batches               Batch[]
+  userProfiles          UserProfile[] @relation("AllowedFactories")
+  contactTickets        ContactTicket[]
+  feedback              Feedback[] @relation("FeedbackFactories")
+  batchTemplates        BatchTemplate[] @relation("ApplicableFactories")
+  notifications         Notification[] @relation("RelatedFactory")
+  tvSettingsSelected    TVDashboardSettings[] @relation("SelectedFactories")
+  
+  // Many-to-many relations
+  responsibleUsers      User[] @relation("ResponsibleUsers")
+  userPermissions       UserFactoryPermission[]
+
+  @@map("mill_factory")
+}
+
+model Device {
+  id               String   @id @db.VarChar(30)
+  name             String?  @db.VarChar(255)  // Made optional for new devices
+  serialNumber     String?  @map("serial_number") @db.VarChar(100)
+  selectedCounter  String   @default("counter_1") @map("selected_counter") @db.VarChar(50)
+  status           Boolean  @default(false)
+  isConfigured     Boolean  @default(false) @map("is_configured")  // New field
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  factoryId        Int?     @map("factory_id")
+
+  // Relations
+  factory                   Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  productionData            ProductionData[]
+  transactionData           TransactionData[]
+  rawData                   RawData[]
+  flourBagCounts            FlourBagCount[]
+  notifications             Notification[] @relation("RelatedDevice")
+  doorStatus                DoorStatus?
+  doorOpenLogs              DoorOpenLogs[]
+  powerEvents               PowerEvent[]
+  devicePowerStatus         DevicePowerStatus?
+  powerData                 PowerData[]
+
+  // Many-to-many relations
+  powerResponsibleUsers     User[] @relation("PowerResponsibleUsers")
+  powerNotificationSettings PowerNotificationSettings[] @relation("PowerResponsibleUsers")
+  userPermissions           UserDevicePermission[]
+
+  @@map("mill_device")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(150)
+  email        String   @unique @db.VarChar(254)
+  firstName    String   @map("first_name") @db.VarChar(150)
+  lastName     String   @map("last_name") @db.VarChar(150)
+  password     String   @db.VarChar(255)  // Hashed password
+  isStaff      Boolean  @default(false) @map("is_staff")
+  isActive     Boolean  @default(true) @map("is_active")
+  isSuperuser  Boolean  @default(false) @map("is_superuser")
+  role         UserRole @default(USER)
+  dateJoined   DateTime @default(now()) @map("date_joined")
+  lastLogin    DateTime? @map("last_login")
+
+  // Relations
+  userProfile                UserProfile?
+  powerManagementPermission  PowerManagementPermission?
+  powerNotificationSettings  PowerNotificationSettings?
+  twoFactorAuth              TwoFactorAuth?
+  approvedBatches           Batch[] @relation("ApprovedBatches")
+  createdBatchTemplates     BatchTemplate[] @relation("CreatedBatchTemplates")
+  acknowledgedAlerts        Alert[] @relation("AcknowledgedAlerts")
+  notifications             Notification[]
+  batchNotifications        BatchNotification[] @relation("BatchNotificationUsers")
+  emailsSent                EmailHistory[] @relation("EmailsSent")
+  emailsReceived            EmailHistory[] @relation("EmailsReceived")
+  sentMassMessages          MassMessage[] @relation("SentMassMessages")
+  receivedMassMessages      MassMessage[] @relation("ReceivedMassMessages")
+  submittedTickets          ContactTicket[] @relation("SubmittedTickets")
+  assignedTickets           ContactTicket[] @relation("AssignedTickets")
+  ticketResponses           TicketResponse[]
+  feedback                  Feedback[]
+  resolvedDoorLogs          DoorOpenLogs[] @relation("ResolvedDoorLogs")
+  resolvedPowerEvents       PowerEvent[] @relation("ResolvedPowerEvents")
+  createdTvSettings         TVDashboardSettings[] @relation("CreatedTvSettings")
+  flourBagCounts            FlourBagCount[]
+  powerPermissionsGranted   PowerManagementPermission[] @relation("PowerPermissionsGranted")
+
+  // Many-to-many relations
+  responsibleFactories      Factory[] @relation("ResponsibleUsers")
+  powerResponsibleDevices   Device[] @relation("PowerResponsibleUsers")
+
+  // Permission relations
+  userCityPermissions   UserCityPermission[]
+  userFactoryPermissions UserFactoryPermission[]
+  userDevicePermissions UserDevicePermission[]
+
+  @@map("auth_user")
+}
+
+// Permission Models
+model UserCityPermission {
+  id         Int           @id @default(autoincrement())
+  userId     Int           @map("user_id")
+  cityId     Int           @map("city_id")
+  permission PermissionType
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city       City          @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cityId])
+  @@map("mill_user_city_permission")
+}
+
+model UserFactoryPermission {
+  id         Int           @id @default(autoincrement())
+  userId     Int           @map("user_id")
+  factoryId  Int           @map("factory_id")
+  permission PermissionType
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factory    Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, factoryId])
+  @@map("mill_user_factory_permission")
+}
+
+model UserDevicePermission {
+  id         Int           @id @default(autoincrement())
+  userId     Int           @map("user_id")
+  deviceId   String        @map("device_id")
+  permission PermissionType
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device     Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@map("mill_user_device_permission")
+}
+
+model UserProfile {
+  id                      Int     @id @default(autoincrement())
+  team                    String? @db.VarChar(100)
+  supportTicketsEnabled   Boolean @default(false) @map("support_tickets_enabled")
+
+  // Foreign keys
+  userId                  Int     @unique @map("user_id")
+
+  // Relations
+  user                    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Many-to-many relations
+  allowedCities           City[] @relation("AllowedCities")
+  allowedFactories        Factory[] @relation("AllowedFactories")
+
+  @@map("mill_userprofile")
+}
+
+// Production Models
+model ProductionData {
+  id                Int      @id @default(autoincrement())
+  dailyProduction   Int      @default(0) @map("daily_production")
+  weeklyProduction  Int      @default(0) @map("weekly_production")
+  monthlyProduction Int      @default(0) @map("monthly_production")
+  yearlyProduction  Int      @default(0) @map("yearly_production")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId          String   @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device            Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@map("mill_productiondata")
+}
+
+model TransactionData {
+  id                Int      @id @default(autoincrement())
+  dailyProduction   Int      @default(0) @map("daily_production")
+  weeklyProduction  Int      @default(0) @map("weekly_production")
+  monthlyProduction Int      @default(0) @map("monthly_production")
+  yearlyProduction  Int      @default(0) @map("yearly_production")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  deviceId          String   @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device            Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@map("mill_transactiondata")
+}
+
+model RawData {
+  id             Int       @id @default(autoincrement())
+  timestamp      DateTime?
+  mobileSignal   Int?      @map("mobile_signal")
+  doutEnabled    String?   @map("dout_enabled") @db.VarChar(255)
+  dout           String?   @db.VarChar(255)
+  diMode         String?   @map("di_mode") @db.VarChar(255)
+  din            String?   @db.VarChar(255)
+  counter1       Int?      @map("counter_1")
+  counter2       Int?      @map("counter_2")
+  counter3       Int?      @map("counter_3")
+  counter4       Int?      @map("counter_4")
+  ainMode        String?   @map("ain_mode") @db.VarChar(255)
+  ain1Value      Decimal?  @map("ain1_value") @db.Decimal(10, 2)
+  ain2Value      Decimal?  @map("ain2_value") @db.Decimal(10, 2)
+  ain3Value      Decimal?  @map("ain3_value") @db.Decimal(10, 2)
+  ain4Value      Decimal?  @map("ain4_value") @db.Decimal(10, 2)
+  ain5Value      Decimal?  @map("ain5_value") @db.Decimal(10, 2)
+  ain6Value      Decimal?  @map("ain6_value") @db.Decimal(10, 2)
+  ain7Value      Decimal?  @map("ain7_value") @db.Decimal(10, 2)
+  ain8Value      Decimal?  @map("ain8_value") @db.Decimal(10, 2)
+  startFlag      Int?      @map("start_flag")
+  dataType       Int?      @map("data_type")
+  length         Int?
+  version        Int?
+  endFlag        Int?      @map("end_flag")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Foreign keys
+  deviceId       String    @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device         Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@map("mill_rawdata")
+}
+
+model Batch {
+  id                Int      @id @default(autoincrement())
+  batchNumber       String   @unique @map("batch_number") @db.VarChar(50)
+  wheatAmount       Int      @map("wheat_amount")
+  wasteFactor       Decimal  @map("waste_factor") @db.Decimal(5, 2)
+  expectedFlourOutput Int    @map("expected_flour_output")
+  actualFlourOutput Int      @default(0) @map("actual_flour_output")
+  startDate         DateTime @map("start_date")
+  endDate           DateTime? @map("end_date")
+  startValue        Int      @map("start_value")
+  currentValue      Int      @default(0) @map("current_value")
+  status            String   @default("pending") @db.VarChar(20) // pending, approved, in_process, paused, stopped, completed, rejected
+  isCompleted       Boolean  @default(false) @map("is_completed")
+  approvedAt        DateTime? @map("approved_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  factoryId         Int?     @map("factory_id")
+  approvedById      Int?     @map("approved_by_id")
+
+  // Relations
+  factory           Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  approvedBy        User?    @relation("ApprovedBatches", fields: [approvedById], references: [id], onDelete: SetNull)
+  alerts            Alert[]
+  flourBagCounts    FlourBagCount[]
+  notifications     Notification[]
+  batchNotifications BatchNotification[]
+
+  @@index([factoryId, status])
+  @@index([batchNumber])
+  @@map("mill_batch")
+}
+
+model Alert {
+  id             Int      @id @default(autoincrement())
+  alertType      String   @map("alert_type") @db.VarChar(20) // PRODUCTION_LOW, DEVIATION, SYSTEM
+  severity       String   @db.VarChar(10) // LOW, MEDIUM, HIGH
+  message        String   @db.Text
+  isActive       Boolean  @default(true) @map("is_active")
+  isAcknowledged Boolean  @default(false) @map("is_acknowledged")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  batchId        Int      @map("batch_id")
+  acknowledgedById Int?   @map("acknowledged_by_id")
+
+  // Relations
+  batch          Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  acknowledgedBy User?    @relation("AcknowledgedAlerts", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  @@index([batchId, alertType, createdAt])
+  @@map("mill_alert")
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(255)
+  message      String   @db.Text
+  priority     String   @default("medium") @db.VarChar(10) // low, medium, high, urgent
+  status       String   @default("pending") @db.VarChar(10) // pending, sent, failed, cancelled
+  sentInApp    Boolean  @default(false) @map("sent_in_app")
+  sentEmail    Boolean  @default(false) @map("sent_email")
+  emailSentAt  DateTime? @map("email_sent_at")
+  emailError   String?  @map("email_error") @db.Text
+  read         Boolean  @default(false)
+  readAt       DateTime? @map("read_at")
+  link         String?  @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  userId       Int      @map("user_id")
+  categoryId   Int      @map("category_id")
+  relatedBatchId Int?   @map("related_batch_id")
+  relatedFactoryId Int? @map("related_factory_id")
+  relatedDeviceId String? @map("related_device_id") @db.VarChar(30)
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     NotificationCategory @relation(fields: [categoryId], references: [id])
+  relatedBatch Batch?   @relation(fields: [relatedBatchId], references: [id], onDelete: SetNull)
+  relatedFactory Factory? @relation("RelatedFactory", fields: [relatedFactoryId], references: [id], onDelete: SetNull)
+  relatedDevice Device? @relation("RelatedDevice", fields: [relatedDeviceId], references: [id], onDelete: SetNull)
+  notificationLogs NotificationLog[]
+
+  @@index([userId, read, createdAt])
+  @@index([priority, createdAt])
+  @@index([status, createdAt])
+  @@map("mill_notification")
+}
+
+model NotificationCategory {
+  id                Int      @id @default(autoincrement())
+  name              String   @unique @db.VarChar(100)
+  description       String   @db.Text
+  notificationType  String   @map("notification_type") @db.VarChar(50)
+  isActive          Boolean  @default(true) @map("is_active")
+  requiresAdmin     Boolean  @default(false) @map("requires_admin")
+  requiresSuperAdmin Boolean @default(false) @map("requires_super_admin")
+
+  // Relations
+  notifications     Notification[]
+  emailTemplates    EmailTemplate[]
+
+  @@map("mill_notificationcategory")
+}
+
+model BatchNotification {
+  id        Int      @id @default(autoincrement())
+  message   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Foreign keys
+  batchId   Int      @map("batch_id")
+
+  // Relations
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sentTo    User[]   @relation("BatchNotificationUsers")
+
+  @@map("mill_batchnotification")
+}
+
+model EmailHistory {
+  id        Int      @id @default(autoincrement())
+  subject   String   @db.VarChar(255)
+  message   String   @db.Text
+  recipient String   @db.VarChar(254)
+  sentAt    DateTime @default(now()) @map("sent_at")
+  status    String   @default("sent") @db.VarChar(20) // sent, failed, pending
+  error     String?  @db.Text
+
+  // Foreign keys
+  userId    Int      @map("user_id")
+  sentById  Int      @map("sent_by_id")
+
+  // Relations
+  user      User     @relation("EmailsReceived", fields: [userId], references: [id], onDelete: Cascade)
+  sentBy    User     @relation("EmailsSent", fields: [sentById], references: [id], onDelete: Cascade)
+
+  @@map("mill_emailhistory")
+}
+
+model EmailTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  subject     String   @db.VarChar(255)
+  body        String   @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  categoryId  Int      @map("category_id")
+
+  // Relations
+  category    NotificationCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("mill_emailtemplate")
+}
+
+model MassMessage {
+  id        Int      @id @default(autoincrement())
+  subject   String   @db.VarChar(255)
+  message   String   @db.Text
+  sentAt    DateTime @default(now()) @map("sent_at")
+  status    String   @default("sent") @db.VarChar(20) // sent, failed, pending
+
+  // Foreign keys
+  sentById  Int      @map("sent_by_id")
+
+  // Relations
+  sentBy    User     @relation("SentMassMessages", fields: [sentById], references: [id], onDelete: Cascade)
+  targetUsers User[] @relation("ReceivedMassMessages")
+
+  @@map("mill_massmessage")
+}
+
+model Microsoft365Settings {
+  id              Int      @id @default(autoincrement())
+  clientId        String   @map("client_id") @db.VarChar(255)
+  clientSecret    String   @map("client_secret") @db.VarChar(255)
+  tenantId        String   @map("tenant_id") @db.VarChar(255)
+  redirectUri     String   @map("redirect_uri") @db.VarChar(500)
+  isActive        Boolean  @default(false) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("mill_microsoft365settings")
+}
+
+model NotificationLog {
+  id              Int      @id @default(autoincrement())
+  notificationId  Int      @map("notification_id")
+  deliveryMethod  String   @map("delivery_method") @db.VarChar(20) // email, sms, push
+  status          String   @db.VarChar(20) // sent, failed, pending
+  error           String?  @db.Text
+  sentAt          DateTime @default(now()) @map("sent_at")
+
+  // Relations
+  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId, deliveryMethod, status])
+  @@map("mill_notificationlog")
+}
+
+model DoorStatus {
+  id              Int      @id @default(autoincrement())
+  isOpen          Boolean  @default(false) @map("is_open")
+  lastDinData     String?  @map("last_din_data") @db.VarChar(255)
+  lastCheck       DateTime @default(now()) @map("last_check")
+  doorInputIndex  Int      @default(0) @map("door_input_index")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId        String   @unique @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device          Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, isOpen])
+  @@map("mill_doorstatus")
+}
+
+model DoorOpenLogs {
+  id              Int      @id @default(autoincrement())
+  isResolved      Boolean  @default(false) @map("is_resolved")
+  resolutionNotes String?  @map("resolution_notes") @db.Text
+  resolvedAt      DateTime? @map("resolved_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId        String   @map("device_id") @db.VarChar(30)
+  resolvedById    Int?     @map("resolved_by_id")
+
+  // Relations
+  device          Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  resolvedBy      User?    @relation("ResolvedDoorLogs", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([deviceId, isResolved])
+  @@map("mill_dooropenlogs")
+}
+
+model ContactTicket {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  email       String   @db.VarChar(254)
+  phone       String?  @db.VarChar(20)
+  ticketType  String   @map("ticket_type") @db.VarChar(20) // TECHNICAL, ACCOUNT, FEATURE, BUG, OTHER
+  subject     String   @db.VarChar(200)
+  message     String   @db.Text
+  priority    String   @default("MEDIUM") @db.VarChar(10) // LOW, MEDIUM, HIGH, URGENT
+  status      String   @default("NEW") @db.VarChar(20) // NEW, IN_PROGRESS, PENDING, RESOLVED, CLOSED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  factoryId   Int?     @map("factory_id")
+  createdById Int      @map("created_by_id")
+  assignedToId Int?    @map("assigned_to_id")
+
+  // Relations
+  factory     Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  createdBy   User     @relation("SubmittedTickets", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedTo  User?    @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  responses   TicketResponse[]
+
+  @@index([status, createdAt])
+  @@index([ticketType, status])
+  @@index([createdById, status])
+  @@index([assignedToId, status])
+  @@map("mill_contactticket")
+}
+
+model TicketResponse {
+  id        Int      @id @default(autoincrement())
+  message   String   @db.Text
+  isInternal Boolean @default(false) @map("is_internal")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  ticketId  Int      @map("ticket_id")
+  createdById Int?   @map("created_by_id")
+
+  // Relations
+  ticket    ContactTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("mill_ticketresponse")
+}
+
+model FeedbackCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Relations
+  feedback    Feedback[]
+
+  @@map("mill_feedbackcategory")
+}
+
+model Feedback {
+  id            Int      @id @default(autoincrement())
+  subject       String   @db.VarChar(200)
+  message       String   @db.Text
+  priority      String   @default("MEDIUM") @db.VarChar(10) // LOW, MEDIUM, HIGH
+  status        String   @default("NEW") @db.VarChar(20) // NEW, IN_PROGRESS, RESOLVED, CLOSED
+  allFactories  Boolean  @default(false) @map("all_factories")
+  issueDate     DateTime? @map("issue_date")
+  expectedValue String?  @map("expected_value") @db.VarChar(255)
+  shownValue    String?  @map("shown_value") @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  categoryId    Int      @map("category_id")
+  userId        Int      @map("user_id")
+
+  // Relations
+  category      FeedbackCategory @relation(fields: [categoryId], references: [id])
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  factories     Factory[] @relation("FeedbackFactories")
+
+  @@map("mill_feedback")
+}
+
+model PowerEvent {
+  id                    Int      @id @default(autoincrement())
+  eventType             String   @map("event_type") @db.VarChar(50) // power_loss, power_restored, production_without_power, power_fluctuation, battery_low, power_surge
+  severity              String   @default("medium") @db.VarChar(20) // low, medium, high, critical
+  ain1Value             Decimal? @map("ain1_value") @db.Decimal(10, 2)
+  previousAin1Value     Decimal? @map("previous_ain1_value") @db.Decimal(10, 2)
+  message               String   @db.Text
+  isResolved            Boolean  @default(false) @map("is_resolved")
+  resolvedAt            DateTime? @map("resolved_at")
+  resolutionNotes       String?  @map("resolution_notes") @db.Text
+  notificationSent      Boolean  @default(false) @map("notification_sent")
+  emailSent             Boolean  @default(false) @map("email_sent")
+  superAdminNotified    Boolean  @default(false) @map("super_admin_notified")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId              String   @map("device_id") @db.VarChar(30)
+  resolvedById          Int?     @map("resolved_by_id")
+
+  // Relations
+  device                Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  resolvedBy            User?    @relation("ResolvedPowerEvents", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([deviceId, eventType, createdAt])
+  @@index([isResolved, createdAt])
+  @@map("mill_powerevent")
+}
+
+model DevicePowerStatus {
+  id                        Int      @id @default(autoincrement())
+  hasPower                  Boolean  @default(false) @map("has_power")
+  ain1Value                 Decimal? @map("ain1_value") @db.Decimal(10, 2)
+  lastPowerCheck            DateTime @default(now()) @map("last_power_check")
+  powerThreshold            Decimal  @default(0) @map("power_threshold") @db.Decimal(10, 2)
+  powerLossDetectedAt       DateTime? @map("power_loss_detected_at")
+  powerRestoredAt           DateTime? @map("power_restored_at")
+  productionDuringPowerLoss Boolean  @default(false) @map("production_during_power_loss")
+  lastProductionCheck       DateTime? @map("last_production_check")
+  notifyOnPowerLoss         Boolean  @default(true) @map("notify_on_power_loss")
+  notifyOnPowerRestore      Boolean  @default(true) @map("notify_on_power_restore")
+  notifyOnProductionWithoutPower Boolean @default(true) @map("notify_on_production_without_power")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId                  String   @unique @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device                    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, hasPower])
+  @@index([hasPower, updatedAt])
+  @@map("mill_devicepowerstatus")
+}
+
+model PowerNotificationSettings {
+  id                        Int      @id @default(autoincrement())
+  notifyOnPowerLoss         Boolean  @default(true) @map("notify_on_power_loss")
+  notifyOnPowerRestore      Boolean  @default(true) @map("notify_on_power_restore")
+  notifyOnProductionWithoutPower Boolean @default(true) @map("notify_on_production_without_power")
+  emailNotifications        Boolean  @default(true) @map("email_notifications")
+  inAppNotifications        Boolean  @default(true) @map("in_app_notifications")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  userId                    Int      @unique @map("user_id")
+
+  // Relations
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responsibleDevices        Device[] @relation("PowerResponsibleUsers")
+
+  @@map("mill_powernotificationsettings")
+}
+
+model PowerManagementPermission {
+  id          Int      @id @default(autoincrement())
+  grantedAt   DateTime @default(now()) @map("granted_at")
+  expiresAt   DateTime? @map("expires_at")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  // Foreign keys
+  userId      Int      @unique @map("user_id")
+  grantedById Int      @map("granted_by_id")
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy   User     @relation("PowerPermissionsGranted", fields: [grantedById], references: [id], onDelete: Cascade)
+
+  @@map("mill_powermanagementpermission")
+}
+
+model PowerData {
+  id                        Int      @id @default(autoincrement())
+  hasPower                  Boolean  @default(false) @map("has_power")
+  ain1Value                 Decimal? @map("ain1_value") @db.Decimal(10, 2)
+  powerLossCount            Int      @default(0) @map("power_loss_count")
+  lastPowerLossAt           DateTime? @map("last_power_loss_at")
+  totalPowerLossTimeToday   String?  @map("total_power_loss_time_today") // interval type
+  totalPowerLossTimeWeek    String?  @map("total_power_loss_time_week") // interval type
+  totalPowerLossTimeMonth   String?  @map("total_power_loss_time_month") // interval type
+  totalPowerLossTimeYear    String?  @map("total_power_loss_time_year") // interval type
+  lastMqttUpdate            DateTime @default(now()) @map("last_mqtt_update")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  deviceId                  String   @map("device_id") @db.VarChar(30)
+
+  // Relations
+  device                    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, createdAt])
+  @@index([deviceId, hasPower])
+  @@index([lastMqttUpdate])
+  @@map("mill_powerdata")
+}
+
+model TVDashboardSettings {
+  id                Int      @id @default(autoincrement())
+  name              String   @unique @db.VarChar(100)
+  description       String?  @db.Text
+  displayMode       String   @default("default") @map("display_mode") @db.VarChar(50)
+  sortBy            String   @default("name") @map("sort_by") @db.VarChar(50)
+  refreshInterval   Int      @default(30) @map("refresh_interval")
+  autoScroll        Boolean  @default(true) @map("auto_scroll")
+  colorTheme        String   @default("light") @map("color_theme") @db.VarChar(20)
+  fontSize          String   @default("medium") @map("font_size") @db.VarChar(20)
+  backgroundStyle   String   @default("solid") @map("background_style") @db.VarChar(20)
+  cardStyle         String   @default("default") @map("card_style") @db.VarChar(20)
+  showCharts        Boolean  @default(true) @map("show_charts")
+  showAlerts        Boolean  @default(true) @map("show_alerts")
+  showStatus        Boolean  @default(true) @map("show_status")
+  isActive          Boolean  @default(false) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  createdById       Int      @map("created_by_id")
+
+  // Relations
+  createdBy         User     @relation("CreatedTvSettings", fields: [createdById], references: [id], onDelete: Cascade)
+  selectedCities    City[]   @relation("SelectedCities")
+  selectedFactories Factory[] @relation("SelectedFactories")
+
+  @@index([name])
+  @@map("mill_tvdashboardsettings")
+}
+
+model TwoFactorAuth {
+  id          Int      @id @default(autoincrement())
+  secretKey   String   @unique @map("secret_key") @db.VarChar(255)
+  isEnabled   Boolean  @default(false) @map("is_enabled")
+  backupCodes String?  @map("backup_codes") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  userId      Int      @unique @map("user_id")
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secretKey])
+  @@map("mill_twofactorauth")
+}
+
+model FlourBagCount {
+  id          Int      @id @default(autoincrement())
+  bagCount    Int      @map("bag_count")
+  bagsWeight  Decimal  @map("bags_weight") @db.Decimal(10, 2)
+  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  batchId     Int      @map("batch_id")
+  deviceId    String   @map("device_id") @db.VarChar(30)
+  createdById Int?     @map("created_by_id")
+
+  // Relations
+  batch       Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([batchId, deviceId, timestamp])
+  @@map("mill_flourbagcount")
+}
+
+model BatchTemplate {
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique @db.VarChar(100)
+  description         String?  @db.Text
+  wheatAmount         Int      @map("wheat_amount")
+  wasteFactor         Decimal  @map("waste_factor") @db.Decimal(5, 2)
+  expectedDurationDays Int     @default(30) @map("expected_duration_days")
+  isActive            Boolean  @default(true) @map("is_active")
+  isDefault           Boolean  @default(false) @map("is_default")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Foreign keys
+  createdById         Int      @map("created_by_id")
+
+  // Relations
+  createdBy           User     @relation("CreatedBatchTemplates", fields: [createdById], references: [id], onDelete: Cascade)
+  applicableFactories Factory[] @relation("ApplicableFactories")
+
+  @@index([name])
+  @@map("mill_batchtemplate")
+}

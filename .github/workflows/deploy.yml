@@ -1,0 +1,71 @@
+name: Deploy to Production Server
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H 45.154.238.102 >> ~/.ssh/known_hosts
+        
+    - name: Deploy to server
+      run: |
+        echo "🚀 Starting deployment to production server..."
+        
+        # Connect to server and deploy
+        ssh administrator@45.154.238.102 << 'EOF'
+          echo "📋 Updating repository..."
+          cd ~/test-grain-nieuwe
+          git pull origin master
+          
+          echo "🔧 Running server setup if needed..."
+          if [ -f "server-setup.sh" ]; then
+            chmod +x server-setup.sh
+            echo "admin123" | sudo -S ./server-setup.sh
+          fi
+          
+          echo "🚀 Restarting services..."
+          if [ -f "start.sh" ]; then
+            chmod +x start.sh stop.sh restart.sh logs.sh
+            ./restart.sh
+          fi
+          
+          echo "📊 Checking service status..."
+          docker ps
+          
+          echo "✅ Deployment completed!"
+        EOF
+        
+    - name: Health check
+      run: |
+        echo "🏥 Performing health check..."
+        sleep 30
+        
+        # Check if services are running
+        ssh administrator@45.154.238.102 << 'EOF'
+          echo "=== Service Status ==="
+          docker ps
+          
+          echo "=== Recent Logs ==="
+          cd ~/test-grain-nieuwe
+          docker-compose -f docker-compose.production.yml logs --tail=10
+        EOF
+        
+    - name: Notify deployment status
+      run: |
+        echo "🎉 Deployment to production server completed successfully!"
+        echo "🌐 Access your application at: https://test.nexonsolutions.be" 

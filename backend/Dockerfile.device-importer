@@ -1,0 +1,33 @@
+# Development Dockerfile for device-importer service
+FROM node:18-alpine
+
+# Install dumb-init and required SSL libraries for Prisma
+RUN apk add --no-cache dumb-init openssl
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code and prisma
+COPY src ./src
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Switch to non-root user
+USER nextjs
+
+# Start device importer
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["npx", "ts-node", "src/scripts/auto-import-devices.ts"] 

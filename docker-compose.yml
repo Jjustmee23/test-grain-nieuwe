@@ -1,90 +1,200 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=45.154.238.114
-      - DB_PORT=5433
-      - DB_NAME=testdb
-      - DB_USER=testuser
-      - DB_PASSWORD=testpassword
-      - DJANGO_DISABLE_MIGRATIONS=False
-      - DJANGO_SETTINGS_MODULE=config.settings
-    depends_on:
-      - postgres
-    volumes:
-      - .:/app
-      - static_volume:/app/staticfiles
-    restart: unless-stopped
-
-  raw-data-sync:
-    build: .
-    env_file:
-      - .env
-    environment:
-      - DB_HOST=45.154.238.114
-      - DB_PORT=5433
-      - DB_NAME=testdb
-      - DB_USER=testuser
-      - DB_PASSWORD=testpassword
-      - DJANGO_DISABLE_MIGRATIONS=False
-      - DJANGO_SETTINGS_MODULE=config.settings
-    depends_on:
-      - postgres
-    volumes:
-      - .:/app
-    restart: unless-stopped
-    command: python manage.py raw_data_sync_daemon --interval 300 --log-level INFO
-    profiles:
-      - sync
-
+  # Main PostgreSQL Database
   postgres:
-    image: postgres:17
-    container_name: app_postgres
+    image: postgres:15-alpine
+    container_name: mill_postgres
     environment:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: testdb
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-      TZ: Asia/Baghdad
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data_test:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  counter-postgres:
-    image: postgres:17
-    container_name: app_counter_postgres
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: counter
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
     volumes:
-      - counter_postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup/scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    networks:
+      - mill_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d counter"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # PostgreSQL Admin Interface
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: mill_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nexonsolutions.be
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - mill_network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mill_redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mill_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: mill_mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mqtt/config:/mosquitto/config
+      - mqtt_data:/mosquitto/data
+      - mqtt_logs:/mosquitto/log
+    networks:
+      - mill_network
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "test"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mill_backend
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://mill_user:mill_password_2024@postgres:5432/mill_db?schema=public
+      - HARDWARE_DATABASE_URL=postgresql://hardware_user:hardware_password_2024@postgres:5432/hardware_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
+      - JWT_REFRESH_SECRET=your-refresh-secret-key-here
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost:3000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    networks:
+      - mill_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: npm run dev
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mill_frontend
+    environment:
+      - REACT_APP_API_URL=http://backend:5000/api
+      - REACT_APP_WS_URL=ws://backend:5000
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mill_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # MQTT Client
+  mqtt-client:
+    build:
+      context: ./mqtt-client
+      dockerfile: Dockerfile
+    container_name: mill_mqtt_client
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=hardware_db
+      - DB_USER=hardware_user
+      - DB_PASSWORD=hardware_password_2024
+      - MQTT_BROKER=45.154.238.114
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=uc300
+      - MQTT_PASSWORD=grain300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    networks:
+      - mill_network
+    restart: unless-stopped
+
+  # Device Importer
+  device-importer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.device-importer
+    container_name: mill_device_importer
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://mill_user:mill_password_2024@postgres:5432/mill_db?schema=public
+      - HARDWARE_DATABASE_URL=postgresql://hardware_user:hardware_password_2024@postgres:5432/hardware_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mill_network
+    restart: unless-stopped
 
 volumes:
-  postgres_data_test:
-  counter_postgres_data:
-  static_volume:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+  mqtt_data:
+    driver: local
+  mqtt_logs:
+    driver: local
 
-
+networks:
+  mill_network:
+    driver: bridge 

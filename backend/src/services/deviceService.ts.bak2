@@ -1,0 +1,198 @@
+import { prisma, counterPrisma } from '../config/database';
+import { logger } from '../config/logger';
+
+export interface Device {
+  id: string;
+  name: string;
+  serialNumber?: string | null;
+  selectedCounter: string;
+  status: boolean;
+  createdAt: Date;
+  factoryId?: number | null;
+  factory?: {
+    id: number;
+    name: string;
+  } | null;
+  // Real-time data from counter database
+  lastSeen?: Date | null;
+  powerStatus?: boolean;
+  temperature?: number | null;
+  doorStatus?: boolean;
+  signalStrength?: number | null;
+  productionCount?: number;
+}
+
+export const getAllDevices = async (): Promise<Device[]> => {
+  try {
+    const devices = await prisma.device.findMany({
+      include: {
+        factory: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // Enrich with real-time data from counter database
+    const enrichedDevices = await Promise.all(
+      devices.map(async (device) => {
+        try {
+          // Get latest power status
+          const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
+            where: { deviceId: device.id },
+            orderBy: { lastPowerCheck: 'desc' }
+          });
+
+          // Get latest door status
+          const doorStatus = await counterPrisma.doorStatus.findFirst({
+            where: { deviceId: device.id },
+            orderBy: { lastCheck: 'desc' }
+          });
+
+          // Get latest production data
+          const productionData = await counterPrisma.productionData.findFirst({
+            where: { deviceId: device.id },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          return {
+            ...device,
+            powerStatus: powerStatus?.hasPower || false,
+            doorStatus: doorStatus?.isOpen || false,
+            temperature: powerStatus?.ain1Value || null,
+            lastSeen: powerStatus?.lastPowerCheck || null,
+            productionCount: productionData?.dailyProduction || 0
+          };
+        } catch (error) {
+          logger.warn(`Could not fetch real-time data for device ${device.id}:`, error);
+          return device;
+        }
+      })
+    );
+
+    logger.info(`Retrieved ${devices.length} devices from database`);
+    return enrichedDevices;
+  } catch (error) {
+    logger.error('Error fetching devices:', error);
+    throw new Error('Failed to fetch devices');
+  }
+};
+
+export const getDeviceById = async (id: string): Promise<Device | null> => {
+  try {
+    const device = await prisma.device.findUnique({
+      where: { id },
+      include: {
+        factory: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!device) return null;
+
+    // Get real-time data
+    const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
+      where: { deviceId: id },
+      orderBy: { lastPowerCheck: 'desc' }
+    });
+
+    const doorStatus = await counterPrisma.doorStatus.findFirst({
+      where: { deviceId: id },
+      orderBy: { lastCheck: 'desc' }
+    });
+
+    return {
+      ...device,
+      powerStatus: powerStatus?.hasPower || false,
+      doorStatus: doorStatus?.isOpen || false,
+      temperature: powerStatus?.ain1Value || null,
+      lastSeen: powerStatus?.lastPowerCheck || null
+    };
+  } catch (error) {
+    logger.error(`Error fetching device ${id}:`, error);
+    throw new Error('Failed to fetch device');
+  }
+};
+
+export const getDevicesByFactory = async (factoryId: number): Promise<Device[]> => {
+  try {
+    const devices = await prisma.device.findMany({
+      where: { factoryId },
+      include: {
+        factory: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // Enrich with real-time data
+    const enrichedDevices = await Promise.all(
+      devices.map(async (device) => {
+        try {
+          const powerStatus = await counterPrisma.devicePowerStatus.findFirst({
+            where: { deviceId: device.id },
+            orderBy: { lastPowerCheck: 'desc' }
+          });
+
+          return {
+            ...device,
+            powerStatus: powerStatus?.hasPower || false,
+            lastSeen: powerStatus?.lastPowerCheck || null
+          };
+        } catch (error) {
+          return device;
+        }
+      })
+    );
+
+    return enrichedDevices;
+  } catch (error) {
+    logger.error(`Error fetching devices for factory ${factoryId}:`, error);
+    throw new Error('Failed to fetch devices by factory');
+  }
+};
+
+export const getDevicesStats = async () => {
+  try {
+    const totalDevices = await prisma.device.count();
+    const onlineDevices = await prisma.device.count({
+      where: { status: true }
+    });
+
+    // Get devices with power status
+    const poweredDevices = await counterPrisma.devicePowerStatus.groupBy({
+      by: ['deviceId'],
+      where: {
+        hasPower: true,
+        lastPowerCheck: {
+          gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
+        }
+      }
+    });
+
+    return {
+      total: totalDevices,
+      online: onlineDevices,
+      powered: poweredDevices.length,
+      offline: totalDevices - onlineDevices
+    };
+  } catch (error) {
+    logger.error('Error fetching device stats:', error);
+    throw new Error('Failed to fetch device statistics');
+  }
+}; 
