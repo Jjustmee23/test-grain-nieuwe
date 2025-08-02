@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { logger } from './config/logger';
 import { testDatabaseConnections } from './config/database';
-import { redisClient } from './config/redis';
+// import { redisClient } from './config/redis'; // Optional for development
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -25,7 +25,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:3001",
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     methods: ["GET", "POST"]
   }
 });
@@ -54,7 +54,7 @@ app.use('/api/', limiter);
 // Middleware
 app.use(compression());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3001",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

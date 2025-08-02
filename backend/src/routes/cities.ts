@@ -5,6 +5,37 @@ import { authenticateToken } from '../middleware/auth';
 const router = Router();
 const prisma = new PrismaClient();
 
+// GET /api/cities/public - Get all cities (public, no auth required)
+router.get('/public', async (req, res) => {
+  try {
+    const cities = await prisma.city.findMany({
+      include: {
+        _count: {
+          select: {
+            factories: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: cities,
+      total: cities.length
+    });
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch cities',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // GET /api/cities - Get all cities
 router.get('/', authenticateToken, async (req, res) => {
   try {

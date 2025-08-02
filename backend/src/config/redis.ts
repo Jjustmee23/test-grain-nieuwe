@@ -224,8 +224,12 @@ export const getRedisHealth = async () => {
   }
 };
 
-// Initialize Redis connection
-connectRedis().catch((error) => {
-  logger.error('Failed to initialize Redis:', error);
-  process.exit(1);
-}); 
+// Initialize Redis connection only if REDIS_URL is set
+if (process.env.REDIS_URL) {
+  connectRedis().catch((error) => {
+    logger.error('Failed to initialize Redis:', error);
+    logger.warn('Continuing without Redis for development...');
+  });
+} else {
+  logger.info('Redis disabled for development - no REDIS_URL configured');
+} 
