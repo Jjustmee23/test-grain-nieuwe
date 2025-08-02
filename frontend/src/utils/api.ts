@@ -14,6 +14,11 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+// Connection status monitoring
+let isBackendConnected = true;
+
+export const getConnectionStatus = () => isBackendConnected;
+
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
@@ -30,9 +35,22 @@ apiClient.interceptors.request.use(
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Backend is responding, mark as connected
+    isBackendConnected = true;
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+
+    // Check if it's a network error
+    if (!error.response) {
+      isBackendConnected = false;
+      console.error('Backend connection failed:', error.message);
+      return Promise.reject(new Error('Backend server is unavailable. Please try again later.'));
+    }
+
+    isBackendConnected = true;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -62,5 +80,19 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Health check utility
+export const checkBackendHealth = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL.replace('/api', '')}/health`, {
+      timeout: 5000
+    });
+    isBackendConnected = true;
+    return response.data;
+  } catch (error) {
+    isBackendConnected = false;
+    throw error;
+  }
+};
 
 export default apiClient;

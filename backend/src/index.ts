@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { logger } from './config/logger';
 import { testDatabaseConnections } from './config/database';
-import { redisClient } from './config/redis';
+// import { redisClient } from './config/redis'; // Optional for development
 
 // Import routes
 import authRoutes from './routes/auth';
